@@ -21,35 +21,47 @@ st.set_page_config(
 )
 
 # =========================================================
-# 3. INJEÇÃO DE CSS CUSTOMIZADO (OCULTA RODAPÉ & BARRAS STREAMLIT)
+# 3. INJEÇÃO DE CSS REFORÇADO (ELIMINA 100% RODAPÉ E BALÃO)
 # =========================================================
 st.markdown("""
     <style>
-    /* Travar largura máxima para simular tela de aplicativo mobile */
-    .block-container {
+    /* 1. Ocultar Cabeçalho, Menu, Rodapé e Marcas do Streamlit */
+    #MainMenu, header, footer, .stDeployButton {
+        display: none !important;
+        visibility: hidden !important;
+        height: 0px !important;
+    }
+
+    /* 2. Ocultar especificamente o container do rodapé 'Built with Streamlit' */
+    footer, [data-testid="stFooter"], .stFooter {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        height: 0 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    /* 3. Ocultar o botão de balão / feedback / status widget no canto */
+    [data-testid="stStatusWidget"], 
+    [data-testid="stDecoration"],
+    [data-testid="stToolbar"],
+    .viewerBadge_container__1353K,
+    .styles_viewerBadge__1yB5_ {
+        display: none !important;
+        visibility: hidden !important;
+    }
+
+    /* 4. Zerar o espaçamento inferior da página para não sobrar espaço branco */
+    .main .block-container {
         padding-top: 0.8rem !important;
-        padding-bottom: 1rem !important;
+        padding-bottom: 0rem !important;
         padding-left: 0.8rem !important;
         padding-right: 0.8rem !important;
         max-width: 480px !important;
     }
 
-    /* Ocultar elementos nativos do Streamlit (Menu, Header, Footer e Built with Streamlit) */
-    #MainMenu {visibility: hidden !important; display: none !important;}
-    header {visibility: hidden !important; display: none !important;}
-    footer {visibility: hidden !important; display: none !important;}
-    .stDeployButton {display: none !important;}
-    
-    /* Oculta especificamente a marca "Built with Streamlit" e widgets de status */
-    footer:after {
-        content: "" !important;
-        visibility: hidden !important;
-        display: none !important;
-    }
-    div[data-testid="stFooter"] {display: none !important;}
-    div[data-testid="stStatusWidget"] {display: none !important;}
-    
-    /* Aumentar o tamanho e destaque dos textos dos rótulos */
+    /* 5. Aumentar o destaque dos rótulos dos campos */
     label {
         font-size: 1.05rem !important;
         font-weight: 700 !important;
@@ -57,20 +69,20 @@ st.markdown("""
         margin-bottom: 0.2rem !important;
     }
 
-    /* Estilizar inputs de texto, data e números */
+    /* 6. Estilizar inputs de texto, data e números */
     div[data-baseweb="input"] input, div[data-baseweb="select"] {
         font-size: 1.15rem !important;
         padding: 10px !important;
         border-radius: 8px !important;
     }
 
-    /* Botões de soma/subtração dos inputs numéricos maiores */
+    /* 7. Botões de soma/subtração maiores */
     div[data-baseweb="input"] button {
         width: 38px !important;
         height: 38px !important;
     }
 
-    /* Botão Principal - Vermelho Destaque Don Max */
+    /* 8. Botão Principal - Vermelho Destaque Don Max */
     .stButton > button {
         width: 100% !important;
         height: 3.8rem !important;
@@ -82,6 +94,7 @@ st.markdown("""
         border: none !important;
         box-shadow: 0px 4px 12px rgba(211, 47, 47, 0.35) !important;
         margin-top: 1rem !important;
+        margin-bottom: 1rem !important;
     }
 
     .stButton > button:active {
@@ -89,7 +102,7 @@ st.markdown("""
         transform: scale(0.98);
     }
 
-    /* Estilização dos títulos de seção */
+    /* 9. Títulos das Seções */
     .section-header {
         font-size: 1.1rem;
         font-weight: bold;
