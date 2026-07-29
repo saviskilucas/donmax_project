@@ -27,36 +27,38 @@ if "aba_ativa" not in st.session_state:
     st.session_state["aba_ativa"] = "Pesagem"
 
 # =========================================================
-# 4. INJEÇÃO DE CSS CUSTOMIZADO (DESIGN IDÊNTICO AO APPSHEET)
+# 4. INJEÇÃO DE CSS CUSTOMIZADO (BARRA TOPO & RODAPÉ CONGELADOS)
 # =========================================================
 st.markdown("""
     <style>
-    /* Configuração da Tela Mobile */
+    /* Configuração Geral da Tela Mobile */
     html, body, [data-testid="stApp"], .stApp {
         background-color: #F4F5F7 !important;
     }
 
-    /* Trava o conteúdo para não ficar oculto atrás das barras fixas */
+    /* Área central de conteúdo com recuo para não ficar atrás dos menus congelados */
     .block-container {
-        padding-top: 3.8rem !important;
+        padding-top: 4.2rem !important;
         padding-bottom: 5.5rem !important;
         padding-left: 0.8rem !important;
         padding-right: 0.8rem !important;
         max-width: 100% !important;
     }
 
-    /* Ocultar elementos nativos do Streamlit */
+    /* Ocultar elementos padrão do Streamlit */
     #MainMenu, header, .stDeployButton, footer {
         display: none !important;
     }
 
-    /* BARRA SUPERIOR ESTILO APPSHEET (VERMELHO DON MAX) */
+    /* =========================================================
+       1. BARRA SUPERIOR CONGELADA (TOPO)
+       ========================================================= */
     .appsheet-header {
         position: fixed;
         top: 0;
         left: 0;
         right: 0;
-        width: 100%;
+        width: 100vw;
         height: 52px;
         background-color: #D32F2F;
         color: #FFFFFF;
@@ -64,7 +66,7 @@ st.markdown("""
         align-items: center;
         justify-content: space-between;
         padding: 0 16px;
-        z-index: 999999;
+        z-index: 999999 !important;
         box-shadow: 0px 2px 6px rgba(0,0,0,0.2);
     }
 
@@ -80,10 +82,70 @@ st.markdown("""
         display: flex;
         gap: 15px;
         font-size: 1.2rem;
-        cursor: pointer;
     }
 
-    /* ESTILIZAÇÃO DOS FORMULÁRIOS E INPUTS */
+    /* =========================================================
+       2. BARRA INFERIOR CONGELADA (RODAPÉ) - IGUAL AO TOPO
+       ========================================================= */
+    div[data-testid="stHorizontalBlock"]:has(button[key^="nav_"]) {
+        position: fixed !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100vw !important;
+        height: 60px !important;
+        background-color: #D32F2F !important;
+        box-shadow: 0px -2px 8px rgba(0,0,0,0.2) !important;
+        z-index: 999999 !important;
+
+        /* Força alinhamento estritamente horizontal dos botões em 1 linha */
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    /* Garante que cada coluna ocupe 1/3 exato da largura */
+    div[data-testid="stHorizontalBlock"]:has(button[key^="nav_"]) > div {
+        flex: 1 1 0% !important;
+        width: 33.33% !important;
+        min-width: 0 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    /* Estilo dos Botões do Rodapé */
+    div[data-testid="stHorizontalBlock"]:has(button[key^="nav_"]) button {
+        width: 100% !important;
+        height: 60px !important;
+        background-color: transparent !important;
+        border: none !important;
+        border-radius: 0px !important;
+        box-shadow: none !important;
+        color: rgba(255, 255, 255, 0.75) !important;
+        font-size: 0.85rem !important;
+        font-weight: 600 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        white-space: pre !important;
+    }
+
+    /* Efeito de aba ativa no rodapé */
+    div[data-testid="stHorizontalBlock"]:has(button[key^="nav_"]) button:active,
+    div[data-testid="stHorizontalBlock"]:has(button[key^="nav_"]) button:focus {
+        color: #FFFFFF !important;
+        background-color: rgba(0, 0, 0, 0.2) !important;
+    }
+
+    /* =========================================================
+       3. ESTILIZAÇÃO DOS CAMPOS E SEÇÕES
+       ========================================================= */
     label {
         font-size: 1rem !important;
         font-weight: 700 !important;
@@ -98,13 +160,12 @@ st.markdown("""
         background-color: #FFFFFF !important;
     }
 
-    /* Botões de soma/subtração dos inputs numéricos */
     div[data-baseweb="input"] button {
         width: 36px !important;
         height: 36px !important;
     }
 
-    /* Botão Principal - Salvar */
+    /* Botão Salvar Principal */
     .stButton > button {
         width: 100% !important;
         height: 3.5rem !important;
@@ -118,11 +179,6 @@ st.markdown("""
         margin-top: 0.8rem !important;
     }
 
-    .stButton > button:active {
-        background-color: #B71C1C !important;
-    }
-
-    /* Títulos de Seção */
     .section-header {
         font-size: 1rem;
         font-weight: bold;
@@ -132,58 +188,6 @@ st.markdown("""
         margin-top: 15px;
         margin-bottom: 12px;
         text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-
-    /* BARRA FIXA INFERIOR (TAB BAR IGUAL AO APPSHEET) */
-    div[data-testid="stHorizontalBlock"]:has(button[key^="nav_"]) {
-        position: fixed !important;
-        bottom: 0 !important;
-        left: 0 !important;
-        right: 0 !important;
-        width: 100% !important;
-        height: 56px !important;
-        background-color: #D32F2F !important; /* Cor da barra inferior do AppSheet */
-        box-shadow: 0px -2px 10px rgba(0, 0, 0, 0.15) !important;
-        z-index: 999999 !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: space-around !important;
-        padding: 0 !important;
-        margin: 0 !important;
-    }
-
-    /* Botões de abas dentro do rodapé */
-    div[data-testid="stHorizontalBlock"]:has(button[key^="nav_"]) div[data-testid="column"] {
-        padding: 0 !important;
-        margin: 0 !important;
-    }
-
-    div[data-testid="stHorizontalBlock"]:has(button[key^="nav_"]) button {
-        background-color: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
-        color: rgba(255, 255, 255, 0.7) !important;
-        font-size: 1.2rem !important;
-        height: 56px !important;
-        border-radius: 0px !important;
-        display: flex !important;
-        flex-direction: column !important;
-        align-items: center !important;
-        justify-content: center !important;
-        padding: 0 !important;
-        margin: 0 !important;
-    }
-
-    div[data-testid="stHorizontalBlock"]:has(button[key^="nav_"]) button:hover {
-        color: #FFFFFF !important;
-    }
-
-    /* Destaque da aba selecionada no estilo AppSheet (fundo mais escuro ou borda superior branca) */
-    div[data-testid="stHorizontalBlock"]:has(button[key^="nav_"]) button.tab-active {
-        color: #FFFFFF !important;
-        background-color: rgba(0, 0, 0, 0.15) !important;
-        border-top: 3px solid #FFFFFF !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -206,9 +210,9 @@ def conectar_gsheets():
     return sheet
 
 # =========================================================
-# 6. CABEÇALHO FIXO SUPERIOR NO ESTILO APPSHEET
+# 6. BARRA SUPERIOR CONGELADA (TOPO ESTILO APPSHEET)
 # =========================================================
-st.markdown(f"""
+st.markdown("""
     <div class="appsheet-header">
         <div class="appsheet-header-title">
             <span>☰</span>
@@ -216,7 +220,7 @@ st.markdown(f"""
         </div>
         <div class="appsheet-header-icons">
             <span>🔍</span>
-            <span onclick="window.location.reload();">🔄</span>
+            <span>🔄</span>
         </div>
     </div>
 """, unsafe_allow_html=True)
@@ -310,7 +314,7 @@ elif st.session_state["aba_ativa"] == "Histórico":
     except Exception as e:
         st.error(f"Erro ao carregar dados do Google Sheets: {e}")
 
-# --- ABA 3: CONFIGURAÇÕES / SOBRE ---
+# --- ABA 3: CONFIGURAÇÕES ---
 elif st.session_state["aba_ativa"] == "Config":
     st.markdown("<div class='section-header'>⚙️ CONFIGURAÇÕES</div>", unsafe_allow_html=True)
     
@@ -331,24 +335,24 @@ elif st.session_state["aba_ativa"] == "Config":
         st.success("Conexão atualizada com sucesso!")
 
 # =========================================================
-# 8. RODAPÉ FIXO DE NAVEGAÇÃO EM ÍCONES (IDÊNTICO AO APPSHEET)
+# 8. BARRA INFERIOR CONGELADA (RODAPÉ 100% FIXO E HORIZONTAL)
 # =========================================================
 col_nav1, col_nav2, col_nav3 = st.columns(3)
 
 with col_nav1:
-    btn_p = st.button("📅\nFormulário", key="nav_pesagem", use_container_width=True)
-    if btn_p:
+    icon_p = "📅\nFormulário" if st.session_state["aba_ativa"] == "Pesagem" else "📅\nFormulário"
+    if st.button(icon_p, key="nav_pesagem"):
         st.session_state["aba_ativa"] = "Pesagem"
         st.rerun()
 
 with col_nav2:
-    btn_h = st.button("📋\nHistórico", key="nav_historico", use_container_width=True)
-    if btn_h:
+    icon_h = "📋\nHistórico" if st.session_state["aba_ativa"] == "Histórico" else "📋\nHistórico"
+    if st.button(icon_h, key="nav_historico"):
         st.session_state["aba_ativa"] = "Histórico"
         st.rerun()
 
 with col_nav3:
-    btn_c = st.button("⚙️\nOpções", key="nav_config", use_container_width=True)
-    if btn_c:
+    icon_c = "⚙️\nOpções" if st.session_state["aba_ativa"] == "Config" else "⚙️\nOpções"
+    if st.button(icon_c, key="nav_config"):
         st.session_state["aba_ativa"] = "Config"
         st.rerun()
