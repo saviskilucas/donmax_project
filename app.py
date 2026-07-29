@@ -22,7 +22,7 @@ if "aba_ativa" not in st.session_state:
     st.session_state["aba_ativa"] = "pesagem"
 
 # =========================================================
-# 2. CSS BASE DA APLICAÇÃO E DA CÁPSULA FLUTUANTE
+# 2. INJEÇÃO DE CSS (CÁPSULA TRAVADA A 80PX DIRETO NAS COLUNAS)
 # =========================================================
 st.markdown("""
     <style>
@@ -83,8 +83,10 @@ st.markdown("""
         gap: 10px;
     }
 
-    /* CÁPSULA VERMELHA CRIADA PELO JS NO RODAPÉ A 80PX */
-    #donmax-portal-navbar {
+    /* =========================================================
+       TRAVAMENTO DA CÁPSULA DO MENU A 80PX DO RODAPÉ
+       ========================================================= */
+    div[data-testid="stHorizontalBlock"]:has(button[key^="nav_fixed_"]) {
         position: fixed !important;
         bottom: 80px !important;
         left: 50% !important;
@@ -94,17 +96,26 @@ st.markdown("""
         background-color: #D32F2F !important;
         border-radius: 30px !important;
         box-shadow: 0px 8px 25px rgba(0, 0, 0, 0.35) !important;
-        z-index: 99999999 !important;
+        z-index: 9999999 !important;
         display: flex !important;
         flex-direction: row !important;
         align-items: center !important;
         justify-content: space-around !important;
-        padding: 0 8px !important;
+        padding: 0 6px !important;
         border: 2px solid #FFFFFF !important;
     }
 
-    /* Estilização dos botões injetados dentro da cápsula */
-    #donmax-portal-navbar button {
+    div[data-testid="stHorizontalBlock"]:has(button[key^="nav_fixed_"]) > div {
+        flex: 1 1 0% !important;
+        width: 33.33% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        display: flex !important;
+        justify-content: center !important;
+    }
+
+    /* Estilização dos Botões da Cápsula */
+    div[data-testid="stHorizontalBlock"]:has(button[key^="nav_fixed_"]) button {
         width: 70px !important;
         height: 44px !important;
         background-color: transparent !important;
@@ -120,8 +131,8 @@ st.markdown("""
         justify-content: center !important;
     }
 
-    /* Botão Selecionado (Caixinha Branca em Destaque) */
-    #donmax-portal-navbar button.btn-portal-active {
+    /* Destaque do Botão Ativo (Caixinha Branca) */
+    div[data-testid="stHorizontalBlock"]:has(button[key^="nav_fixed_"]) button.nav-active-btn {
         background-color: #FFFFFF !important;
         color: #D32F2F !important;
         box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2) !important;
@@ -193,28 +204,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # =========================================================
-# 5. BOTÕES INVISÍVEIS DO STREAMLIT (SÃO MOVIDOS PELO JS)
-# =========================================================
-# Criamos um container reservado para renderizar os botões nativos
-with st.container():
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        if st.button("🏠", key="portal_btn_pesagem"):
-            st.session_state["aba_ativa"] = "pesagem"
-            st.rerun()
-
-    with col2:
-        if st.button("📋", key="portal_btn_historico"):
-            st.session_state["aba_ativa"] = "historico"
-            st.rerun()
-
-    with col3:
-        if st.button("👤", key="portal_btn_config"):
-            st.session_state["aba_ativa"] = "config"
-            st.rerun()
-
-# =========================================================
-# 6. CONTEÚDO DAS ABAS
+# 5. CONTEÚDO DAS ABAS
 # =========================================================
 st.markdown("<div class='main-content-animated'>", unsafe_allow_html=True)
 
@@ -283,48 +273,41 @@ elif aba == "config":
 st.markdown("</div>", unsafe_allow_html=True)
 
 # =========================================================
-# 7. SCRIPT DE PORTAL: MOVE OS BOTÕES PARA DENTRO DA CÁPSULA
+# 6. MENU NATIVO FIXO NA PARTE INFERIOR A 80PX
 # =========================================================
-js_portal = f"""
+nav_col1, nav_col2, nav_col3 = st.columns(3)
+
+with nav_col1:
+    if st.button("🏠", key="nav_fixed_pesagem"):
+        st.session_state["aba_ativa"] = "pesagem"
+        st.rerun()
+
+with nav_col2:
+    if st.button("📋", key="nav_fixed_historico"):
+        st.session_state["aba_ativa"] = "historico"
+        st.rerun()
+
+with nav_col3:
+    if st.button("👤", key="nav_fixed_config"):
+        st.session_state["aba_ativa"] = "config"
+        st.rerun()
+
+# Destaque dinâmico sem interferir no DOM do Streamlit
+js_highlight = f"""
     <script>
-    function inicializarPortalMenu() {{
+    setTimeout(function() {{
         const parentDoc = window.parent.document;
-        if (!parentDoc) return;
+        const btns = parentDoc.querySelectorAll('button[key^="nav_fixed_"]');
+        btns.forEach(b => b.classList.remove('nav-active-btn'));
 
-        // 1. Procura ou cria a cápsula vermelha no body principal
-        let portalNav = parentDoc.getElementById('donmax-portal-navbar');
-        if (!portalNav) {{
-            portalNav = parentDoc.createElement('div');
-            portalNav.id = 'donmax-portal-navbar';
-            parentDoc.body.appendChild(portalNav);
+        if ("{aba}" === "pesagem" && btns[0]) {{
+            btns[0].classList.add('nav-active-btn');
+        }} else if ("{aba}" === "historico" && btns[1]) {{
+            btns[1].classList.add('nav-active-btn');
+        }} else if ("{aba}" === "config" && btns[2]) {{
+            btns[2].classList.add('nav-active-btn');
         }}
-
-        // 2. Localiza os botões nativos do Streamlit
-        const btnP = parentDoc.querySelector('button[key="portal_btn_pesagem"]');
-        const btnH = parentDoc.querySelector('button[key="portal_btn_historico"]');
-        const btnC = parentDoc.querySelector('button[key="portal_btn_config"]');
-
-        if (btnP && btnH && btnC) {{
-            // Move os botões fisicamente para dentro do portal
-            portalNav.appendChild(btnP);
-            portalNav.appendChild(btnH);
-            portalNav.appendChild(btnC);
-
-            // Reseta a classe de destaque
-            btnP.classList.remove('btn-portal-active');
-            btnH.classList.remove('btn-portal-active');
-            btnC.classList.remove('btn-portal-active');
-
-            // Aplica a caixinha branca no botão ativo
-            if ("{aba}" === "pesagem") btnP.classList.add('btn-portal-active');
-            if ("{aba}" === "historico") btnH.classList.add('btn-portal-active');
-            if ("{aba}" === "config") btnC.classList.add('btn-portal-active');
-        }}
-    }}
-
-    // Executa a injeção em milissegundos após a renderização do DOM
-    setTimeout(inicializarPortalMenu, 10);
-    setTimeout(inicializarPortalMenu, 100);
+    }}, 20);
     </script>
 """
-st.components.v1.html(js_portal, height=0)
+st.components.v1.html(js_highlight, height=0)
