@@ -151,7 +151,7 @@ with col_l2:
     else:
         st.markdown("<h1 style='text-align: center;'>🍲</h1>", unsafe_allow_html=True)
 
-st.markdown("<h3 style='text-align: center; margin-top: -10px; color: #222;'>Controle de CLEITON</h3>", unsafe_allow_html=True)
+st.markdown("<h3 style='text-align: center; margin-top: -10px; color: #222;'>Controle de Buffet</h3>", unsafe_allow_html=True)
 
 # =========================================================
 # 6. FORMULÁRIO OPERACIONAL DA COZINHA
