@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Don Max - Buffet</title>
-    
-    <!-- Metadados para o Celular e PWA -->
+
+    <!-- Metadados PWA para o Celular -->
     <link rel="icon" type="image/png" href="logo.png">
     <link rel="apple-touch-icon" href="logo.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -13,33 +13,63 @@
     <meta name="apple-mobile-web-app-title" content="Don Max">
     <meta name="application-name" content="Don Max">
     <meta name="theme-color" content="#D32F2F">
-    
-    <!-- Manifesto do Aplicativo -->
+
     <link rel="manifest" href="manifest.json">
-    
+
     <style>
         * {
             box-sizing: border-box;
         }
-        body, html {
+        html, body {
             margin: 0;
             padding: 0;
             width: 100%;
             height: 100%;
             overflow: hidden;
-            background-color: #D32F2F;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #FFFFFF;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
         }
+
+        /* Container que embute o Streamlit cortando a barra inferior */
+        .app-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            /* Aumenta a altura em 50px e empurra pra baixo para esconder o rodapé do Streamlit */
+            height: calc(100% + 50px);
+            border: none;
+        }
+
         iframe {
             width: 100%;
             height: 100%;
             border: none;
             display: block;
         }
+
+        /* Tampão branco de segurança travado na base da tela */
+        .bottom-cover {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 45px;
+            background-color: #FFFFFF;
+            z-index: 99999;
+            pointer-events: none;
+        }
     </style>
 </head>
 <body>
-    <!-- Cole abaixo o link exato do seu app publicado no Streamlit -->
-    <iframe src="https://donmax.streamlit.app/?embed=true"></iframe>
+
+    <div class="app-container">
+        <!-- Substitua abaixo pela URL real do seu app no Streamlit se necessário -->
+        <iframe src="https://donmax-buffet.streamlit.app/?embed=true"></iframe>
+    </div>
+
+    <!-- Tampão que esconde o 'Built with Streamlit' -->
+    <div class="bottom-cover"></div>
+
 </body>
 </html>
