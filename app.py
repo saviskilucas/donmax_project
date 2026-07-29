@@ -79,7 +79,7 @@ st.markdown("""
     /* MENU FLUTUANTE FIXO NO MEIO DA TELA (INJETADO NATIVAMENTE) */
     .middle-navbar-internal {
         position: fixed !important;
-        bottom: 30px !important; /* Trava a 15px do rodapé da tela */
+        bottom: 80px !important; /* Trava a 15px do rodapé da tela */
         left: 50% !important;
         transform: translateX(-50%) !important; /* Centraliza na horizontal */
         width: 280px !important;
