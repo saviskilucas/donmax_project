@@ -32,7 +32,7 @@ st.markdown("""
 
     .block-container {
         padding-top: 0.8rem !important;
-        padding-bottom: 2rem !important;
+        padding-bottom: 4rem !important; /* Margem estendida para garantir acesso no PWA */
         padding-left: 0.8rem !important;
         padding-right: 0.8rem !important;
         max-width: 100% !important;

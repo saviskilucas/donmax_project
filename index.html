@@ -2,14 +2,14 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Don Max - Buffet</title>
 
     <!-- Metadados PWA para o Celular -->
     <link rel="icon" type="image/png" href="logo.png">
     <link rel="apple-touch-icon" href="logo.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Don Max">
     <meta name="application-name" content="Don Max">
     <meta name="theme-color" content="#FFFFFF">
@@ -29,31 +29,39 @@
             background-color: #FFFFFF;
         }
 
-        /* Envolvente que esconde o rodapé cortando a área inferior do iframe */
+        /* Envolvente com trava estrita de transbordamento */
         .wrapper {
-            position: absolute;
+            position: fixed;
             top: 0;
             left: 0;
-            right: 0;
-            bottom: 0;
+            width: 100vw;
+            height: 100vh;
             overflow: hidden !important;
         }
 
+        /* Iframe ajustado para empurrar o rodapé para baixo da tela */
         iframe {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
-            /* Aumenta a altura para jogar o rodapé do Streamlit para fora da tela */
-            height: calc(100% + 60px) !important;
+            height: calc(100% + 80px) !important;
             border: none;
+        }
+
+        /* Regra específica para quando o App é aberto pelo atalho/PWA instalado */
+        @media (display-mode: standalone) {
+            iframe {
+                height: calc(100% + 100px) !important;
+                margin-bottom: -100px !important;
+            }
         }
     </style>
 </head>
 <body>
 
     <div class="wrapper">
-        <!-- Substitua a URL abaixo pela URL real do seu app no Streamlit -->
+        <!-- Substitua a URL abaixo pela URL real do seu app no Streamlit caso necessário -->
         <iframe src="https://donmax.streamlit.app/?embed=true"></iframe>
     </div>
 
