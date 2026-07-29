@@ -21,21 +21,21 @@ st.set_page_config(
 )
 
 # =========================================================
-# 3. INJEÇÃO DE CSS (REMOVE BORDAS, MOLDURAS E MARCA D'ÁGUA)
+# 3. INJEÇÃO DE CSS REFORÇADO + TAMPÃO DE RODAPÉ
 # =========================================================
 st.markdown("""
     <style>
-    /* 1. Forçar fundo branco unificado em toda a tela (elimina bordas/molduras cinzas) */
+    /* 1. Forçar fundo branco unificado em toda a tela */
     html, body, [data-testid="stApp"], [data-testid="stAppViewContainer"], .stApp {
         background-color: #FFFFFF !important;
         margin: 0 !important;
         padding: 0 !important;
     }
 
-    /* 2. Remover sombras, bordas e molduras do container principal */
+    /* 2. Configurar o contêiner principal para dar espaço no final */
     [data-testid="stAppViewBlockContainer"], .block-container {
         padding-top: 0.8rem !important;
-        padding-bottom: 1rem !important;
+        padding-bottom: 4rem !important; /* Espaço para não cobrir o botão de salvar */
         padding-left: 0.8rem !important;
         padding-right: 0.8rem !important;
         max-width: 100% !important;
@@ -43,31 +43,31 @@ st.markdown("""
         box-shadow: none !important;
     }
 
-    /* 3. Ocultar Cabeçalho, Menu, Rodapé e Marcas do Streamlit */
+    /* 3. Ocultar Cabeçalho, Menu, Rodapé e Marcas padrão */
     #MainMenu, header, footer, .stDeployButton {
         display: none !important;
         visibility: hidden !important;
         height: 0px !important;
     }
 
-    /* 4. Ocultar especificamente o container do rodapé e marca d'água */
-    footer, [data-testid="stFooter"], .stFooter {
+    /* 4. Ocultar especificamente o container do rodapé 'Built with Streamlit' */
+    footer, [data-testid="stFooter"], .stFooter, [data-testid="stStatusWidget"] {
         display: none !important;
         visibility: hidden !important;
         opacity: 0 !important;
-        height: 0 !important;
-        padding: 0 !important;
-        margin: 0 !important;
     }
 
-    /* 5. Ocultar botões de feedback, marcas d'água flutuantes e widgets */
-    [data-testid="stStatusWidget"], 
-    [data-testid="stDecoration"],
-    [data-testid="stToolbar"],
-    .viewerBadge_container__1353K,
-    .styles_viewerBadge__1yB5_ {
-        display: none !important;
-        visibility: hidden !important;
+    /* 5. TAMPÃO ANTI-RODAPÉ: Cria uma barra branca fixa sobrepondo o Built with Streamlit */
+    body::after {
+        content: "";
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100vw;
+        height: 50px;
+        background-color: #FFFFFF;
+        z-index: 999999 !important;
+        pointer-events: none;
     }
 
     /* 6. Aumentar o destaque dos rótulos dos campos */
@@ -103,7 +103,7 @@ st.markdown("""
         border: none !important;
         box-shadow: 0px 4px 12px rgba(211, 47, 47, 0.35) !important;
         margin-top: 1rem !important;
-        margin-bottom: 1rem !important;
+        margin-bottom: 1.5rem !important;
     }
 
     .stButton > button:active {
