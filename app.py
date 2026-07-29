@@ -21,29 +21,29 @@ st.set_page_config(
 )
 
 # =========================================================
-# 3. INJEÇÃO DE CSS CUSTOMIZADO PARA INTERFACE DA COZINHA
+# 3. INJEÇÃO DE CSS CUSTOMIZADO (MENU FIXO NO RODAPÉ)
 # =========================================================
 st.markdown("""
     <style>
-    /* Ajustes gerais de layout mobile */
+    /* Estilização Geral Mobile */
     html, body, [data-testid="stApp"], .stApp {
         background-color: #FFFFFF !important;
     }
 
     .block-container {
         padding-top: 0.8rem !important;
-        padding-bottom: 4rem !important; /* Margem estendida para garantir acesso no PWA */
+        padding-bottom: 5.5rem !important; /* Espaço para não cobrir o conteúdo com o menu fixo */
         padding-left: 0.8rem !important;
         padding-right: 0.8rem !important;
         max-width: 100% !important;
     }
 
-    /* Ocultar cabeçalhos/menus padrão */
-    #MainMenu, header, .stDeployButton {
+    /* Ocultar elementos padrão do Streamlit */
+    #MainMenu, header, .stDeployButton, footer {
         display: none !important;
     }
 
-    /* Destaque nos rótulos dos campos */
+    /* Destaque nos rótulos */
     label {
         font-size: 1.05rem !important;
         font-weight: 700 !important;
@@ -51,7 +51,7 @@ st.markdown("""
         margin-bottom: 0.2rem !important;
     }
 
-    /* Inputs numéricos e seletores */
+    /* Estilizar entradas numéricas e textos */
     div[data-baseweb="input"] input, div[data-baseweb="select"] {
         font-size: 1.15rem !important;
         padding: 10px !important;
@@ -63,19 +63,17 @@ st.markdown("""
         height: 38px !important;
     }
 
-    /* Botão Principal - Vermelho Don Max */
+    /* Botão Principal Vermelho */
     .stButton > button {
         width: 100% !important;
-        height: 3.8rem !important;
-        font-size: 1.25rem !important;
+        height: 3.5rem !important;
+        font-size: 1.2rem !important;
         font-weight: 800 !important;
         background-color: #D32F2F !important;
         color: #FFFFFF !important;
         border-radius: 12px !important;
         border: none !important;
-        box-shadow: 0px 4px 12px rgba(211, 47, 47, 0.35) !important;
-        margin-top: 1rem !important;
-        margin-bottom: 1rem !important;
+        box-shadow: 0px 4px 10px rgba(211, 47, 47, 0.3) !important;
     }
 
     .stButton > button:active {
@@ -83,6 +81,7 @@ st.markdown("""
         transform: scale(0.98);
     }
 
+    /* Títulos de Seção */
     .section-header {
         font-size: 1.1rem;
         font-weight: bold;
@@ -92,11 +91,45 @@ st.markdown("""
         margin-top: 15px;
         margin-bottom: 15px;
     }
+
+    /* ESTILIZAÇÃO DO MENU INFERIOR FIXO */
+    div[data-testid="stHorizontalBlock"]:has(button[key^="nav_"]) {
+        position: fixed !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        width: 100vw !important;
+        background-color: #FFFFFF !important;
+        box-shadow: 0px -3px 10px rgba(0, 0, 0, 0.1) !important;
+        padding: 8px 5px !important;
+        z-index: 99999 !important;
+        border-top: 1px solid #EEEEEE !important;
+    }
+
+    /* Botões de Navegação do Rodapé */
+    div[data-testid="stHorizontalBlock"]:has(button[key^="nav_"]) button {
+        background-color: transparent !important;
+        color: #666666 !important;
+        border: none !important;
+        box-shadow: none !important;
+        font-size: 0.9rem !important;
+        height: 2.8rem !important;
+        padding: 0 !important;
+    }
+
+    div[data-testid="stHorizontalBlock"]:has(button[key^="nav_"]) button:hover {
+        color: #D32F2F !important;
+    }
     </style>
 """, unsafe_allow_html=True)
 
 # =========================================================
-# 4. FUNÇÃO DE CONEXÃO COM O GOOGLE SHEETS
+# 4. GERENCIAMENTO DE ESTADO DA NAVEGAÇÃO (ABA ATIVA)
+# =========================================================
+if "aba_ativa" not in st.session_state:
+    st.session_state["aba_ativa"] = "Pesagem"
+
+# =========================================================
+# 5. CONEXÃO COM O GOOGLE SHEETS
 # =========================================================
 @st.cache_resource
 def conectar_gsheets():
@@ -113,7 +146,7 @@ def conectar_gsheets():
     return sheet
 
 # =========================================================
-# 5. CABEÇALHO (LOGO E NOME DO RESTAURANTE)
+# 6. CABEÇALHO FIXO DO APP (LOGO E TÍTULO)
 # =========================================================
 col_l1, col_l2, col_l3 = st.columns([1, 2, 1])
 with col_l2:
@@ -122,70 +155,140 @@ with col_l2:
     else:
         st.markdown("<h1 style='text-align: center;'>🍲</h1>", unsafe_allow_html=True)
 
-st.markdown("<h3 style='text-align: center; margin-top: -10px; color: #222;'>Controle de Buffet</h3>", unsafe_allow_html=True)
+st.markdown("<h3 style='text-align: center; margin-top: -10px; color: #222;'>Don Max Buffet</h3>", unsafe_allow_html=True)
 
 # =========================================================
-# 6. FORMULÁRIO OPERACIONAL DA COZINHA
+# 7. CONTEÚDO DAS ABAS NAVEGÁVEIS
 # =========================================================
-with st.form("form_pesagem", clear_on_submit=True):
 
-    st.markdown("<div class='section-header'>1. INFORMAÇÕES DO DIA</div>", unsafe_allow_html=True)
+# --- ABA 1: FORMULÁRIO DE PESAGEM DIÁRIA ---
+if st.session_state["aba_ativa"] == "Pesagem":
+    with st.form("form_pesagem", clear_on_submit=True):
+
+        st.markdown("<div class='section-header'>1. INFORMAÇÕES DO DIA</div>", unsafe_allow_html=True)
+        
+        data_sel = st.date_input("Data do Serviço", value=date.today())
+        responsavel = st.text_input("Responsável pelo Turno", placeholder="Ex: João Silva")
+        clientes = st.number_input("Clientes Atendidos no Dia", min_value=0, step=1, value=0)
+
+        st.markdown("<div class='section-header'>2. PREPARAÇÃO / PRATO</div>", unsafe_allow_html=True)
+        
+        pratos_lista = [
+            "Arroz", "Feijão", "Barreado", "Carne 1", "Carne 2",
+            "Massa", "Guarnição 1", "Guarnição 2", "Saladas", "Sobremesas",
+            "Outro 1", "Outro 2"
+        ]
+        prato_sel = st.selectbox("Selecione o Prato", pratos_lista)
+
+        st.markdown("<div class='section-header'>3. MEDIÇÕES DA BALANÇA (KG)</div>", unsafe_allow_html=True)
+
+        col1, col2 = st.columns(2)
+        with col1:
+            prod_inicial = st.number_input("Produção Inicial", min_value=0.0, step=0.1, format="%.2f")
+            reposicao = st.number_input("Reposição Total", min_value=0.0, step=0.1, format="%.2f")
+            sobra_limpa = st.number_input("Sobra Limpa", min_value=0.0, step=0.1, format="%.2f")
+
+        with col2:
+            sobra_buffet = st.number_input("Sobra Buffet", min_value=0.0, step=0.1, format="%.2f")
+            descarte = st.number_input("Descarte Total", min_value=0.0, step=0.1, format="%.2f")
+
+        observacoes = st.text_area("Observações (Opcional)", placeholder="Ex: Sobra de carne devido ao tempo chuvoso...")
+
+        btn_salvar = st.form_submit_button("💾 SALVAR PESAGEM")
+
+        if btn_salvar:
+            if not responsavel.strip():
+                st.error("⚠️ Preencha o nome do Responsável antes de salvar.")
+            else:
+                try:
+                    sheet = conectar_gsheets()
+                    nova_linha = [
+                        str(data_sel),
+                        responsavel.strip(),
+                        int(clientes),
+                        prato_sel,
+                        float(prod_inicial),
+                        float(reposicao),
+                        float(sobra_limpa),
+                        float(sobra_buffet),
+                        float(descarte),
+                        observacoes.strip()
+                    ]
+                    sheet.append_row(nova_linha)
+                    st.success(f"✅ **{prato_sel}** registrado com sucesso!")
+                    st.balloons()
+                except Exception as e:
+                    st.error(f"❌ Erro ao salvar na planilha: {e}")
+
+# --- ABA 2: CONSULTA / HISTÓRICO DA PLANILHA ---
+elif st.session_state["aba_ativa"] == "Histórico":
+    st.markdown("<div class='section-header'>📊 ÚLTIMOS LANÇAMENTOS</div>", unsafe_allow_html=True)
     
-    data_sel = st.date_input("Data do Serviço", value=date.today())
-    responsavel = st.text_input("Responsável pelo Turno", placeholder="Ex: João Silva")
-    clientes = st.number_input("Clientes Atendidos no Dia", min_value=0, step=1, value=0)
-
-    st.markdown("<div class='section-header'>2. PREPARAÇÃO / PRATO</div>", unsafe_allow_html=True)
-    
-    pratos_lista = [
-        "Arroz", "Feijão", "Barreado", "Carne 1", "Carne 2",
-        "Massa", "Guarnição 1", "Guarnição 2", "Saladas", "Sobremesas",
-        "Outro 1", "Outro 2"
-    ]
-    prato_sel = st.selectbox("Selecione o Prato", pratos_lista)
-
-    st.markdown("<div class='section-header'>3. MEDIÇÕES DA BALANÇA (KG)</div>", unsafe_allow_html=True)
-
-    col1, col2 = st.columns(2)
-    with col1:
-        prod_inicial = st.number_input("Produção Inicial", min_value=0.0, step=0.1, format="%.2f")
-        reposicao = st.number_input("Reposição Total", min_value=0.0, step=0.1, format="%.2f")
-        sobra_limpa = st.number_input("Sobra Limpa", min_value=0.0, step=0.1, format="%.2f")
-
-    with col2:
-        sobra_buffet = st.number_input("Sobra Buffet", min_value=0.0, step=0.1, format="%.2f")
-        descarte = st.number_input("Descarte Total", min_value=0.0, step=0.1, format="%.2f")
-
-    observacoes = st.text_area("Observações (Opcional)", placeholder="Ex: Sobra de carne devido ao tempo chuvoso...")
-
-    btn_salvar = st.form_submit_button("💾 SALVAR PESAGEM")
-
-    # =========================================================
-    # 7. LÓGICA DE PROCESSAMENTO E GRAVAÇÃO
-    # =========================================================
-    if btn_salvar:
-        if not responsavel.strip():
-            st.error("⚠️ Preencha o nome do Responsável antes de salvar.")
+    try:
+        sheet = conectar_gsheets()
+        dados = sheet.get_all_records()
+        
+        if dados:
+            df = pd.DataFrame(dados)
+            # Exibe os últimos 10 lançamentos em ordem decrescente
+            df_recente = df.tail(10).iloc[::-1]
+            
+            st.dataframe(
+                df_recente,
+                use_container_width=True,
+                hide_index=True
+            )
+            
+            # Resumo simples para o celular
+            st.markdown("---")
+            total_descarte = df['Descarte Total'].sum() if 'Descarte Total' in df.columns else 0
+            st.metric("Descarte Acumulado (kg)", f"{total_descarte:.2f} kg")
         else:
-            try:
-                sheet = conectar_gsheets()
-                
-                nova_linha = [
-                    str(data_sel),
-                    responsavel.strip(),
-                    int(clientes),
-                    prato_sel,
-                    float(prod_inicial),
-                    float(reposicao),
-                    float(sobra_limpa),
-                    float(sobra_buffet),
-                    float(descarte),
-                    observacoes.strip()
-                ]
+            st.info("Nenhum registro encontrado na planilha ainda.")
+    except Exception as e:
+        st.error(f"Erro ao carregar dados do Google Sheets: {e}")
 
-                sheet.append_row(nova_linha)
-                
-                st.success(f"✅ **{prato_sel}** registrado com sucesso!")
-                st.balloons()
-            except Exception as e:
-                st.error(f"❌ Erro ao salvar na planilha: {e}")
+# --- ABA 3: CONFIGURAÇÕES / AJUDA ---
+elif st.session_state["aba_ativa"] == "Config":
+    st.markdown("<div class='section-header'>⚙️ CONFIGURAÇÕES DO SISTEMA</div>", unsafe_allow_html=True)
+    
+    st.markdown("""
+        **Don Max Buffet v1.0**  
+        *Sistema Integrado de Controle de Pesagens*
+        
+        ---
+        
+        **Instruções para a Cozinha:**
+        1. Realize as pesagens sempre ao final do turno.
+        2. Certifique-se de zerar a tara da balança.
+        3. Dúvidas ou problemas com a planilha falar com a gerência.
+    """)
+    
+    if st.button("🔄 Atualizar Conexão com a Planilha"):
+        st.cache_resource.clear()
+        st.success("Conexão atualizada com sucesso!")
+
+# =========================================================
+# 8. RODAPÉ FIXO DE NAVEGAÇÃO (3 BOTÕES)
+# =========================================================
+st.markdown("<br><br>", unsafe_allow_html=True) # Espaçador
+
+col_nav1, col_nav2, col_nav3 = st.columns(3)
+
+with col_nav1:
+    label_p = "📝 **Pesagem**" if st.session_state["aba_ativa"] == "Pesagem" else "📝 Pesagem"
+    if st.button(label_p, key="nav_pesagem"):
+        st.session_state["aba_ativa"] = "Pesagem"
+        st.rerun()
+
+with col_nav2:
+    label_h = "📊 **Histórico**" if st.session_state["aba_ativa"] == "Histórico" else "📊 Histórico"
+    if st.button(label_h, key="nav_historico"):
+        st.session_state["aba_ativa"] = "Histórico"
+        st.rerun()
+
+with col_nav3:
+    label_c = "⚙️ **Config**" if st.session_state["aba_ativa"] == "Config" else "⚙️ Config"
+    if st.button(label_c, key="nav_config"):
+        st.session_state["aba_ativa"] = "Config"
+        st.rerun()
