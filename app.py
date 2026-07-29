@@ -21,18 +21,36 @@ st.set_page_config(
 )
 
 # =========================================================
-# 3. INJEÇÃO DE CSS REFORÇADO (ELIMINA 100% RODAPÉ E BALÃO)
+# 3. INJEÇÃO DE CSS (REMOVE BORDAS, MOLDURAS E MARCA D'ÁGUA)
 # =========================================================
 st.markdown("""
     <style>
-    /* 1. Ocultar Cabeçalho, Menu, Rodapé e Marcas do Streamlit */
+    /* 1. Forçar fundo branco unificado em toda a tela (elimina bordas/molduras cinzas) */
+    html, body, [data-testid="stApp"], [data-testid="stAppViewContainer"], .stApp {
+        background-color: #FFFFFF !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    /* 2. Remover sombras, bordas e molduras do container principal */
+    [data-testid="stAppViewBlockContainer"], .block-container {
+        padding-top: 0.8rem !important;
+        padding-bottom: 1rem !important;
+        padding-left: 0.8rem !important;
+        padding-right: 0.8rem !important;
+        max-width: 100% !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+
+    /* 3. Ocultar Cabeçalho, Menu, Rodapé e Marcas do Streamlit */
     #MainMenu, header, footer, .stDeployButton {
         display: none !important;
         visibility: hidden !important;
         height: 0px !important;
     }
 
-    /* 2. Ocultar especificamente o container do rodapé 'Built with Streamlit' */
+    /* 4. Ocultar especificamente o container do rodapé e marca d'água */
     footer, [data-testid="stFooter"], .stFooter {
         display: none !important;
         visibility: hidden !important;
@@ -42,7 +60,7 @@ st.markdown("""
         margin: 0 !important;
     }
 
-    /* 3. Ocultar o botão de balão / feedback / status widget no canto */
+    /* 5. Ocultar botões de feedback, marcas d'água flutuantes e widgets */
     [data-testid="stStatusWidget"], 
     [data-testid="stDecoration"],
     [data-testid="stToolbar"],
@@ -52,16 +70,7 @@ st.markdown("""
         visibility: hidden !important;
     }
 
-    /* 4. Zerar o espaçamento inferior da página para não sobrar espaço branco */
-    .main .block-container {
-        padding-top: 0.8rem !important;
-        padding-bottom: 0rem !important;
-        padding-left: 0.8rem !important;
-        padding-right: 0.8rem !important;
-        max-width: 480px !important;
-    }
-
-    /* 5. Aumentar o destaque dos rótulos dos campos */
+    /* 6. Aumentar o destaque dos rótulos dos campos */
     label {
         font-size: 1.05rem !important;
         font-weight: 700 !important;
@@ -69,20 +78,20 @@ st.markdown("""
         margin-bottom: 0.2rem !important;
     }
 
-    /* 6. Estilizar inputs de texto, data e números */
+    /* 7. Estilizar inputs de texto, data e números */
     div[data-baseweb="input"] input, div[data-baseweb="select"] {
         font-size: 1.15rem !important;
         padding: 10px !important;
         border-radius: 8px !important;
     }
 
-    /* 7. Botões de soma/subtração maiores */
+    /* 8. Botões de soma/subtração maiores */
     div[data-baseweb="input"] button {
         width: 38px !important;
         height: 38px !important;
     }
 
-    /* 8. Botão Principal - Vermelho Destaque Don Max */
+    /* 9. Botão Principal - Vermelho Destaque Don Max */
     .stButton > button {
         width: 100% !important;
         height: 3.8rem !important;
@@ -102,7 +111,7 @@ st.markdown("""
         transform: scale(0.98);
     }
 
-    /* 9. Títulos das Seções */
+    /* 10. Títulos das Seções */
     .section-header {
         font-size: 1.1rem;
         font-weight: bold;
