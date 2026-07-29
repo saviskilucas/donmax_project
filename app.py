@@ -65,7 +65,7 @@ st.markdown("""
         left: 0;
         width: 100vw;
         height: 50px;
-        background-color: #FFFFFF;
+        background-color: #000000;
         z-index: 999999 !important;
         pointer-events: none;
     }
