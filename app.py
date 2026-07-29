@@ -17,25 +17,21 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Gerenciamento de Estado sem recarregamento de página
+# Estado de navegação interno (Sem F5 / Sem Tela Preta)
 if "aba_ativa" not in st.session_state:
     st.session_state["aba_ativa"] = "pesagem"
 
-# Captura parâmetros se existirem
-if "aba" in st.query_params:
-    st.session_state["aba_ativa"] = st.query_params["aba"]
-
 # =========================================================
-# 2. INJEÇÃO DE CSS (RODAPÉ FIXO A 80PX + TRANSIÇÃO SUAVE)
+# 2. INJEÇÃO DE CSS (MENU NATIVO FIXO A 80PX & TRANSIÇÃO)
 # =========================================================
 st.markdown("""
     <style>
-    /* Configuração do Fundo sem telas pretas */
+    /* Configuração do Fundo da Aplicação */
     html, body, [data-testid="stApp"], .stApp {
         background-color: #F8F9FA !important;
     }
 
-    /* Recuo de segurança no rodapé */
+    /* Recuo inferior de segurança para o formulário */
     .block-container {
         padding-top: 3.8rem !important;
         padding-bottom: 8.5rem !important; 
@@ -44,28 +40,20 @@ st.markdown("""
         max-width: 100% !important;
     }
 
-    /* Ocultar elementos nativos do Streamlit */
+    /* Ocultar cabeçalho e rodapé padrão do Streamlit */
     #MainMenu, header, .stDeployButton, footer, [data-testid="stFooter"] {
         display: none !important;
         visibility: hidden !important;
     }
 
-    /* =========================================================
-       TRANSIÇÃO SUAVE DE CONTEÚDO (FADE-IN)
-       ========================================================= */
+    /* ANIMAÇÃO DE TRANSIÇÃO SUAVE (SEM PISCAR TELA) */
     .main-content-animated {
-        animation: fadeIn 0.2s ease-in-out forwards;
+        animation: fadeIn 0.2s ease-out forwards;
     }
 
     @keyframes fadeIn {
-        from {
-            opacity: 0.2;
-            transform: translateY(4px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+        from { opacity: 0.3; transform: translateY(4px); }
+        to { opacity: 1; transform: translateY(0); }
     }
 
     /* BARRA SUPERIOR FIXA */
@@ -93,6 +81,60 @@ st.markdown("""
         display: flex;
         align-items: center;
         gap: 10px;
+    }
+
+    /* =========================================================
+       INJEÇÃO DE ESTILO INQUEBRÁVEL PARA O MENU A 80PX
+       ========================================================= */
+    div[data-testid="stHorizontalBlock"]:has(button[key^="nav_btn_"]) {
+        position: fixed !important;
+        bottom: 80px !important; /* TRAVADO A 80PX DO RODAPÉ */
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        width: 280px !important;
+        height: 60px !important;
+        background-color: #D32F2F !important;
+        border-radius: 30px !important;
+        box-shadow: 0px 8px 25px rgba(0, 0, 0, 0.35) !important;
+        z-index: 999999 !important;
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: space-around !important;
+        padding: 0 8px !important;
+        border: 2px solid #FFFFFF !important;
+    }
+
+    div[data-testid="stHorizontalBlock"]:has(button[key^="nav_btn_"]) > div {
+        flex: 1 1 0% !important;
+        width: 33.33% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        display: flex !important;
+        justify-content: center !important;
+    }
+
+    div[data-testid="stHorizontalBlock"]:has(button[key^="nav_btn_"]) button {
+        width: 70px !important;
+        height: 44px !important;
+        background-color: transparent !important;
+        border: none !important;
+        border-radius: 18px !important;
+        color: rgba(255, 255, 255, 0.8) !important;
+        font-size: 1.3rem !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+
+    /* Estilo do Botão Ativo com Caixinha Branca Flutuante */
+    div[data-testid="stHorizontalBlock"]:has(button[key^="nav_btn_"]) button.active-nav-btn {
+        background-color: #FFFFFF !important;
+        color: #D32F2F !important;
+        box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2) !important;
     }
 
     /* CAMPOS DO FORMULÁRIO */
@@ -161,7 +203,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # =========================================================
-# 5. CONTEÚDO DAS ABAS COM FADE-IN
+# 5. CONTEÚDO DAS ABAS
 # =========================================================
 st.markdown("<div class='main-content-animated'>", unsafe_allow_html=True)
 
@@ -230,75 +272,41 @@ elif aba == "config":
 st.markdown("</div>", unsafe_allow_html=True)
 
 # =========================================================
-# 6. RODAPÉ INQUEBRÁVEL (SEM RELOAD / SEM TELA PRETA)
+# 6. RODAPÉ FIXO NATIVO (IMPEDIDO DE SUMIR + SEM TELA PRETA)
 # =========================================================
-act_p = "active" if aba == "pesagem" else ""
-act_h = "active" if aba == "historico" else ""
-act_c = "active" if aba == "config" else ""
+col1, col2, col3 = st.columns(3)
 
-footer_html = f"""
-    <style>
-        .fixed-floating-navbar {{
-            position: fixed !important;
-            bottom: 80px !important;
-            left: 50% !important;
-            transform: translateX(-50%) !important;
-            width: 280px !important;
-            height: 60px !important;
-            background-color: #D32F2F !important;
-            border-radius: 30px !important;
-            box-shadow: 0px 8px 25px rgba(0, 0, 0, 0.35) !important;
-            z-index: 99999999 !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: space-around !important;
-            padding: 0 10px !important;
-            border: 2px solid #FFFFFF !important;
-            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-        }}
+with col1:
+    if st.button("🏠", key="nav_btn_pesagem"):
+        st.session_state["aba_ativa"] = "pesagem"
+        st.rerun()
 
-        .nav-btn-int {{
-            width: 70px;
-            height: 44px;
-            background: transparent;
-            border: none;
-            border-radius: 18px;
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 1.3rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.15s ease;
-        }}
+with col2:
+    if st.button("📋", key="nav_btn_historico"):
+        st.session_state["aba_ativa"] = "historico"
+        st.rerun()
 
-        .nav-btn-int.active {{
-            background-color: #FFFFFF !important;
-            color: #D32F2F !important;
-            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2) !important;
-        }}
-    </style>
+with col3:
+    if st.button("👤", key="nav_btn_config"):
+        st.session_state["aba_ativa"] = "config"
+        st.rerun()
 
-    <div class="fixed-floating-navbar">
-        <button onclick="trocarAba('pesagem')" class="nav-btn-int {act_p}">🏠</button>
-        <button onclick="trocarAba('historico')" class="nav-btn-int {act_h}">📋</button>
-        <button onclick="trocarAba('config')" class="nav-btn-int {act_c}">👤</button>
-    </div>
-
+# Aplica a caixinha branca no ícone ativo via classe estrita
+js_active = f"""
     <script>
-    function trocarAba(nomeAba) {{
-        // Altera o parâmetro na URL sem dar F5 / Reload no navegador
-        const parentUrl = new URL(window.parent.location.href);
-        if (parentUrl.searchParams.get('aba') !== nomeAba) {{
-            parentUrl.searchParams.set('aba', nomeAba);
-            window.parent.history.pushState({{}}, '', parentUrl.toString());
-            // Atualiza o estado via mensagem nativa do navegador
-            window.parent.postMessage({{type: 'streamlit:setComponentValue', value: nomeAba}}, '*');
-            window.parent.location.replace(parentUrl.toString());
+    setTimeout(function() {{
+        const parentDoc = window.parent.document;
+        const btns = parentDoc.querySelectorAll('button[key^="nav_btn_"]');
+        btns.forEach(b => b.classList.remove('active-nav-btn'));
+        
+        if ("{aba}" === "pesagem" && btns[0]) {{
+            btns[0].classList.add('active-nav-btn');
+        }} else if ("{aba}" === "historico" && btns[1]) {{
+            btns[1].classList.add('active-nav-btn');
+        }} else if ("{aba}" === "config" && btns[2]) {{
+            btns[2].classList.add('active-nav-btn');
         }}
-    }}
+    }}, 30);
     </script>
 """
-
-# Renderização isolada no topo da camada sem piscar
-st.components.v1.html(footer_html, height=0)
+st.components.v1.html(js_active, height=0)
