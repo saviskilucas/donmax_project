@@ -4,20 +4,11 @@ import gspread
 from google.oauth2.service_account import Credentials
 from datetime import date
 import os
-import base64
 
 # =========================================================
-# 1. CARREGAMENTO DA LOGO LOCAL (PNG EM BASE64)
+# 1. CARREGAMENTO DA LOGO LOCAL (PNG)
 # =========================================================
 NOME_ARQUIVO_LOGO = "logo.png"
-
-logo_b64 = ""
-if os.path.exists(NOME_ARQUIVO_LOGO):
-    with open(NOME_ARQUIVO_LOGO, "rb") as f:
-        logo_b64 = base64.b64encode(f.read()).decode("utf-8")
-        logo_src = f"data:image/png;base64,{logo_b64}"
-else:
-    logo_src = ""
 
 # =========================================================
 # 2. CONFIGURAÇÃO DA PÁGINA (PWA & MOBILE LAYOUT)
@@ -30,115 +21,34 @@ st.set_page_config(
 )
 
 # =========================================================
-# 3. SCRIPT DE SOBRESCRITA FORÇADA DE MANIFESTO E ÍCONE (REMOVE STREAMLIT)
-# =========================================================
-if logo_src:
-    pwa_override_js = f"""
-        <script>
-        (function() {{
-            const appName = "Don Max";
-            const appFullName = "Don Max Buffet";
-            const logoBase64 = "{logo_src}";
-
-            // 1. Alterar o título da aba/janela no pai do iframe
-            try {{
-                window.top.document.title = appFullName;
-            }} catch(e) {{
-                document.title = appFullName;
-            }}
-
-            // 2. Função para deletar manifestos e ícones do Streamlit e injetar os do Don Max
-            function forceDonMaxBranding() {{
-                const targetDoc = window.top.document || document;
-                
-                // Remover qualquer manifest pré-existente do Streamlit
-                const oldManifests = targetDoc.querySelectorAll('link[rel="manifest"]');
-                oldManifests.forEach(el => el.remove());
-
-                // Remover ícones pré-existentes do Streamlit
-                const oldIcons = targetDoc.querySelectorAll('link[rel*="icon"]');
-                oldIcons.forEach(el => el.remove());
-
-                // Criar o novo manifesto do Don Max
-                const manifestObj = {{
-                    "short_name": appName,
-                    "name": appFullName,
-                    "icons": [
-                        {{
-                            "src": logoBase64,
-                            "sizes": "192x192 512x512",
-                            "type": "image/png",
-                            "purpose": "any maskable"
-                        }}
-                    ],
-                    "start_url": ".",
-                    "background_color": "#D32F2F",
-                    "theme_color": "#D32F2F",
-                    "display": "standalone"
-                }};
-
-                const blob = new Blob([JSON.stringify(manifestObj)], {{type: 'application/json'}});
-                const manifestURL = URL.createObjectURL(blob);
-
-                // Injetar novo manifesto
-                const newManifest = targetDoc.createElement('link');
-                newManifest.rel = 'manifest';
-                newManifest.href = manifestURL;
-                targetDoc.head.appendChild(newManifest);
-
-                // Injetar Apple Touch Icon (iOS Safari)
-                const appleIcon = targetDoc.createElement('link');
-                appleIcon.rel = 'apple-touch-icon';
-                appleIcon.href = logoBase64;
-                targetDoc.head.appendChild(appleIcon);
-
-                // Injetar Favicon (Android / Chrome)
-                const favIcon = targetDoc.createElement('link');
-                favIcon.rel = 'icon';
-                favIcon.type = 'image/png';
-                favIcon.href = logoBase64;
-                targetDoc.head.appendChild(favIcon);
-            }}
-
-            // Executar imediatamente e monitorar alterações no DOM
-            forceDonMaxBranding();
-            
-            // MutationObserver para barrar qualquer recriação de tags pelo Streamlit
-            const observer = new MutationObserver(function() {{
-                const targetDoc = window.top.document || document;
-                if (!targetDoc.querySelector('link[rel="apple-touch-icon"]')) {{
-                    forceDonMaxBranding();
-                }}
-            }});
-            
-            const targetDoc = window.top.document || document;
-            if (targetDoc.head) {{
-                observer.observe(targetDoc.head, {{ childList: true, subtree: true }});
-            }}
-        }})();
-        </script>
-    """
-    st.components.v1.html(pwa_override_js, height=0)
-
-# =========================================================
-# 4. INJEÇÃO DE CSS CUSTOMIZADO (Mobile PWA Style)
+# 3. INJEÇÃO DE CSS CUSTOMIZADO (OCULTA RODAPÉ & BARRAS STREAMLIT)
 # =========================================================
 st.markdown("""
     <style>
     /* Travar largura máxima para simular tela de aplicativo mobile */
     .block-container {
         padding-top: 0.8rem !important;
-        padding-bottom: 2rem !important;
+        padding-bottom: 1rem !important;
         padding-left: 0.8rem !important;
         padding-right: 0.8rem !important;
         max-width: 480px !important;
     }
 
-    /* Ocultar elementos nativos do Streamlit */
-    #MainMenu {visibility: hidden;}
-    header {visibility: hidden;}
-    footer {visibility: hidden;}
-
+    /* Ocultar elementos nativos do Streamlit (Menu, Header, Footer e Built with Streamlit) */
+    #MainMenu {visibility: hidden !important; display: none !important;}
+    header {visibility: hidden !important; display: none !important;}
+    footer {visibility: hidden !important; display: none !important;}
+    .stDeployButton {display: none !important;}
+    
+    /* Oculta especificamente a marca "Built with Streamlit" e widgets de status */
+    footer:after {
+        content: "" !important;
+        visibility: hidden !important;
+        display: none !important;
+    }
+    div[data-testid="stFooter"] {display: none !important;}
+    div[data-testid="stStatusWidget"] {display: none !important;}
+    
     /* Aumentar o tamanho e destaque dos textos dos rótulos */
     label {
         font-size: 1.05rem !important;
@@ -193,7 +103,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # =========================================================
-# 5. FUNÇÃO DE CONEXÃO COM O GOOGLE SHEETS
+# 4. FUNÇÃO DE CONEXÃO COM O GOOGLE SHEETS
 # =========================================================
 @st.cache_resource
 def conectar_gsheets():
@@ -210,7 +120,7 @@ def conectar_gsheets():
     return sheet
 
 # =========================================================
-# 6. CABEÇALHO (LOGO E NOME DO RESTAURANTE)
+# 5. CABEÇALHO (LOGO E NOME DO RESTAURANTE)
 # =========================================================
 col_l1, col_l2, col_l3 = st.columns([1, 2, 1])
 with col_l2:
@@ -222,7 +132,7 @@ with col_l2:
 st.markdown("<h3 style='text-align: center; margin-top: -10px; color: #222;'>Controle de Buffet</h3>", unsafe_allow_html=True)
 
 # =========================================================
-# 7. FORMULÁRIO OPERACIONAL DA COZINHA
+# 6. FORMULÁRIO OPERACIONAL DA COZINHA
 # =========================================================
 with st.form("form_pesagem", clear_on_submit=True):
 
@@ -258,7 +168,7 @@ with st.form("form_pesagem", clear_on_submit=True):
     btn_salvar = st.form_submit_button("💾 SALVAR PESAGEM")
 
     # =========================================================
-    # 8. LÓGICA DE PROCESSAMENTO E GRAVAÇÃO
+    # 7. LÓGICA DE PROCESSAMENTO E GRAVAÇÃO
     # =========================================================
     if btn_salvar:
         if not responsavel.strip():
