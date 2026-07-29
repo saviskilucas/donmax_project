@@ -21,18 +21,25 @@ st.set_page_config(
 )
 
 # =========================================================
-# 3. INJEÇÃO DE CSS CUSTOMIZADO (MENU FIXO NO RODAPÉ)
+# 3. GERENCIAMENTO DE ESTADO DA NAVEGAÇÃO
+# =========================================================
+if "aba_ativa" not in st.session_state:
+    st.session_state["aba_ativa"] = "Pesagem"
+
+# =========================================================
+# 4. INJEÇÃO DE CSS CUSTOMIZADO (MENU ESTILO APPSHEET NO RODAPÉ)
 # =========================================================
 st.markdown("""
     <style>
-    /* Estilização Geral Mobile */
+    /* Configuração da Tela Mobile */
     html, body, [data-testid="stApp"], .stApp {
         background-color: #FFFFFF !important;
     }
 
+    /* Espaço no final para o formulário rolar sem ficar atrás do menu fixo */
     .block-container {
         padding-top: 0.8rem !important;
-        padding-bottom: 5.5rem !important; /* Espaço para não cobrir o conteúdo com o menu fixo */
+        padding-bottom: 6rem !important;
         padding-left: 0.8rem !important;
         padding-right: 0.8rem !important;
         max-width: 100% !important;
@@ -51,7 +58,7 @@ st.markdown("""
         margin-bottom: 0.2rem !important;
     }
 
-    /* Estilizar entradas numéricas e textos */
+    /* Inputs numéricos e seletores */
     div[data-baseweb="input"] input, div[data-baseweb="select"] {
         font-size: 1.15rem !important;
         padding: 10px !important;
@@ -63,7 +70,7 @@ st.markdown("""
         height: 38px !important;
     }
 
-    /* Botão Principal Vermelho */
+    /* Botão Principal Salvar */
     .stButton > button {
         width: 100% !important;
         height: 3.5rem !important;
@@ -76,12 +83,7 @@ st.markdown("""
         box-shadow: 0px 4px 10px rgba(211, 47, 47, 0.3) !important;
     }
 
-    .stButton > button:active {
-        background-color: #B71C1C !important;
-        transform: scale(0.98);
-    }
-
-    /* Títulos de Seção */
+    /* Títulos das Seções */
     .section-header {
         font-size: 1.1rem;
         font-weight: bold;
@@ -92,41 +94,53 @@ st.markdown("""
         margin-bottom: 15px;
     }
 
-    /* ESTILIZAÇÃO DO MENU INFERIOR FIXO */
+    /* BARRA FIXA ESTILO APPSHEET NO RODAPÉ */
+    div[element-id="menu_fixo_rodape"], 
     div[data-testid="stHorizontalBlock"]:has(button[key^="nav_"]) {
         position: fixed !important;
         bottom: 0 !important;
         left: 0 !important;
-        width: 100vw !important;
+        right: 0 !important;
+        width: 100% !important;
+        height: 65px !important;
         background-color: #FFFFFF !important;
-        box-shadow: 0px -3px 10px rgba(0, 0, 0, 0.1) !important;
-        padding: 8px 5px !important;
-        z-index: 99999 !important;
-        border-top: 1px solid #EEEEEE !important;
+        box-shadow: 0px -4px 12px rgba(0, 0, 0, 0.12) !important;
+        z-index: 999999 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-around !important;
+        padding: 5px 10px !important;
+        border-top: 1px solid #E0E0E0 !important;
     }
 
-    /* Botões de Navegação do Rodapé */
+    /* Botões individuais dentro do menu inferior */
+    div[data-testid="stHorizontalBlock"]:has(button[key^="nav_"]) div[data-testid="column"] {
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
     div[data-testid="stHorizontalBlock"]:has(button[key^="nav_"]) button {
         background-color: transparent !important;
-        color: #666666 !important;
         border: none !important;
         box-shadow: none !important;
-        font-size: 0.9rem !important;
-        height: 2.8rem !important;
-        padding: 0 !important;
+        color: #666666 !important;
+        font-size: 0.85rem !important;
+        font-weight: 600 !important;
+        height: 50px !important;
+        border-radius: 8px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
     }
 
-    div[data-testid="stHorizontalBlock"]:has(button[key^="nav_"]) button:hover {
+    /* Estilo do botão ativo */
+    div[data-testid="stHorizontalBlock"]:has(button[key^="nav_"]) button.active-tab {
         color: #D32F2F !important;
+        background-color: #FFEBEE !important;
     }
     </style>
 """, unsafe_allow_html=True)
-
-# =========================================================
-# 4. GERENCIAMENTO DE ESTADO DA NAVEGAÇÃO (ABA ATIVA)
-# =========================================================
-if "aba_ativa" not in st.session_state:
-    st.session_state["aba_ativa"] = "Pesagem"
 
 # =========================================================
 # 5. CONEXÃO COM O GOOGLE SHEETS
@@ -146,7 +160,7 @@ def conectar_gsheets():
     return sheet
 
 # =========================================================
-# 6. CABEÇALHO FIXO DO APP (LOGO E TÍTULO)
+# 6. CABEÇALHO DO RESTAURANTE
 # =========================================================
 col_l1, col_l2, col_l3 = st.columns([1, 2, 1])
 with col_l2:
@@ -161,7 +175,7 @@ st.markdown("<h3 style='text-align: center; margin-top: -10px; color: #222;'>Don
 # 7. CONTEÚDO DAS ABAS NAVEGÁVEIS
 # =========================================================
 
-# --- ABA 1: FORMULÁRIO DE PESAGEM DIÁRIA ---
+# --- ABA 1: FORMULÁRIO DE PESAGEM ---
 if st.session_state["aba_ativa"] == "Pesagem":
     with st.form("form_pesagem", clear_on_submit=True):
 
@@ -220,7 +234,7 @@ if st.session_state["aba_ativa"] == "Pesagem":
                 except Exception as e:
                     st.error(f"❌ Erro ao salvar na planilha: {e}")
 
-# --- ABA 2: CONSULTA / HISTÓRICO DA PLANILHA ---
+# --- ABA 2: HISTÓRICO DA PLANILHA ---
 elif st.session_state["aba_ativa"] == "Histórico":
     st.markdown("<div class='section-header'>📊 ÚLTIMOS LANÇAMENTOS</div>", unsafe_allow_html=True)
     
@@ -230,7 +244,6 @@ elif st.session_state["aba_ativa"] == "Histórico":
         
         if dados:
             df = pd.DataFrame(dados)
-            # Exibe os últimos 10 lançamentos em ordem decrescente
             df_recente = df.tail(10).iloc[::-1]
             
             st.dataframe(
@@ -239,7 +252,6 @@ elif st.session_state["aba_ativa"] == "Histórico":
                 hide_index=True
             )
             
-            # Resumo simples para o celular
             st.markdown("---")
             total_descarte = df['Descarte Total'].sum() if 'Descarte Total' in df.columns else 0
             st.metric("Descarte Acumulado (kg)", f"{total_descarte:.2f} kg")
@@ -261,7 +273,7 @@ elif st.session_state["aba_ativa"] == "Config":
         **Instruções para a Cozinha:**
         1. Realize as pesagens sempre ao final do turno.
         2. Certifique-se de zerar a tara da balança.
-        3. Dúvidas ou problemas com a planilha falar com a gerência.
+        3. Dúvidas ou problemas falar com a gerência.
     """)
     
     if st.button("🔄 Atualizar Conexão com a Planilha"):
@@ -269,26 +281,27 @@ elif st.session_state["aba_ativa"] == "Config":
         st.success("Conexão atualizada com sucesso!")
 
 # =========================================================
-# 8. RODAPÉ FIXO DE NAVEGAÇÃO (3 BOTÕES)
+# 8. RODAPÉ FIXO ESTILO APPSHEET (PERMANECE TRAVADO NA TELA)
 # =========================================================
-st.markdown("<br><br>", unsafe_allow_html=True) # Espaçador
-
 col_nav1, col_nav2, col_nav3 = st.columns(3)
 
 with col_nav1:
-    label_p = "📝 **Pesagem**" if st.session_state["aba_ativa"] == "Pesagem" else "📝 Pesagem"
-    if st.button(label_p, key="nav_pesagem"):
+    pesagem_ativa = st.session_state["aba_ativa"] == "Pesagem"
+    btn_p = st.button("📝\nPesagem", key="nav_pesagem", use_container_width=True)
+    if btn_p:
         st.session_state["aba_ativa"] = "Pesagem"
         st.rerun()
 
 with col_nav2:
-    label_h = "📊 **Histórico**" if st.session_state["aba_ativa"] == "Histórico" else "📊 Histórico"
-    if st.button(label_h, key="nav_historico"):
+    historico_ativo = st.session_state["aba_ativa"] == "Histórico"
+    btn_h = st.button("📊\nHistórico", key="nav_historico", use_container_width=True)
+    if btn_h:
         st.session_state["aba_ativa"] = "Histórico"
         st.rerun()
 
 with col_nav3:
-    label_c = "⚙️ **Config**" if st.session_state["aba_ativa"] == "Config" else "⚙️ Config"
-    if st.button(label_c, key="nav_config"):
+    config_ativo = st.session_state["aba_ativa"] == "Config"
+    btn_c = st.button("⚙️\nConfig", key="nav_config", use_container_width=True)
+    if btn_c:
         st.session_state["aba_ativa"] = "Config"
         st.rerun()
