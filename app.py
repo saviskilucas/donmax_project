@@ -21,13 +21,17 @@ st.set_page_config(
 )
 
 # =========================================================
-# 3. LEITURA E GERENCIAMENTO DA ABA ATIVA VIA URL
+# 3. GERENCIAMENTO DE ESTADO DA NAVEGAÇÃO
 # =========================================================
-query_params = st.query_params
-aba_atual = query_params.get("aba", "pesagem")
+if "aba_ativa" not in st.session_state:
+    st.session_state["aba_ativa"] = "Pesagem"
+
+# Verificar se houve mudança de aba via parâmetros
+if "aba" in st.query_params:
+    st.session_state["aba_ativa"] = st.query_params["aba"]
 
 # =========================================================
-# 4. INJEÇÃO DE CSS CUSTOMIZADO (BARRAS DE TOPO E RODAPÉ IDÊNTICAS)
+# 4. INJEÇÃO DE CSS CUSTOMIZADO (TOPO E RODAPÉ FIXOS/CONGELADOS)
 # =========================================================
 st.markdown("""
     <style>
@@ -36,7 +40,7 @@ st.markdown("""
         background-color: #F4F5F7 !important;
     }
 
-    /* Recuo central para não sobrepor o conteúdo nas barras congeladas */
+    /* Recuo de segurança para o conteúdo rolar entre o topo e o rodapé congelados */
     .block-container {
         padding-top: 4.2rem !important;
         padding-bottom: 5.5rem !important;
@@ -45,7 +49,7 @@ st.markdown("""
         max-width: 100% !important;
     }
 
-    /* Ocultar elementos nativos do Streamlit */
+    /* Ocultar elementos padrão do Streamlit */
     #MainMenu, header, .stDeployButton, footer {
         display: none !important;
     }
@@ -85,7 +89,7 @@ st.markdown("""
     }
 
     /* =========================================================
-       2. BARRA INFERIOR CONGELADA (RODAPÉ ESTILO APPSHEET)
+       2. BARRA INFERIOR CONGELADA (RODAPÉ)
        ========================================================= */
     .appsheet-footer {
         position: fixed;
@@ -104,21 +108,24 @@ st.markdown("""
         box-shadow: 0px -2px 8px rgba(0,0,0,0.2);
     }
 
-    .appsheet-footer-item {
+    .appsheet-footer-button {
         flex: 1;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        text-decoration: none !important;
-        color: rgba(255, 255, 255, 0.75) !important;
+        background: transparent;
+        border: none;
+        color: rgba(255, 255, 255, 0.7) !important;
         font-size: 0.8rem;
         font-weight: 600;
         height: 100%;
-        transition: background 0.2s;
+        cursor: pointer;
+        padding: 0;
+        margin: 0;
     }
 
-    .appsheet-footer-item.active {
+    .appsheet-footer-button.active {
         color: #FFFFFF !important;
         background-color: rgba(0, 0, 0, 0.2);
         border-top: 3px solid #FFFFFF;
@@ -130,7 +137,7 @@ st.markdown("""
     }
 
     /* =========================================================
-       3. ESTILIZAÇÃO DOS CAMPOS E SEÇÕES
+       3. ESTILIZAÇÃO DOS INPUTS E BOTÕES
        ========================================================= */
     label {
         font-size: 1rem !important;
@@ -151,7 +158,6 @@ st.markdown("""
         height: 36px !important;
     }
 
-    /* Botão Salvar Principal */
     .stButton > button {
         width: 100% !important;
         height: 3.5rem !important;
@@ -216,7 +222,7 @@ st.markdown("""
 # =========================================================
 
 # --- ABA 1: FORMULÁRIO DE PESAGEM ---
-if aba_atual == "pesagem":
+if st.session_state["aba_ativa"] == "Pesagem":
     with st.form("form_pesagem", clear_on_submit=True):
 
         st.markdown("<div class='section-header'>1. INFORMAÇÕES DO DIA</div>", unsafe_allow_html=True)
@@ -275,7 +281,7 @@ if aba_atual == "pesagem":
                     st.error(f"❌ Erro ao salvar na planilha: {e}")
 
 # --- ABA 2: HISTÓRICO DA PLANILHA ---
-elif aba_atual == "historico":
+elif st.session_state["aba_ativa"] == "Histórico":
     st.markdown("<div class='section-header'>📊 ÚLTIMOS LANÇAMENTOS</div>", unsafe_allow_html=True)
     
     try:
@@ -301,7 +307,7 @@ elif aba_atual == "historico":
         st.error(f"Erro ao carregar dados do Google Sheets: {e}")
 
 # --- ABA 3: CONFIGURAÇÕES ---
-elif aba_atual == "config":
+elif st.session_state["aba_ativa"] == "Config":
     st.markdown("<div class='section-header'>⚙️ CONFIGURAÇÕES</div>", unsafe_allow_html=True)
     
     st.markdown("""
@@ -321,25 +327,35 @@ elif aba_atual == "config":
         st.success("Conexão atualizada com sucesso!")
 
 # =========================================================
-# 8. BARRA INFERIOR CONGELADA (RODAPÉ 100% IDENTICO AO TOPO)
+# 8. BARRA INFERIOR CONGELADA (RODAPÉ FIXO GARANTIDO VIA JS)
 # =========================================================
-active_pesagem = "active" if aba_atual == "pesagem" else ""
-active_historico = "active" if aba_atual == "historico" else ""
-active_config = "active" if aba_atual == "config" else ""
+active_p = "active" if st.session_state["aba_ativa"] == "Pesagem" else ""
+active_h = "active" if st.session_state["aba_ativa"] == "Histórico" else ""
+active_c = "active" if st.session_state["aba_ativa"] == "Config" else ""
 
-st.markdown(f"""
+footer_html = f"""
     <div class="appsheet-footer">
-        <a href="?aba=pesagem" target="_self" class="appsheet-footer-item {active_pesagem}">
+        <button onclick="mudarAba('Pesagem')" class="appsheet-footer-button {active_p}">
             <span class="appsheet-footer-icon">📅</span>
             <span>Formulário</span>
-        </a>
-        <a href="?aba=historico" target="_self" class="appsheet-footer-item {active_historico}">
+        </button>
+        <button onclick="mudarAba('Histórico')" class="appsheet-footer-button {active_h}">
             <span class="appsheet-footer-icon">📋</span>
             <span>Histórico</span>
-        </a>
-        <a href="?aba=config" target="_self" class="appsheet-footer-item {active_config}">
+        </button>
+        <button onclick="mudarAba('Config')" class="appsheet-footer-button {active_c}">
             <span class="appsheet-footer-icon">⚙️</span>
             <span>Opções</span>
-        </a>
+        </button>
     </div>
-""", unsafe_allow_html=True)
+
+    <script>
+    function mudarAba(nomeAba) {{
+        const url = new URL(window.location.href);
+        url.searchParams.set('aba', nomeAba);
+        window.location.href = url.toString();
+    }}
+    </script>
+"""
+
+st.markdown(footer_html, unsafe_allow_html=True)
