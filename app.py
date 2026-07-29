@@ -17,24 +17,27 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Gerenciamento de Estado sem recarregamento da URL
+# Gerenciamento de Estado sem recarregamento de página
 if "aba_ativa" not in st.session_state:
     st.session_state["aba_ativa"] = "pesagem"
 
+if "aba" in st.query_params:
+    st.session_state["aba_ativa"] = st.query_params["aba"]
+
 # =========================================================
-# 2. INJEÇÃO DE CSS (ANIMAÇÃO DE PÁGINA E DESIGN MOBILE)
+# 2. INJEÇÃO DE CSS (RODAPÉ INQUEBRÁVEL + ANIMAÇÃO FADE-IN)
 # =========================================================
 st.markdown("""
     <style>
-    /* 1. Configuração de Fundo sem Pistas Escuras */
+    /* Configuração de Fundo */
     html, body, [data-testid="stApp"], .stApp {
         background-color: #F8F9FA !important;
     }
 
-    /* Recuo inferior ajustado para a margem de 80px */
+    /* Recuo inferior para não cobrir o formulário com o menu a 80px */
     .block-container {
         padding-top: 3.8rem !important;
-        padding-bottom: 7.5rem !important; 
+        padding-bottom: 8.0rem !important; 
         padding-left: 0.8rem !important;
         padding-right: 0.8rem !important;
         max-width: 100% !important;
@@ -47,7 +50,7 @@ st.markdown("""
     }
 
     /* =========================================================
-       2. ANIMAÇÃO DE TRANSIÇÃO SUAVE ENTRE ABAS (FADE-IN)
+       ANIMAÇÃO DE TRANSIÇÃO SUAVE (SEM TELA PRETA)
        ========================================================= */
     .main-content-animated {
         animation: fadeInSlide 0.25s ease-out forwards;
@@ -56,7 +59,7 @@ st.markdown("""
     @keyframes fadeInSlide {
         from {
             opacity: 0;
-            transform: translateY(8px);
+            transform: translateY(6px);
         }
         to {
             opacity: 1;
@@ -65,7 +68,7 @@ st.markdown("""
     }
 
     /* =========================================================
-       3. BARRA SUPERIOR FIXA
+       BARRA SUPERIOR FIXA
        ========================================================= */
     .modern-header {
         position: fixed;
@@ -94,11 +97,11 @@ st.markdown("""
     }
 
     /* =========================================================
-       4. BARRA DE MENU NATIVA EM FLUXO ÚNICO (SISTEMA DE COLUNAS)
+       BARRA DE MENU FLUTUANTE QUE FUNCIONAVA (NATIVA HTML)
        ========================================================= */
-    div[data-testid="stHorizontalBlock"]:has(button[key^="btn_nav_"]) {
+    .fixed-floating-navbar {
         position: fixed !important;
-        bottom: 80px !important; /* SUA CONFIGURAÇÃO DE 80PX */
+        bottom: 80px !important; /* SEU AJUSTE DE 80PX */
         left: 50% !important;
         transform: translateX(-50%) !important;
         width: 280px !important;
@@ -108,46 +111,36 @@ st.markdown("""
         box-shadow: 0px 8px 25px rgba(0, 0, 0, 0.35) !important;
         z-index: 999999 !important;
         display: flex !important;
-        flex-direction: row !important;
         align-items: center !important;
         justify-content: space-around !important;
-        padding: 0 8px !important;
+        padding: 0 10px !important;
         border: 2px solid #FFFFFF !important;
     }
 
-    div[data-testid="stHorizontalBlock"]:has(button[key^="btn_nav_"]) > div {
-        flex: 1 1 0% !important;
-        width: 33.33% !important;
-        padding: 0 !important;
-        margin: 0 !important;
-        display: flex !important;
-        justify-content: center !important;
+    .nav-btn-int {
+        width: 70px;
+        height: 44px;
+        background: transparent;
+        border: none;
+        border-radius: 18px;
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 1.3rem;
+        text-decoration: none !important;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        cursor: pointer;
     }
 
-    div[data-testid="stHorizontalBlock"]:has(button[key^="btn_nav_"]) button {
-        width: 70px !important;
-        height: 44px !important;
-        background-color: transparent !important;
-        border: none !important;
-        border-radius: 18px !important;
-        color: rgba(255, 255, 255, 0.8) !important;
-        font-size: 1.3rem !important;
-        box-shadow: none !important;
-        padding: 0 !important;
-        margin: 0 !important;
-        transition: all 0.2s ease-in-out !important;
-    }
-
-    /* Botão Selecionado com Caixinha Branca */
-    div[data-testid="stHorizontalBlock"]:has(button[key^="btn_nav_"]) button.btn-active-tab {
+    /* Caixinha Branca Flutuante no Ícone Ativo */
+    .nav-btn-int.active {
         background-color: #FFFFFF !important;
         color: #D32F2F !important;
         box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2) !important;
     }
 
-    /* =========================================================
-       5. ESTILIZAÇÃO DOS FORMULÁRIOS
-       ========================================================= */
+    /* CAMPOS DO FORMULÁRIO */
     label {
         font-size: 0.98rem !important;
         font-weight: 700 !important;
@@ -213,11 +206,25 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # =========================================================
-# 5. CONTEÚDO DAS ABAS COM ENVOLVET DE ANIMAÇÃO
+# 5. BARRA DE MENU HTML QUE FUNCIONA (INQUEBRÁVEL)
+# =========================================================
+aba = st.session_state["aba_ativa"]
+act_p = "active" if aba == "pesagem" else ""
+act_h = "active" if aba == "historico" else ""
+act_c = "active" if aba == "config" else ""
+
+st.markdown(f"""
+    <div class="fixed-floating-navbar">
+        <a href="?aba=pesagem" target="_self" class="nav-btn-int {act_p}">🏠</a>
+        <a href="?aba=historico" target="_self" class="nav-btn-int {act_h}">📋</a>
+        <a href="?aba=config" target="_self" class="nav-btn-int {act_c}">👤</a>
+    </div>
+""", unsafe_allow_html=True)
+
+# =========================================================
+# 6. CONTEÚDO DAS ABAS COM TRANSIÇÃO ANIMADA (FADE-IN)
 # =========================================================
 st.markdown("<div class='main-content-animated'>", unsafe_allow_html=True)
-
-aba = st.session_state["aba_ativa"]
 
 if aba == "pesagem":
     with st.form("form_pesagem", clear_on_submit=True):
@@ -280,45 +287,3 @@ elif aba == "config":
         st.success("Conexão atualizada com sucesso!")
 
 st.markdown("</div>", unsafe_allow_html=True) # Fim do container animado
-
-# =========================================================
-# 6. RODAPÉ FIXO COMPACTO (80PX) COM RE-RENDER INSTANTÂNEO
-# =========================================================
-col_nav1, col_nav2, col_nav3 = st.columns(3)
-
-with col_nav1:
-    if st.button("🏠", key="btn_nav_1"):
-        st.session_state["aba_ativa"] = "pesagem"
-        st.rerun()
-
-with col_nav2:
-    if st.button("📋", key="btn_nav_2"):
-        st.session_state["aba_ativa"] = "historico"
-        st.rerun()
-
-with col_nav3:
-    if st.button("👤", key="btn_nav_3"):
-        st.session_state["aba_ativa"] = "config"
-        st.rerun()
-
-# JS Instantâneo para aplicar a caixinha branca no ícone ativo sem piscar
-st.components.v1.html(f"""
-    <script>
-    setTimeout(function() {{
-        const parentDoc = window.parent.document;
-        const navContainer = parentDoc.querySelector('div[data-testid="stHorizontalBlock"]:has(button[key^="btn_nav_"])');
-        if (navContainer) {{
-            const btns = navContainer.querySelectorAll('button');
-            btns.forEach(b => b.classList.remove('btn-active-tab'));
-            
-            if ("{aba}" === "pesagem" && btns[0]) {{
-                btns[0].classList.add('btn-active-tab');
-            }} else if ("{aba}" === "historico" && btns[1]) {{
-                btns[1].classList.add('btn-active-tab');
-            }} else if ("{aba}" === "config" && btns[2]) {{
-                btns[2].classList.add('btn-active-tab');
-            }}
-        }}
-    }}, 20);
-    </script>
-""", height=0)
