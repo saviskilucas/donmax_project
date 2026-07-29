@@ -1,8 +1,12 @@
 import streamlit as st
+import pandas as pd
+import gspread
+from google.oauth2.service_account import Credentials
+from datetime import date
 
-# ---------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA (LAYOUT MOBILE COMPACTO)
-# ---------------------------------------------------------
+# =========================================================
+# 1. CONFIGURAÇÃO DA PÁGINA (Layout Mobile Compacto)
+# =========================================================
 st.set_page_config(
     page_title="Don Max - Buffet",
     page_icon="🍲",
@@ -10,60 +14,176 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Injeção de CSS para experiência 100% Mobile
+# =========================================================
+# 2. INJEÇÃO DE CSS CUSTOMIZADO (Mobile PWA Style)
+# =========================================================
 st.markdown("""
     <style>
-    /* 1. Reduzir as margens superiores e laterais para aproveitar a tela do celular */
+    /* Travar largura máxima para simular tela de aplicativo mobile */
     .block-container {
-        padding-top: 1rem !important;
+        padding-top: 0.8rem !important;
         padding-bottom: 2rem !important;
         padding-left: 0.8rem !important;
         padding-right: 0.8rem !important;
-        max-width: 500px !important; /* Força o visual compacto de celular */
+        max-width: 480px !important;
     }
 
-    /* 2. Esconder a barra superior e o menu padrão do Streamlit */
+    /* Ocultar elementos nativos do Streamlit */
     #MainMenu {visibility: hidden;}
     header {visibility: hidden;}
     footer {visibility: hidden;}
 
-    /* 3. Aumentar os rótulos/títulos dos campos para facilitar a leitura */
+    /* Aumentar o tamanho e destaque dos textos dos rótulos */
     label {
         font-size: 1.05rem !important;
-        font-weight: 600 !important;
-        color: #222222 !important;
+        font-weight: 700 !important;
+        color: #1A1A1A !important;
+        margin-bottom: 0.2rem !important;
     }
 
-    /* 4. Estilizar os campos de entrada de números (Inputs) */
-    div[data-baseweb="input"] input {
-        font-size: 1.2rem !important;
+    /* Estilizar inputs de texto, data e números */
+    div[data-baseweb="input"] input, div[data-baseweb="select"] {
+        font-size: 1.15rem !important;
         padding: 10px !important;
         border-radius: 8px !important;
     }
 
-    /* 5. Deixar os botões de + e - dos números maiores */
+    /* Botões de soma/subtração dos inputs numéricos maiores */
     div[data-baseweb="input"] button {
-        width: 40px !important;
-        height: 40px !important;
+        width: 38px !important;
+        height: 38px !important;
     }
 
-    /* 6. Botão Principal de SALVAR (Destaque Gigante Vermelho) */
+    /* Botão Principal - Vermelho Destaque Don Max */
     .stButton > button {
         width: 100% !important;
         height: 3.8rem !important;
         font-size: 1.25rem !important;
-        font-weight: bold !important;
+        font-weight: 800 !important;
         background-color: #D32F2F !important;
-        color: white !important;
+        color: #FFFFFF !important;
         border-radius: 12px !important;
         border: none !important;
-        box-shadow: 0px 4px 10px rgba(211, 47, 47, 0.3) !important;
+        box-shadow: 0px 4px 12px rgba(211, 47, 47, 0.35) !important;
         margin-top: 1rem !important;
     }
 
-    /* 7. Caixas de alertas e mensagens bonitas */
-    .stAlert {
-        border-radius: 10px !important;
+    .stButton > button:active {
+        background-color: #B71C1C !important;
+        transform: scale(0.98);
+    }
+
+    /* Estilização dos títulos de seção */
+    .section-header {
+        font-size: 1.1rem;
+        font-weight: bold;
+        color: #D32F2F;
+        border-bottom: 2px solid #D32F2F;
+        padding-bottom: 4px;
+        margin-top: 15px;
+        margin-bottom: 15px;
     }
     </style>
 """, unsafe_allow_html=True)
+
+# =========================================================
+# 3. FUNÇÃO DE CONEXÃO COM O GOOGLE SHEETS
+# =========================================================
+@st.cache_resource
+def conectar_gsheets():
+    scope = [
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive"
+    ]
+    # Carrega as credenciais da Service Account do Google dos Secrets do Streamlit
+    credentials = Credentials.from_service_account_info(
+        st.secrets["gcp_service_account"],
+        scopes=scope
+    )
+    client = gspread.authorize(credentials)
+    # Abre a planilha pelo nome exato da aba de lançamentos
+    sheet = client.open("Planilha Don Max").worksheet("Lancamentos_Diarios")
+    return sheet
+
+# =========================================================
+# 4. CABEÇALHO (LOGO E NOME DO RESTAURANTE)
+# =========================================================
+# Exibe a logo do Don Max centralizada
+col_l1, col_l2, col_l3 = st.columns([1, 2, 1])
+with col_l2:
+    st.image(
+        "https://www.appsheet.com:443/fsimage.png?appid=33166895-21f5-4355-9589-9a260ced39c5#view=Inicio",
+        use_container_width=True
+    )
+
+st.markdown("<h3 style='text-align: center; margin-top: -10px; color: #222;'>Controle de Buffet</h3>", unsafe_allow_html=True)
+
+# =========================================================
+# 5. FORMULÁRIO OPERACIONAL DA COZINHA
+# =========================================================
+with st.form("form_pesagem", clear_on_submit=True):
+
+    st.markdown("<div class='section-header'>1. INFORMAÇÕES DO DIA</div>", unsafe_allow_html=True)
+    
+    data_sel = st.date_input("Data do Serviço", value=date.today())
+    responsavel = st.text_input("Responsável pelo Turno", placeholder="Ex: João Silva")
+    clientes = st.number_input("Clientes Atendidos no Dia", min_value=0, step=1, value=0)
+
+    st.markdown("<div class='section-header'>2. PREPARAÇÃO / PRATO</div>", unsafe_allow_html=True)
+    
+    pratos_lista = [
+        "Arroz", "Feijão", "Barreado", "Carne 1", "Carne 2",
+        "Massa", "Guarnição 1", "Guarnição 2", "Saladas", "Sobremesas",
+        "Outro 1", "Outro 2"
+    ]
+    prato_sel = st.selectbox("Selecione o Prato", pratos_lista)
+
+    st.markdown("<div class='section-header'>3. MEDIÇÕES DA BALANÇA (KG)</div>", unsafe_allow_html=True)
+
+    # Organização em 2 colunas para melhor encaixe no celular
+    col1, col2 = st.columns(2)
+    with col1:
+        prod_inicial = st.number_input("Produção Inicial", min_value=0.0, step=0.1, format="%.2f")
+        reposicao = st.number_input("Reposição Total", min_value=0.0, step=0.1, format="%.2f")
+        sobra_limpa = st.number_input("Sobra Limpa", min_value=0.0, step=0.1, format="%.2f")
+
+    with col2:
+        sobra_buffet = st.number_input("Sobra Buffet", min_value=0.0, step=0.1, format="%.2f")
+        descarte = st.number_input("Descarte Total", min_value=0.0, step=0.1, format="%.2f")
+
+    observacoes = st.text_area("Observações (Opcional)", placeholder="Ex: Sobra de carne devido ao tempo chuvoso...")
+
+    # Botão de Salvar Grande para a Cozinha
+    btn_salvar = st.form_submit_button("💾 SALVAR PESAGEM")
+
+    # =========================================================
+    # 6. LÓGICA DE PROCESSAMENTO E GRAVAÇÃO
+    # =========================================================
+    if btn_salvar:
+        if not responsavel.strip():
+            st.error("⚠️ Preencha o nome do Responsável antes de salvar.")
+        else:
+            try:
+                sheet = conectar_gsheets()
+                
+                # Monta a linha com a ordem exata das colunas do Google Sheets
+                nova_linha = [
+                    str(data_sel),
+                    responsavel.strip(),
+                    int(clientes),
+                    prato_sel,
+                    float(prod_inicial),
+                    float(reposicao),
+                    float(sobra_limpa),
+                    float(sobra_buffet),
+                    float(descarte),
+                    observacoes.strip()
+                ]
+
+                # Insere os dados na planilha
+                sheet.append_row(nova_linha)
+                
+                st.success(f"✅ **{prato_sel}** registrado com sucesso!")
+                st.balloons()
+            except Exception as e:
+                st.error(f"❌ Erro ao salvar na planilha: {e}")
