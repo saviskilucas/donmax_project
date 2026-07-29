@@ -26,24 +26,20 @@ st.set_page_config(
 if "aba_ativa" not in st.session_state:
     st.session_state["aba_ativa"] = "Pesagem"
 
-# Verificar se houve mudança de aba via parâmetros
-if "aba" in st.query_params:
-    st.session_state["aba_ativa"] = st.query_params["aba"]
-
 # =========================================================
-# 4. INJEÇÃO DE CSS CUSTOMIZADO (TOPO E RODAPÉ FIXOS/CONGELADOS)
+# 4. INJEÇÃO DE CSS CUSTOMIZADO (RODAPÉ ARREDONDADO MODERNO)
 # =========================================================
 st.markdown("""
     <style>
     /* Configuração Geral da Tela Mobile */
     html, body, [data-testid="stApp"], .stApp {
-        background-color: #F4F5F7 !important;
+        background-color: #F8F9FA !important;
     }
 
-    /* Recuo de segurança para o conteúdo rolar entre o topo e o rodapé congelados */
+    /* Espaçamento central para o formulário rolar entre as barras congeladas */
     .block-container {
-        padding-top: 4.2rem !important;
-        padding-bottom: 5.5rem !important;
+        padding-top: 4.0rem !important;
+        padding-bottom: 6.0rem !important;
         padding-left: 0.8rem !important;
         padding-right: 0.8rem !important;
         max-width: 100% !important;
@@ -55,101 +51,117 @@ st.markdown("""
     }
 
     /* =========================================================
-       1. BARRA SUPERIOR CONGELADA (TOPO)
+       1. BARRA SUPERIOR (HEADER MODERNO COM CANTOS ARREDONDADOS)
        ========================================================= */
-    .appsheet-header {
+    .modern-header {
         position: fixed;
         top: 0;
         left: 0;
         right: 0;
         width: 100vw;
-        height: 52px;
+        height: 55px;
         background-color: #D32F2F;
         color: #FFFFFF;
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 0 16px;
+        padding: 0 18px;
         z-index: 999999 !important;
-        box-shadow: 0px 2px 6px rgba(0,0,0,0.2);
+        box-shadow: 0px 4px 12px rgba(211, 47, 47, 0.25);
+        border-radius: 0 0 16px 16px;
     }
 
-    .appsheet-header-title {
+    .modern-header-title {
         font-size: 1.15rem;
-        font-weight: 700;
+        font-weight: 800;
+        letter-spacing: 0.3px;
         display: flex;
         align-items: center;
         gap: 10px;
     }
 
-    .appsheet-header-icons {
+    .modern-header-icons {
         display: flex;
-        gap: 15px;
-        font-size: 1.2rem;
-    }
-
-    /* =========================================================
-       2. BARRA INFERIOR CONGELADA (RODAPÉ)
-       ========================================================= */
-    .appsheet-footer {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        width: 100vw;
-        height: 60px;
-        background-color: #D32F2F;
-        color: #FFFFFF;
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-        justify-content: space-around;
-        z-index: 999999 !important;
-        box-shadow: 0px -2px 8px rgba(0,0,0,0.2);
-    }
-
-    .appsheet-footer-button {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        background: transparent;
-        border: none;
-        color: rgba(255, 255, 255, 0.7) !important;
-        font-size: 0.8rem;
-        font-weight: 600;
-        height: 100%;
+        gap: 16px;
+        font-size: 1.25rem;
         cursor: pointer;
-        padding: 0;
-        margin: 0;
-    }
-
-    .appsheet-footer-button.active {
-        color: #FFFFFF !important;
-        background-color: rgba(0, 0, 0, 0.2);
-        border-top: 3px solid #FFFFFF;
-    }
-
-    .appsheet-footer-icon {
-        font-size: 1.2rem;
-        margin-bottom: 2px;
     }
 
     /* =========================================================
-       3. ESTILIZAÇÃO DOS INPUTS E BOTÕES
+       2. BARRA INFERIOR CONGELADA (DESIGN IDÊNTICO À FOTO DE REFERÊNCIA)
+       ========================================================= */
+    div[data-testid="stHorizontalBlock"]:has(button[key^="nav_"]) {
+        position: fixed !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100vw !important;
+        height: 65px !important;
+        background-color: #D32F2F !important; /* Cor principal Don Max */
+        border-radius: 22px 22px 0 0 !important; /* Cantos arredondados do topo da barra */
+        box-shadow: 0px -6px 20px rgba(0, 0, 0, 0.15) !important;
+        z-index: 999999 !important;
+
+        /* Força os 3 botões em linha horizontal perfeita */
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: space-around !important;
+        padding: 0 10px !important;
+        margin: 0 !important;
+    }
+
+    /* Cada coluna ocupa 1/3 exato da largura */
+    div[data-testid="stHorizontalBlock"]:has(button[key^="nav_"]) > div {
+        flex: 1 1 0% !important;
+        width: 33.33% !important;
+        min-width: 0 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        display: flex !important;
+        justify-content: center !important;
+    }
+
+    /* Estilo dos Botões/Ícones estilo App Moderno */
+    div[data-testid="stHorizontalBlock"]:has(button[key^="nav_"]) button {
+        width: 85% !important;
+        height: 48px !important;
+        background-color: transparent !important;
+        border: none !important;
+        border-radius: 14px !important; /* Caixinha arredondada do ícone */
+        box-shadow: none !important;
+        color: rgba(255, 255, 255, 0.75) !important;
+        font-size: 1.3rem !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        transition: all 0.2s ease-in-out !important;
+    }
+
+    /* ABA ATIVA: Cartão interno em destaque (Exatamente como na foto de referência) */
+    div[data-testid="stHorizontalBlock"]:has(button[key^="nav_"]) button.active-btn {
+        background-color: #FFFFFF !important; /* Caixa branca flutuante igual a foto */
+        color: #D32F2F !important; /* Ícone na cor do tema */
+        box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.15) !important;
+        transform: translateY(-2px);
+    }
+
+    /* =========================================================
+       3. ESTILIZAÇÃO DOS CAMPOS DO FORMULÁRIO
        ========================================================= */
     label {
-        font-size: 1rem !important;
+        font-size: 0.98rem !important;
         font-weight: 700 !important;
-        color: #333333 !important;
+        color: #2D3748 !important;
         margin-bottom: 0.2rem !important;
     }
 
     div[data-baseweb="input"] input, div[data-baseweb="select"] {
-        font-size: 1.1rem !important;
+        font-size: 1.05rem !important;
         padding: 8px 12px !important;
-        border-radius: 6px !important;
+        border-radius: 8px !important;
         background-color: #FFFFFF !important;
     }
 
@@ -158,6 +170,7 @@ st.markdown("""
         height: 36px !important;
     }
 
+    /* Botão Salvar Principal */
     .stButton > button {
         width: 100% !important;
         height: 3.5rem !important;
@@ -165,21 +178,22 @@ st.markdown("""
         font-weight: 800 !important;
         background-color: #D32F2F !important;
         color: #FFFFFF !important;
-        border-radius: 8px !important;
+        border-radius: 12px !important;
         border: none !important;
-        box-shadow: 0px 3px 8px rgba(211, 47, 47, 0.3) !important;
+        box-shadow: 0px 4px 12px rgba(211, 47, 47, 0.3) !important;
         margin-top: 0.8rem !important;
     }
 
     .section-header {
-        font-size: 1rem;
-        font-weight: bold;
+        font-size: 0.95rem;
+        font-weight: 800;
         color: #D32F2F;
         border-bottom: 2px solid #D32F2F;
         padding-bottom: 4px;
         margin-top: 15px;
         margin-bottom: 12px;
         text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -202,17 +216,16 @@ def conectar_gsheets():
     return sheet
 
 # =========================================================
-# 6. BARRA SUPERIOR CONGELADA (TOPO ESTILO APPSHEET)
+# 6. BARRA SUPERIOR FIXA (MODERNA)
 # =========================================================
 st.markdown("""
-    <div class="appsheet-header">
-        <div class="appsheet-header-title">
-            <span>☰</span>
-            <span>Don Max Buffet</span>
+    <div class="modern-header">
+        <div class="modern-header-title">
+            <span> Don Max Buffet</span>
         </div>
-        <div class="appsheet-header-icons">
+        <div class="modern-header-icons">
             <span>🔍</span>
-            <span onclick="window.location.reload();" style="cursor:pointer;">🔄</span>
+            <span onclick="window.location.reload();">🔄</span>
         </div>
     </div>
 """, unsafe_allow_html=True)
@@ -306,7 +319,7 @@ elif st.session_state["aba_ativa"] == "Histórico":
     except Exception as e:
         st.error(f"Erro ao carregar dados do Google Sheets: {e}")
 
-# --- ABA 3: CONFIGURAÇÕES ---
+# --- ABA 3: CONFIGURAÇÕES / SOBRE ---
 elif st.session_state["aba_ativa"] == "Config":
     st.markdown("<div class='section-header'>⚙️ CONFIGURAÇÕES</div>", unsafe_allow_html=True)
     
@@ -327,35 +340,47 @@ elif st.session_state["aba_ativa"] == "Config":
         st.success("Conexão atualizada com sucesso!")
 
 # =========================================================
-# 8. BARRA INFERIOR CONGELADA (RODAPÉ FIXO GARANTIDO VIA JS)
+# 8. RODAPÉ FIXO ESTILO APLICATIVO MODERNO (IGUAL À FOTO)
 # =========================================================
-active_p = "active" if st.session_state["aba_ativa"] == "Pesagem" else ""
-active_h = "active" if st.session_state["aba_ativa"] == "Histórico" else ""
-active_c = "active" if st.session_state["aba_ativa"] == "Config" else ""
+col_nav1, col_nav2, col_nav3 = st.columns(3)
 
-footer_html = f"""
-    <div class="appsheet-footer">
-        <button onclick="mudarAba('Pesagem')" class="appsheet-footer-button {active_p}">
-            <span class="appsheet-footer-icon">📅</span>
-            <span>Formulário</span>
-        </button>
-        <button onclick="mudarAba('Histórico')" class="appsheet-footer-button {active_h}">
-            <span class="appsheet-footer-icon">📋</span>
-            <span>Histórico</span>
-        </button>
-        <button onclick="mudarAba('Config')" class="appsheet-footer-button {active_c}">
-            <span class="appsheet-footer-icon">⚙️</span>
-            <span>Opções</span>
-        </button>
-    </div>
+is_pesagem = st.session_state["aba_ativa"] == "Pesagem"
+is_historico = st.session_state["aba_ativa"] == "Histórico"
+is_config = st.session_state["aba_ativa"] == "Config"
 
+with col_nav1:
+    btn_p = st.button("🏠" if not is_pesagem else "🏠", key="nav_pesagem", help="Formulário")
+    if btn_p:
+        st.session_state["aba_ativa"] = "Pesagem"
+        st.rerun()
+
+with col_nav2:
+    btn_h = st.button("📋" if not is_historico else "📋", key="nav_historico", help="Histórico")
+    if btn_h:
+        st.session_state["aba_ativa"] = "Histórico"
+        st.rerun()
+
+with col_nav3:
+    btn_c = st.button("👤" if not is_config else "👤", key="nav_config", help="Opções")
+    if btn_c:
+        st.session_state["aba_ativa"] = "Config"
+        st.rerun()
+
+# Injetar classe 'active-btn' no botão selecionado via JS
+js_active = f"""
     <script>
-    function mudarAba(nomeAba) {{
-        const url = new URL(window.location.href);
-        url.searchParams.set('aba', nomeAba);
-        window.location.href = url.toString();
-    }}
+    setTimeout(function() {{
+        const buttons = window.parent.document.querySelectorAll('div[data-testid="stHorizontalBlock"]:has(button[key^="nav_"]) button');
+        buttons.forEach(btn => btn.classList.remove('active-btn'));
+        
+        if ("{st.session_state['aba_ativa']}" === "Pesagem" && buttons[0]) {{
+            buttons[0].classList.add('active-btn');
+        }} else if ("{st.session_state['aba_ativa']}" === "Histórico" && buttons[1]) {{
+            buttons[1].classList.add('active-btn');
+        }} else if ("{st.session_state['aba_ativa']}" === "Config" && buttons[2]) {{
+            buttons[2].classList.add('active-btn');
+        }}
+    }}, 100);
     </script>
 """
-
-st.markdown(footer_html, unsafe_allow_html=True)
+st.components.v1.html(js_active, height=0)
