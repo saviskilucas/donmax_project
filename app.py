@@ -79,9 +79,9 @@ st.markdown("""
     /* MENU FLUTUANTE FIXO NO MEIO DA TELA (INJETADO NATIVAMENTE) */
     .middle-navbar-internal {
         position: fixed !important;
-        top: 50% !important;
+        bottom: 15px !important; /* Trava a 15px do rodapé da tela */
         left: 50% !important;
-        transform: translate(-50%, -50%) !important;
+        transform: translateX(-50%) !important; /* Centraliza na horizontal */
         width: 280px !important;
         height: 60px !important;
         background-color: #D32F2F !important;
