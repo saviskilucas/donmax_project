@@ -21,23 +21,24 @@ st.set_page_config(
 if "aba_ativa" not in st.session_state:
     st.session_state["aba_ativa"] = "pesagem"
 
+# Captura parâmetros se existirem
 if "aba" in st.query_params:
     st.session_state["aba_ativa"] = st.query_params["aba"]
 
 # =========================================================
-# 2. INJEÇÃO DE CSS (RODAPÉ INQUEBRÁVEL + ANIMAÇÃO FADE-IN)
+# 2. INJEÇÃO DE CSS (RODAPÉ FIXO A 80PX + TRANSIÇÃO SUAVE)
 # =========================================================
 st.markdown("""
     <style>
-    /* Configuração de Fundo */
+    /* Configuração do Fundo sem telas pretas */
     html, body, [data-testid="stApp"], .stApp {
         background-color: #F8F9FA !important;
     }
 
-    /* Recuo inferior para não cobrir o formulário com o menu a 80px */
+    /* Recuo de segurança no rodapé */
     .block-container {
         padding-top: 3.8rem !important;
-        padding-bottom: 8.0rem !important; 
+        padding-bottom: 8.5rem !important; 
         padding-left: 0.8rem !important;
         padding-right: 0.8rem !important;
         max-width: 100% !important;
@@ -50,16 +51,16 @@ st.markdown("""
     }
 
     /* =========================================================
-       ANIMAÇÃO DE TRANSIÇÃO SUAVE (SEM TELA PRETA)
+       TRANSIÇÃO SUAVE DE CONTEÚDO (FADE-IN)
        ========================================================= */
     .main-content-animated {
-        animation: fadeInSlide 0.25s ease-out forwards;
+        animation: fadeIn 0.2s ease-in-out forwards;
     }
 
-    @keyframes fadeInSlide {
+    @keyframes fadeIn {
         from {
-            opacity: 0;
-            transform: translateY(6px);
+            opacity: 0.2;
+            transform: translateY(4px);
         }
         to {
             opacity: 1;
@@ -67,9 +68,7 @@ st.markdown("""
         }
     }
 
-    /* =========================================================
-       BARRA SUPERIOR FIXA
-       ========================================================= */
+    /* BARRA SUPERIOR FIXA */
     .modern-header {
         position: fixed;
         top: 0;
@@ -94,50 +93,6 @@ st.markdown("""
         display: flex;
         align-items: center;
         gap: 10px;
-    }
-
-    /* =========================================================
-       BARRA DE MENU FLUTUANTE QUE FUNCIONAVA (NATIVA HTML)
-       ========================================================= */
-    .fixed-floating-navbar {
-        position: fixed !important;
-        bottom: 80px !important; /* SEU AJUSTE DE 80PX */
-        left: 50% !important;
-        transform: translateX(-50%) !important;
-        width: 280px !important;
-        height: 60px !important;
-        background-color: #D32F2F !important;
-        border-radius: 30px !important;
-        box-shadow: 0px 8px 25px rgba(0, 0, 0, 0.35) !important;
-        z-index: 999999 !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: space-around !important;
-        padding: 0 10px !important;
-        border: 2px solid #FFFFFF !important;
-    }
-
-    .nav-btn-int {
-        width: 70px;
-        height: 44px;
-        background: transparent;
-        border: none;
-        border-radius: 18px;
-        color: rgba(255, 255, 255, 0.8);
-        font-size: 1.3rem;
-        text-decoration: none !important;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.2s ease;
-        cursor: pointer;
-    }
-
-    /* Caixinha Branca Flutuante no Ícone Ativo */
-    .nav-btn-int.active {
-        background-color: #FFFFFF !important;
-        color: #D32F2F !important;
-        box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2) !important;
     }
 
     /* CAMPOS DO FORMULÁRIO */
@@ -206,25 +161,11 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # =========================================================
-# 5. BARRA DE MENU HTML QUE FUNCIONA (INQUEBRÁVEL)
-# =========================================================
-aba = st.session_state["aba_ativa"]
-act_p = "active" if aba == "pesagem" else ""
-act_h = "active" if aba == "historico" else ""
-act_c = "active" if aba == "config" else ""
-
-st.markdown(f"""
-    <div class="fixed-floating-navbar">
-        <a href="?aba=pesagem" target="_self" class="nav-btn-int {act_p}">🏠</a>
-        <a href="?aba=historico" target="_self" class="nav-btn-int {act_h}">📋</a>
-        <a href="?aba=config" target="_self" class="nav-btn-int {act_c}">👤</a>
-    </div>
-""", unsafe_allow_html=True)
-
-# =========================================================
-# 6. CONTEÚDO DAS ABAS COM TRANSIÇÃO ANIMADA (FADE-IN)
+# 5. CONTEÚDO DAS ABAS COM FADE-IN
 # =========================================================
 st.markdown("<div class='main-content-animated'>", unsafe_allow_html=True)
+
+aba = st.session_state["aba_ativa"]
 
 if aba == "pesagem":
     with st.form("form_pesagem", clear_on_submit=True):
@@ -286,4 +227,78 @@ elif aba == "config":
         st.cache_resource.clear()
         st.success("Conexão atualizada com sucesso!")
 
-st.markdown("</div>", unsafe_allow_html=True) # Fim do container animado
+st.markdown("</div>", unsafe_allow_html=True)
+
+# =========================================================
+# 6. RODAPÉ INQUEBRÁVEL (SEM RELOAD / SEM TELA PRETA)
+# =========================================================
+act_p = "active" if aba == "pesagem" else ""
+act_h = "active" if aba == "historico" else ""
+act_c = "active" if aba == "config" else ""
+
+footer_html = f"""
+    <style>
+        .fixed-floating-navbar {{
+            position: fixed !important;
+            bottom: 80px !important;
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+            width: 280px !important;
+            height: 60px !important;
+            background-color: #D32F2F !important;
+            border-radius: 30px !important;
+            box-shadow: 0px 8px 25px rgba(0, 0, 0, 0.35) !important;
+            z-index: 99999999 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-around !important;
+            padding: 0 10px !important;
+            border: 2px solid #FFFFFF !important;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+        }}
+
+        .nav-btn-int {{
+            width: 70px;
+            height: 44px;
+            background: transparent;
+            border: none;
+            border-radius: 18px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }}
+
+        .nav-btn-int.active {{
+            background-color: #FFFFFF !important;
+            color: #D32F2F !important;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2) !important;
+        }}
+    </style>
+
+    <div class="fixed-floating-navbar">
+        <button onclick="trocarAba('pesagem')" class="nav-btn-int {act_p}">🏠</button>
+        <button onclick="trocarAba('historico')" class="nav-btn-int {act_h}">📋</button>
+        <button onclick="trocarAba('config')" class="nav-btn-int {act_c}">👤</button>
+    </div>
+
+    <script>
+    function trocarAba(nomeAba) {{
+        // Altera o parâmetro na URL sem dar F5 / Reload no navegador
+        const parentUrl = new URL(window.parent.location.href);
+        if (parentUrl.searchParams.get('aba') !== nomeAba) {{
+            parentUrl.searchParams.set('aba', nomeAba);
+            window.parent.history.pushState({{}}, '', parentUrl.toString());
+            // Atualiza o estado via mensagem nativa do navegador
+            window.parent.postMessage({{type: 'streamlit:setComponentValue', value: nomeAba}}, '*');
+            window.parent.location.replace(parentUrl.toString());
+        }}
+    }}
+    </script>
+"""
+
+# Renderização isolada no topo da camada sem piscar
+st.components.v1.html(footer_html, height=0)
