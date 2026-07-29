@@ -27,93 +27,133 @@ if "aba_ativa" not in st.session_state:
     st.session_state["aba_ativa"] = "Pesagem"
 
 # =========================================================
-# 4. INJEÇÃO DE CSS CUSTOMIZADO (MENU ESTILO APPSHEET NO RODAPÉ)
+# 4. INJEÇÃO DE CSS CUSTOMIZADO (DESIGN IDÊNTICO AO APPSHEET)
 # =========================================================
 st.markdown("""
     <style>
     /* Configuração da Tela Mobile */
     html, body, [data-testid="stApp"], .stApp {
-        background-color: #FFFFFF !important;
+        background-color: #F4F5F7 !important;
     }
 
-    /* Espaço no final para o formulário rolar sem ficar atrás do menu fixo */
+    /* Trava o conteúdo para não ficar oculto atrás das barras fixas */
     .block-container {
-        padding-top: 0.8rem !important;
-        padding-bottom: 6rem !important;
+        padding-top: 3.8rem !important;
+        padding-bottom: 5.5rem !important;
         padding-left: 0.8rem !important;
         padding-right: 0.8rem !important;
         max-width: 100% !important;
     }
 
-    /* Ocultar elementos padrão do Streamlit */
+    /* Ocultar elementos nativos do Streamlit */
     #MainMenu, header, .stDeployButton, footer {
         display: none !important;
     }
 
-    /* Destaque nos rótulos */
+    /* BARRA SUPERIOR ESTILO APPSHEET (VERMELHO DON MAX) */
+    .appsheet-header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        width: 100%;
+        height: 52px;
+        background-color: #D32F2F;
+        color: #FFFFFF;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 16px;
+        z-index: 999999;
+        box-shadow: 0px 2px 6px rgba(0,0,0,0.2);
+    }
+
+    .appsheet-header-title {
+        font-size: 1.15rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .appsheet-header-icons {
+        display: flex;
+        gap: 15px;
+        font-size: 1.2rem;
+        cursor: pointer;
+    }
+
+    /* ESTILIZAÇÃO DOS FORMULÁRIOS E INPUTS */
     label {
-        font-size: 1.05rem !important;
+        font-size: 1rem !important;
         font-weight: 700 !important;
-        color: #1A1A1A !important;
+        color: #333333 !important;
         margin-bottom: 0.2rem !important;
     }
 
-    /* Inputs numéricos e seletores */
     div[data-baseweb="input"] input, div[data-baseweb="select"] {
-        font-size: 1.15rem !important;
-        padding: 10px !important;
-        border-radius: 8px !important;
+        font-size: 1.1rem !important;
+        padding: 8px 12px !important;
+        border-radius: 6px !important;
+        background-color: #FFFFFF !important;
     }
 
+    /* Botões de soma/subtração dos inputs numéricos */
     div[data-baseweb="input"] button {
-        width: 38px !important;
-        height: 38px !important;
+        width: 36px !important;
+        height: 36px !important;
     }
 
-    /* Botão Principal Salvar */
+    /* Botão Principal - Salvar */
     .stButton > button {
         width: 100% !important;
         height: 3.5rem !important;
-        font-size: 1.2rem !important;
+        font-size: 1.15rem !important;
         font-weight: 800 !important;
         background-color: #D32F2F !important;
         color: #FFFFFF !important;
-        border-radius: 12px !important;
+        border-radius: 8px !important;
         border: none !important;
-        box-shadow: 0px 4px 10px rgba(211, 47, 47, 0.3) !important;
+        box-shadow: 0px 3px 8px rgba(211, 47, 47, 0.3) !important;
+        margin-top: 0.8rem !important;
     }
 
-    /* Títulos das Seções */
+    .stButton > button:active {
+        background-color: #B71C1C !important;
+    }
+
+    /* Títulos de Seção */
     .section-header {
-        font-size: 1.1rem;
+        font-size: 1rem;
         font-weight: bold;
         color: #D32F2F;
         border-bottom: 2px solid #D32F2F;
         padding-bottom: 4px;
         margin-top: 15px;
-        margin-bottom: 15px;
+        margin-bottom: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
 
-    /* BARRA FIXA ESTILO APPSHEET NO RODAPÉ */
-    div[element-id="menu_fixo_rodape"], 
+    /* BARRA FIXA INFERIOR (TAB BAR IGUAL AO APPSHEET) */
     div[data-testid="stHorizontalBlock"]:has(button[key^="nav_"]) {
         position: fixed !important;
         bottom: 0 !important;
         left: 0 !important;
         right: 0 !important;
         width: 100% !important;
-        height: 65px !important;
-        background-color: #FFFFFF !important;
-        box-shadow: 0px -4px 12px rgba(0, 0, 0, 0.12) !important;
+        height: 56px !important;
+        background-color: #D32F2F !important; /* Cor da barra inferior do AppSheet */
+        box-shadow: 0px -2px 10px rgba(0, 0, 0, 0.15) !important;
         z-index: 999999 !important;
         display: flex !important;
         align-items: center !important;
         justify-content: space-around !important;
-        padding: 5px 10px !important;
-        border-top: 1px solid #E0E0E0 !important;
+        padding: 0 !important;
+        margin: 0 !important;
     }
 
-    /* Botões individuais dentro do menu inferior */
+    /* Botões de abas dentro do rodapé */
     div[data-testid="stHorizontalBlock"]:has(button[key^="nav_"]) div[data-testid="column"] {
         padding: 0 !important;
         margin: 0 !important;
@@ -123,21 +163,27 @@ st.markdown("""
         background-color: transparent !important;
         border: none !important;
         box-shadow: none !important;
-        color: #666666 !important;
-        font-size: 0.85rem !important;
-        font-weight: 600 !important;
-        height: 50px !important;
-        border-radius: 8px !important;
+        color: rgba(255, 255, 255, 0.7) !important;
+        font-size: 1.2rem !important;
+        height: 56px !important;
+        border-radius: 0px !important;
         display: flex !important;
         flex-direction: column !important;
         align-items: center !important;
         justify-content: center !important;
+        padding: 0 !important;
+        margin: 0 !important;
     }
 
-    /* Estilo do botão ativo */
-    div[data-testid="stHorizontalBlock"]:has(button[key^="nav_"]) button.active-tab {
-        color: #D32F2F !important;
-        background-color: #FFEBEE !important;
+    div[data-testid="stHorizontalBlock"]:has(button[key^="nav_"]) button:hover {
+        color: #FFFFFF !important;
+    }
+
+    /* Destaque da aba selecionada no estilo AppSheet (fundo mais escuro ou borda superior branca) */
+    div[data-testid="stHorizontalBlock"]:has(button[key^="nav_"]) button.tab-active {
+        color: #FFFFFF !important;
+        background-color: rgba(0, 0, 0, 0.15) !important;
+        border-top: 3px solid #FFFFFF !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -160,16 +206,20 @@ def conectar_gsheets():
     return sheet
 
 # =========================================================
-# 6. CABEÇALHO DO RESTAURANTE
+# 6. CABEÇALHO FIXO SUPERIOR NO ESTILO APPSHEET
 # =========================================================
-col_l1, col_l2, col_l3 = st.columns([1, 2, 1])
-with col_l2:
-    if os.path.exists(NOME_ARQUIVO_LOGO):
-        st.image(NOME_ARQUIVO_LOGO, use_container_width=True)
-    else:
-        st.markdown("<h1 style='text-align: center;'>🍲</h1>", unsafe_allow_html=True)
-
-st.markdown("<h3 style='text-align: center; margin-top: -10px; color: #222;'>Don Max Buffet</h3>", unsafe_allow_html=True)
+st.markdown(f"""
+    <div class="appsheet-header">
+        <div class="appsheet-header-title">
+            <span>☰</span>
+            <span>Don Max Buffet</span>
+        </div>
+        <div class="appsheet-header-icons">
+            <span>🔍</span>
+            <span onclick="window.location.reload();">🔄</span>
+        </div>
+    </div>
+""", unsafe_allow_html=True)
 
 # =========================================================
 # 7. CONTEÚDO DAS ABAS NAVEGÁVEIS
@@ -260,9 +310,9 @@ elif st.session_state["aba_ativa"] == "Histórico":
     except Exception as e:
         st.error(f"Erro ao carregar dados do Google Sheets: {e}")
 
-# --- ABA 3: CONFIGURAÇÕES / AJUDA ---
+# --- ABA 3: CONFIGURAÇÕES / SOBRE ---
 elif st.session_state["aba_ativa"] == "Config":
-    st.markdown("<div class='section-header'>⚙️ CONFIGURAÇÕES DO SISTEMA</div>", unsafe_allow_html=True)
+    st.markdown("<div class='section-header'>⚙️ CONFIGURAÇÕES</div>", unsafe_allow_html=True)
     
     st.markdown("""
         **Don Max Buffet v1.0**  
@@ -281,27 +331,24 @@ elif st.session_state["aba_ativa"] == "Config":
         st.success("Conexão atualizada com sucesso!")
 
 # =========================================================
-# 8. RODAPÉ FIXO ESTILO APPSHEET (PERMANECE TRAVADO NA TELA)
+# 8. RODAPÉ FIXO DE NAVEGAÇÃO EM ÍCONES (IDÊNTICO AO APPSHEET)
 # =========================================================
 col_nav1, col_nav2, col_nav3 = st.columns(3)
 
 with col_nav1:
-    pesagem_ativa = st.session_state["aba_ativa"] == "Pesagem"
-    btn_p = st.button("📝\nPesagem", key="nav_pesagem", use_container_width=True)
+    btn_p = st.button("📅\nFormulário", key="nav_pesagem", use_container_width=True)
     if btn_p:
         st.session_state["aba_ativa"] = "Pesagem"
         st.rerun()
 
 with col_nav2:
-    historico_ativo = st.session_state["aba_ativa"] == "Histórico"
-    btn_h = st.button("📊\nHistórico", key="nav_historico", use_container_width=True)
+    btn_h = st.button("📋\nHistórico", key="nav_historico", use_container_width=True)
     if btn_h:
         st.session_state["aba_ativa"] = "Histórico"
         st.rerun()
 
 with col_nav3:
-    config_ativo = st.session_state["aba_ativa"] == "Config"
-    btn_c = st.button("⚙️\nConfig", key="nav_config", use_container_width=True)
+    btn_c = st.button("⚙️\nOpções", key="nav_config", use_container_width=True)
     if btn_c:
         st.session_state["aba_ativa"] = "Config"
         st.rerun()
