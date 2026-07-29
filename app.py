@@ -21,56 +21,29 @@ st.set_page_config(
 )
 
 # =========================================================
-# 3. INJEÇÃO DE CSS REFORÇADO + TAMPÃO DE RODAPÉ
+# 3. INJEÇÃO DE CSS CUSTOMIZADO PARA INTERFACE DA COZINHA
 # =========================================================
 st.markdown("""
     <style>
-    /* 1. Forçar fundo branco unificado em toda a tela */
-    html, body, [data-testid="stApp"], [data-testid="stAppViewContainer"], .stApp {
+    /* Ajustes gerais de layout mobile */
+    html, body, [data-testid="stApp"], .stApp {
         background-color: #FFFFFF !important;
-        margin: 0 !important;
-        padding: 0 !important;
     }
 
-    /* 2. Configurar o contêiner principal para dar espaço no final */
-    [data-testid="stAppViewBlockContainer"], .block-container {
+    .block-container {
         padding-top: 0.8rem !important;
-        padding-bottom: 4rem !important; /* Espaço para não cobrir o botão de salvar */
+        padding-bottom: 3rem !important;
         padding-left: 0.8rem !important;
         padding-right: 0.8rem !important;
         max-width: 100% !important;
-        border: none !important;
-        box-shadow: none !important;
     }
 
-    /* 3. Ocultar Cabeçalho, Menu, Rodapé e Marcas padrão */
-    #MainMenu, header, footer, .stDeployButton {
+    /* Ocultar cabeçalhos/menus padrão */
+    #MainMenu, header, .stDeployButton {
         display: none !important;
-        visibility: hidden !important;
-        height: 0px !important;
     }
 
-    /* 4. Ocultar especificamente o container do rodapé 'Built with Streamlit' */
-    footer, [data-testid="stFooter"], .stFooter, [data-testid="stStatusWidget"] {
-        display: none !important;
-        visibility: hidden !important;
-        opacity: 0 !important;
-    }
-
-    /* 5. TAMPÃO ANTI-RODAPÉ: Cria uma barra branca fixa sobrepondo o Built with Streamlit */
-    body::after {
-        content: "";
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        width: 100vw;
-        height: 50px;
-        background-color: #000000;
-        z-index: 999999 !important;
-        pointer-events: none;
-    }
-
-    /* 6. Aumentar o destaque dos rótulos dos campos */
+    /* Destaque nos rótulos dos campos */
     label {
         font-size: 1.05rem !important;
         font-weight: 700 !important;
@@ -78,20 +51,19 @@ st.markdown("""
         margin-bottom: 0.2rem !important;
     }
 
-    /* 7. Estilizar inputs de texto, data e números */
+    /* Inputs numéricos e seletores */
     div[data-baseweb="input"] input, div[data-baseweb="select"] {
         font-size: 1.15rem !important;
         padding: 10px !important;
         border-radius: 8px !important;
     }
 
-    /* 8. Botões de soma/subtração maiores */
     div[data-baseweb="input"] button {
         width: 38px !important;
         height: 38px !important;
     }
 
-    /* 9. Botão Principal - Vermelho Destaque Don Max */
+    /* Botão Principal - Vermelho Don Max */
     .stButton > button {
         width: 100% !important;
         height: 3.8rem !important;
@@ -103,7 +75,7 @@ st.markdown("""
         border: none !important;
         box-shadow: 0px 4px 12px rgba(211, 47, 47, 0.35) !important;
         margin-top: 1rem !important;
-        margin-bottom: 1.5rem !important;
+        margin-bottom: 1rem !important;
     }
 
     .stButton > button:active {
@@ -111,7 +83,6 @@ st.markdown("""
         transform: scale(0.98);
     }
 
-    /* 10. Títulos das Seções */
     .section-header {
         font-size: 1.1rem;
         font-weight: bold;
