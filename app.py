@@ -22,7 +22,7 @@ if "aba_ativa" not in st.session_state:
     st.session_state["aba_ativa"] = "pesagem"
 
 # =========================================================
-# 2. CSS CUSTOMIZADO (RODAPÉ CONGELADO + DESIGN MODERNO)
+# 2. CSS CUSTOMIZADO (INJEÇÃO DIRETA NO BLOCO DE COLUNAS)
 # =========================================================
 st.markdown("""
     <style>
@@ -84,11 +84,11 @@ st.markdown("""
     }
 
     /* =========================================================
-       NHOQUE/CÁPSULA FIXA DO MENU (NOVA ABORDAGEM DE ENVOLTÓRIO)
+       TRAVAMENTO E ESTILIZAÇÃO DO BLOCO DE COLUNAS DO MENU
        ========================================================= */
-    .fixed-nav-wrapper {
+    div[data-testid="stHorizontalBlock"]:has(button[key^="nav_menu_"]) {
         position: fixed !important;
-        bottom: 80px !important; /* TRAVADO NOS 80PX */
+        bottom: 80px !important; /* TRAVADO NOS 80PX DO RODAPÉ */
         left: 50% !important;
         transform: translateX(-50%) !important;
         width: 280px !important;
@@ -98,23 +98,25 @@ st.markdown("""
         box-shadow: 0px 8px 25px rgba(0, 0, 0, 0.35) !important;
         z-index: 999999 !important;
         display: flex !important;
+        flex-direction: row !important;
         align-items: center !important;
         justify-content: space-around !important;
         padding: 0 8px !important;
         border: 2px solid #FFFFFF !important;
     }
 
-    /* FORÇA A BARRA FIXA DO STREAMLIT A FICAR CONGELADA */
-    div[element-id="menu_flutuante_fixo"] {
-        position: fixed !important;
-        bottom: 80px !important;
-        left: 50% !important;
-        transform: translateX(-50%) !important;
-        z-index: 999999 !important;
+    /* Garante que as colunas fiquem alinhadas dentro da cápsula */
+    div[data-testid="stHorizontalBlock"]:has(button[key^="nav_menu_"]) > div {
+        flex: 1 1 0% !important;
+        width: 33.33% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        display: flex !important;
+        justify-content: center !important;
     }
 
-    /* Estilização dos botões nativos dentro do menu */
-    .fixed-nav-wrapper button {
+    /* Estilização dos botões dentro do menu */
+    div[data-testid="stHorizontalBlock"]:has(button[key^="nav_menu_"]) button {
         width: 70px !important;
         height: 44px !important;
         background-color: transparent !important;
@@ -131,7 +133,7 @@ st.markdown("""
     }
 
     /* Botão Ativo com Caixinha Branca Flutuante */
-    .fixed-nav-wrapper button.active-btn {
+    div[data-testid="stHorizontalBlock"]:has(button[key^="nav_menu_"]) button.active-btn {
         background-color: #FFFFFF !important;
         color: #D32F2F !important;
         box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2) !important;
@@ -203,7 +205,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # =========================================================
-# 5. CONTEÚDO DA TELA
+# 5. CONTEÚDO DA TELA (ANIMADO)
 # =========================================================
 st.markdown("<div class='main-content-animated'>", unsafe_allow_html=True)
 
@@ -272,40 +274,33 @@ elif aba == "config":
 st.markdown("</div>", unsafe_allow_html=True)
 
 # =========================================================
-# 6. NOVO CONTAINER FIXO E INQUEBRÁVEL NO RODAPÉ (80PX)
+# 6. MENU NATIVO FIXO (CÁPSULA REDONDA A 80PX COM ÍCONES INSIDE)
 # =========================================================
-# Usamos um container nativo isolado envolvido pela classe CSS fixa
-st.markdown('<div class="fixed-nav-wrapper">', unsafe_allow_html=True)
-c1, c2, c3 = st.columns(3)
+col_m1, col_m2, col_m3 = st.columns(3)
 
-with c1:
-    btn_1 = st.button("🏠", key="btn_pesagem")
-    if btn_1:
+with col_m1:
+    if st.button("🏠", key="nav_menu_pesagem"):
         st.session_state["aba_ativa"] = "pesagem"
         st.rerun()
 
-with c2:
-    btn_2 = st.button("📋", key="btn_historico")
-    if btn_2:
+with col_m2:
+    if st.button("📋", key="nav_menu_historico"):
         st.session_state["aba_ativa"] = "historico"
         st.rerun()
 
-with c3:
-    btn_3 = st.button("👤", key="btn_config")
-    if btn_3:
+with col_m3:
+    if st.button("👤", key="nav_menu_config"):
         st.session_state["aba_ativa"] = "config"
         st.rerun()
 
-st.markdown('</div>', unsafe_allow_html=True)
-
-# Aplicação imediata da caixinha branca no ícone ativo sem quebrar o layout
+# JS para destacar o botão ativo com a caixa branca
 st.components.v1.html(f"""
     <script>
     setTimeout(function() {{
         const parentDoc = window.parent.document;
-        const wrapper = parentDoc.querySelector('.fixed-nav-wrapper');
-        if (wrapper) {{
-            const btns = wrapper.querySelectorAll('button');
+        const navContainer = parentDoc.querySelector('div[data-testid="stHorizontalBlock"]:has(button[key^="nav_menu_"])');
+        if (navContainer) {{
+            const btns = navContainer.querySelectorAll('button');
             btns.forEach(b => b.classList.remove('active-btn'));
             
             if ("{aba}" === "pesagem" && btns[0]) {{
