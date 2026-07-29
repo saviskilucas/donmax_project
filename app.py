@@ -21,13 +21,13 @@ st.set_page_config(
 )
 
 # =========================================================
-# 3. GERENCIAMENTO DE ESTADO DA NAVEGAÇÃO
+# 3. LEITURA E GERENCIAMENTO DA ABA ATIVA VIA URL
 # =========================================================
-if "aba_ativa" not in st.session_state:
-    st.session_state["aba_ativa"] = "Pesagem"
+query_params = st.query_params
+aba_atual = query_params.get("aba", "pesagem")
 
 # =========================================================
-# 4. INJEÇÃO DE CSS CUSTOMIZADO (BARRA TOPO & RODAPÉ CONGELADOS)
+# 4. INJEÇÃO DE CSS CUSTOMIZADO (BARRAS DE TOPO E RODAPÉ IDÊNTICAS)
 # =========================================================
 st.markdown("""
     <style>
@@ -36,7 +36,7 @@ st.markdown("""
         background-color: #F4F5F7 !important;
     }
 
-    /* Área central de conteúdo com recuo para não ficar atrás dos menus congelados */
+    /* Recuo central para não sobrepor o conteúdo nas barras congeladas */
     .block-container {
         padding-top: 4.2rem !important;
         padding-bottom: 5.5rem !important;
@@ -45,7 +45,7 @@ st.markdown("""
         max-width: 100% !important;
     }
 
-    /* Ocultar elementos padrão do Streamlit */
+    /* Ocultar elementos nativos do Streamlit */
     #MainMenu, header, .stDeployButton, footer {
         display: none !important;
     }
@@ -85,62 +85,48 @@ st.markdown("""
     }
 
     /* =========================================================
-       2. BARRA INFERIOR CONGELADA (RODAPÉ) - IGUAL AO TOPO
+       2. BARRA INFERIOR CONGELADA (RODAPÉ ESTILO APPSHEET)
        ========================================================= */
-    div[data-testid="stHorizontalBlock"]:has(button[key^="nav_"]) {
-        position: fixed !important;
-        bottom: 0 !important;
-        left: 0 !important;
-        right: 0 !important;
-        width: 100vw !important;
-        height: 60px !important;
-        background-color: #D32F2F !important;
-        box-shadow: 0px -2px 8px rgba(0,0,0,0.2) !important;
+    .appsheet-footer {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        width: 100vw;
+        height: 60px;
+        background-color: #D32F2F;
+        color: #FFFFFF;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-around;
         z-index: 999999 !important;
-
-        /* Força alinhamento estritamente horizontal dos botões em 1 linha */
-        display: flex !important;
-        flex-direction: row !important;
-        align-items: center !important;
-        justify-content: space-between !important;
-        padding: 0 !important;
-        margin: 0 !important;
+        box-shadow: 0px -2px 8px rgba(0,0,0,0.2);
     }
 
-    /* Garante que cada coluna ocupe 1/3 exato da largura */
-    div[data-testid="stHorizontalBlock"]:has(button[key^="nav_"]) > div {
-        flex: 1 1 0% !important;
-        width: 33.33% !important;
-        min-width: 0 !important;
-        padding: 0 !important;
-        margin: 0 !important;
-    }
-
-    /* Estilo dos Botões do Rodapé */
-    div[data-testid="stHorizontalBlock"]:has(button[key^="nav_"]) button {
-        width: 100% !important;
-        height: 60px !important;
-        background-color: transparent !important;
-        border: none !important;
-        border-radius: 0px !important;
-        box-shadow: none !important;
+    .appsheet-footer-item {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none !important;
         color: rgba(255, 255, 255, 0.75) !important;
-        font-size: 0.85rem !important;
-        font-weight: 600 !important;
-        display: flex !important;
-        flex-direction: column !important;
-        align-items: center !important;
-        justify-content: center !important;
-        padding: 0 !important;
-        margin: 0 !important;
-        white-space: pre !important;
+        font-size: 0.8rem;
+        font-weight: 600;
+        height: 100%;
+        transition: background 0.2s;
     }
 
-    /* Efeito de aba ativa no rodapé */
-    div[data-testid="stHorizontalBlock"]:has(button[key^="nav_"]) button:active,
-    div[data-testid="stHorizontalBlock"]:has(button[key^="nav_"]) button:focus {
+    .appsheet-footer-item.active {
         color: #FFFFFF !important;
-        background-color: rgba(0, 0, 0, 0.2) !important;
+        background-color: rgba(0, 0, 0, 0.2);
+        border-top: 3px solid #FFFFFF;
+    }
+
+    .appsheet-footer-icon {
+        font-size: 1.2rem;
+        margin-bottom: 2px;
     }
 
     /* =========================================================
@@ -220,7 +206,7 @@ st.markdown("""
         </div>
         <div class="appsheet-header-icons">
             <span>🔍</span>
-            <span>🔄</span>
+            <span onclick="window.location.reload();" style="cursor:pointer;">🔄</span>
         </div>
     </div>
 """, unsafe_allow_html=True)
@@ -230,7 +216,7 @@ st.markdown("""
 # =========================================================
 
 # --- ABA 1: FORMULÁRIO DE PESAGEM ---
-if st.session_state["aba_ativa"] == "Pesagem":
+if aba_atual == "pesagem":
     with st.form("form_pesagem", clear_on_submit=True):
 
         st.markdown("<div class='section-header'>1. INFORMAÇÕES DO DIA</div>", unsafe_allow_html=True)
@@ -289,7 +275,7 @@ if st.session_state["aba_ativa"] == "Pesagem":
                     st.error(f"❌ Erro ao salvar na planilha: {e}")
 
 # --- ABA 2: HISTÓRICO DA PLANILHA ---
-elif st.session_state["aba_ativa"] == "Histórico":
+elif aba_atual == "historico":
     st.markdown("<div class='section-header'>📊 ÚLTIMOS LANÇAMENTOS</div>", unsafe_allow_html=True)
     
     try:
@@ -315,7 +301,7 @@ elif st.session_state["aba_ativa"] == "Histórico":
         st.error(f"Erro ao carregar dados do Google Sheets: {e}")
 
 # --- ABA 3: CONFIGURAÇÕES ---
-elif st.session_state["aba_ativa"] == "Config":
+elif aba_atual == "config":
     st.markdown("<div class='section-header'>⚙️ CONFIGURAÇÕES</div>", unsafe_allow_html=True)
     
     st.markdown("""
@@ -335,24 +321,25 @@ elif st.session_state["aba_ativa"] == "Config":
         st.success("Conexão atualizada com sucesso!")
 
 # =========================================================
-# 8. BARRA INFERIOR CONGELADA (RODAPÉ 100% FIXO E HORIZONTAL)
+# 8. BARRA INFERIOR CONGELADA (RODAPÉ 100% IDENTICO AO TOPO)
 # =========================================================
-col_nav1, col_nav2, col_nav3 = st.columns(3)
+active_pesagem = "active" if aba_atual == "pesagem" else ""
+active_historico = "active" if aba_atual == "historico" else ""
+active_config = "active" if aba_atual == "config" else ""
 
-with col_nav1:
-    icon_p = "📅\nFormulário" if st.session_state["aba_ativa"] == "Pesagem" else "📅\nFormulário"
-    if st.button(icon_p, key="nav_pesagem"):
-        st.session_state["aba_ativa"] = "Pesagem"
-        st.rerun()
-
-with col_nav2:
-    icon_h = "📋\nHistórico" if st.session_state["aba_ativa"] == "Histórico" else "📋\nHistórico"
-    if st.button(icon_h, key="nav_historico"):
-        st.session_state["aba_ativa"] = "Histórico"
-        st.rerun()
-
-with col_nav3:
-    icon_c = "⚙️\nOpções" if st.session_state["aba_ativa"] == "Config" else "⚙️\nOpções"
-    if st.button(icon_c, key="nav_config"):
-        st.session_state["aba_ativa"] = "Config"
-        st.rerun()
+st.markdown(f"""
+    <div class="appsheet-footer">
+        <a href="?aba=pesagem" target="_self" class="appsheet-footer-item {active_pesagem}">
+            <span class="appsheet-footer-icon">📅</span>
+            <span>Formulário</span>
+        </a>
+        <a href="?aba=historico" target="_self" class="appsheet-footer-item {active_historico}">
+            <span class="appsheet-footer-icon">📋</span>
+            <span>Histórico</span>
+        </a>
+        <a href="?aba=config" target="_self" class="appsheet-footer-item {active_config}">
+            <span class="appsheet-footer-icon">⚙️</span>
+            <span>Opções</span>
+        </a>
+    </div>
+""", unsafe_allow_html=True)
