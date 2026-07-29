@@ -17,39 +17,56 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Gerenciamento da aba via session_state
+# Gerenciamento de Estado sem recarregamento da URL
 if "aba_ativa" not in st.session_state:
     st.session_state["aba_ativa"] = "pesagem"
 
-# Captura evento de clique nos botões do menu interno
-if "aba" in st.query_params:
-    st.session_state["aba_ativa"] = st.query_params["aba"]
-
 # =========================================================
-# 2. INJEÇÃO DE CSS DA TELA E DO MENU FIXO INTERNO
+# 2. INJEÇÃO DE CSS (ANIMAÇÃO DE PÁGINA E DESIGN MOBILE)
 # =========================================================
 st.markdown("""
     <style>
-    /* Configuração Geral da Tela Mobile */
+    /* 1. Configuração de Fundo sem Pistas Escuras */
     html, body, [data-testid="stApp"], .stApp {
         background-color: #F8F9FA !important;
     }
 
+    /* Recuo inferior ajustado para a margem de 80px */
     .block-container {
         padding-top: 3.8rem !important;
-        padding-bottom: 5.0rem !important;
+        padding-bottom: 7.5rem !important; 
         padding-left: 0.8rem !important;
         padding-right: 0.8rem !important;
         max-width: 100% !important;
     }
 
-    /* Ocultar elementos padrão do Streamlit */
+    /* Ocultar elementos nativos do Streamlit */
     #MainMenu, header, .stDeployButton, footer, [data-testid="stFooter"] {
         display: none !important;
         visibility: hidden !important;
     }
 
-    /* BARRA SUPERIOR FIXA */
+    /* =========================================================
+       2. ANIMAÇÃO DE TRANSIÇÃO SUAVE ENTRE ABAS (FADE-IN)
+       ========================================================= */
+    .main-content-animated {
+        animation: fadeInSlide 0.25s ease-out forwards;
+    }
+
+    @keyframes fadeInSlide {
+        from {
+            opacity: 0;
+            transform: translateY(8px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* =========================================================
+       3. BARRA SUPERIOR FIXA
+       ========================================================= */
     .modern-header {
         position: fixed;
         top: 0;
@@ -76,47 +93,61 @@ st.markdown("""
         gap: 10px;
     }
 
-    /* MENU FLUTUANTE FIXO NO MEIO DA TELA (INJETADO NATIVAMENTE) */
-    .middle-navbar-internal {
+    /* =========================================================
+       4. BARRA DE MENU NATIVA EM FLUXO ÚNICO (SISTEMA DE COLUNAS)
+       ========================================================= */
+    div[data-testid="stHorizontalBlock"]:has(button[key^="btn_nav_"]) {
         position: fixed !important;
-        bottom: 80px !important; /* Trava a 15px do rodapé da tela */
+        bottom: 80px !important; /* SUA CONFIGURAÇÃO DE 80PX */
         left: 50% !important;
-        transform: translateX(-50%) !important; /* Centraliza na horizontal */
+        transform: translateX(-50%) !important;
         width: 280px !important;
         height: 60px !important;
         background-color: #D32F2F !important;
         border-radius: 30px !important;
-        box-shadow: 0px 8px 25px rgba(0, 0, 0, 0.4) !important;
+        box-shadow: 0px 8px 25px rgba(0, 0, 0, 0.35) !important;
         z-index: 999999 !important;
         display: flex !important;
+        flex-direction: row !important;
         align-items: center !important;
         justify-content: space-around !important;
-        padding: 0 10px !important;
+        padding: 0 8px !important;
         border: 2px solid #FFFFFF !important;
     }
 
-    .nav-btn-int {
-        width: 70px;
-        height: 44px;
-        background: transparent;
-        border: none;
-        border-radius: 18px;
-        color: rgba(255, 255, 255, 0.8);
-        font-size: 1.3rem;
-        text-decoration: none !important;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.2s ease;
+    div[data-testid="stHorizontalBlock"]:has(button[key^="btn_nav_"]) > div {
+        flex: 1 1 0% !important;
+        width: 33.33% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        display: flex !important;
+        justify-content: center !important;
     }
 
-    .nav-btn-int.active {
+    div[data-testid="stHorizontalBlock"]:has(button[key^="btn_nav_"]) button {
+        width: 70px !important;
+        height: 44px !important;
+        background-color: transparent !important;
+        border: none !important;
+        border-radius: 18px !important;
+        color: rgba(255, 255, 255, 0.8) !important;
+        font-size: 1.3rem !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        transition: all 0.2s ease-in-out !important;
+    }
+
+    /* Botão Selecionado com Caixinha Branca */
+    div[data-testid="stHorizontalBlock"]:has(button[key^="btn_nav_"]) button.btn-active-tab {
         background-color: #FFFFFF !important;
         color: #D32F2F !important;
         box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2) !important;
     }
 
-    /* CAMPOS DO FORMULÁRIO */
+    /* =========================================================
+       5. ESTILIZAÇÃO DOS FORMULÁRIOS
+       ========================================================= */
     label {
         font-size: 0.98rem !important;
         font-weight: 700 !important;
@@ -182,24 +213,12 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # =========================================================
-# 5. BARRA DE MENU NO MEIO DA TELA (INJETADA NO PYTHON)
+# 5. CONTEÚDO DAS ABAS COM ENVOLVET DE ANIMAÇÃO
 # =========================================================
+st.markdown("<div class='main-content-animated'>", unsafe_allow_html=True)
+
 aba = st.session_state["aba_ativa"]
-act_p = "active" if aba == "pesagem" else ""
-act_h = "active" if aba == "historico" else ""
-act_c = "active" if aba == "config" else ""
 
-st.markdown(f"""
-    <div class="middle-navbar-internal">
-        <a href="?aba=pesagem" target="_self" class="nav-btn-int {act_p}">🏠</a>
-        <a href="?aba=historico" target="_self" class="nav-btn-int {act_h}">📋</a>
-        <a href="?aba=config" target="_self" class="nav-btn-int {act_c}">👤</a>
-    </div>
-""", unsafe_allow_html=True)
-
-# =========================================================
-# 6. EXIBIÇÃO DAS ABAS
-# =========================================================
 if aba == "pesagem":
     with st.form("form_pesagem", clear_on_submit=True):
         st.markdown("<div class='section-header'>1. INFORMAÇÕES DO DIA</div>", unsafe_allow_html=True)
@@ -259,3 +278,47 @@ elif aba == "config":
     if st.button("🔄 Atualizar Conexão com a Planilha"):
         st.cache_resource.clear()
         st.success("Conexão atualizada com sucesso!")
+
+st.markdown("</div>", unsafe_allow_html=True) # Fim do container animado
+
+# =========================================================
+# 6. RODAPÉ FIXO COMPACTO (80PX) COM RE-RENDER INSTANTÂNEO
+# =========================================================
+col_nav1, col_nav2, col_nav3 = st.columns(3)
+
+with col_nav1:
+    if st.button("🏠", key="btn_nav_1"):
+        st.session_state["aba_ativa"] = "pesagem"
+        st.rerun()
+
+with col_nav2:
+    if st.button("📋", key="btn_nav_2"):
+        st.session_state["aba_ativa"] = "historico"
+        st.rerun()
+
+with col_nav3:
+    if st.button("👤", key="btn_nav_3"):
+        st.session_state["aba_ativa"] = "config"
+        st.rerun()
+
+# JS Instantâneo para aplicar a caixinha branca no ícone ativo sem piscar
+st.components.v1.html(f"""
+    <script>
+    setTimeout(function() {{
+        const parentDoc = window.parent.document;
+        const navContainer = parentDoc.querySelector('div[data-testid="stHorizontalBlock"]:has(button[key^="btn_nav_"])');
+        if (navContainer) {{
+            const btns = navContainer.querySelectorAll('button');
+            btns.forEach(b => b.classList.remove('btn-active-tab'));
+            
+            if ("{aba}" === "pesagem" && btns[0]) {{
+                btns[0].classList.add('btn-active-tab');
+            }} else if ("{aba}" === "historico" && btns[1]) {{
+                btns[1].classList.add('btn-active-tab');
+            }} else if ("{aba}" === "config" && btns[2]) {{
+                btns[2].classList.add('btn-active-tab');
+            }}
+        }}
+    }}, 20);
+    </script>
+""", height=0)
