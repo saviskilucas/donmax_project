@@ -7,11 +7,10 @@ import os
 import base64
 
 # =========================================================
-# 1. CARREGAMENTO E CONFIGURAÇÃO DA LOGO LOCAL (PNG)
+# 1. CARREGAMENTO DA LOGO LOCAL (PNG EM BASE64)
 # =========================================================
 NOME_ARQUIVO_LOGO = "logo.png"
 
-# Converte a logo local em Base64 para garantir a exibição no HTML/JS
 logo_b64 = ""
 if os.path.exists(NOME_ARQUIVO_LOGO):
     with open(NOME_ARQUIVO_LOGO, "rb") as f:
@@ -31,58 +30,95 @@ st.set_page_config(
 )
 
 # =========================================================
-# 3. INJEÇÃO DE MANIFESTO PWA VIA JAVASCRIPT (SOLUÇÃO DE ÍCONE E NOME)
+# 3. SCRIPT DE SOBRESCRITA FORÇADA DE MANIFESTO E ÍCONE (REMOVE STREAMLIT)
 # =========================================================
 if logo_src:
-    # Cria o manifesto PWA dinâmico embutido
-    manifest_script = f"""
+    pwa_override_js = f"""
         <script>
-            // 1. Alterar o título do aplicativo no navegador
-            document.title = "Don Max - Buffet";
+        (function() {{
+            const appName = "Don Max";
+            const appFullName = "Don Max Buffet";
+            const logoBase64 = "{logo_src}";
 
-            # 2. Criar e injetar o Web App Manifest dinamicamente
-            const myManifest = {{
-                "short_name": "Don Max",
-                "name": "Don Max Buffet",
-                "icons": [
-                    {{
-                        "src": "{logo_src}",
-                        "sizes": "192x192 512x512",
-                        "type": "image/png",
-                        "purpose": "any maskable"
-                    }}
-                ],
-                "start_url": ".",
-                "background_color": "#D32F2F",
-                "theme_color": "#D32F2F",
-                "display": "standalone"
-            }};
+            // 1. Alterar o título da aba/janela no pai do iframe
+            try {{
+                window.top.document.title = appFullName;
+            }} catch(e) {{
+                document.title = appFullName;
+            }}
 
-            const stringManifest = JSON.stringify(myManifest);
-            const blob = new Blob([stringManifest], {{type: 'application/json'}});
-            const manifestURL = URL.createObjectURL(blob);
+            // 2. Função para deletar manifestos e ícones do Streamlit e injetar os do Don Max
+            function forceDonMaxBranding() {{
+                const targetDoc = window.top.document || document;
+                
+                // Remover qualquer manifest pré-existente do Streamlit
+                const oldManifests = targetDoc.querySelectorAll('link[rel="manifest"]');
+                oldManifests.forEach(el => el.remove());
+
+                // Remover ícones pré-existentes do Streamlit
+                const oldIcons = targetDoc.querySelectorAll('link[rel*="icon"]');
+                oldIcons.forEach(el => el.remove());
+
+                // Criar o novo manifesto do Don Max
+                const manifestObj = {{
+                    "short_name": appName,
+                    "name": appFullName,
+                    "icons": [
+                        {{
+                            "src": logoBase64,
+                            "sizes": "192x192 512x512",
+                            "type": "image/png",
+                            "purpose": "any maskable"
+                        }}
+                    ],
+                    "start_url": ".",
+                    "background_color": "#D32F2F",
+                    "theme_color": "#D32F2F",
+                    "display": "standalone"
+                }};
+
+                const blob = new Blob([JSON.stringify(manifestObj)], {{type: 'application/json'}});
+                const manifestURL = URL.createObjectURL(blob);
+
+                // Injetar novo manifesto
+                const newManifest = targetDoc.createElement('link');
+                newManifest.rel = 'manifest';
+                newManifest.href = manifestURL;
+                targetDoc.head.appendChild(newManifest);
+
+                // Injetar Apple Touch Icon (iOS Safari)
+                const appleIcon = targetDoc.createElement('link');
+                appleIcon.rel = 'apple-touch-icon';
+                appleIcon.href = logoBase64;
+                targetDoc.head.appendChild(appleIcon);
+
+                // Injetar Favicon (Android / Chrome)
+                const favIcon = targetDoc.createElement('link');
+                favIcon.rel = 'icon';
+                favIcon.type = 'image/png';
+                favIcon.href = logoBase64;
+                targetDoc.head.appendChild(favIcon);
+            }}
+
+            // Executar imediatamente e monitorar alterações no DOM
+            forceDonMaxBranding();
             
-            let manifestLink = document.querySelector('link[rel="manifest"]');
-            if (manifestLink) {{
-                manifestLink.setAttribute('href', manifestURL);
-            }} else {{
-                manifestLink = document.createElement('link');
-                manifestLink.setAttribute('rel', 'manifest');
-                manifestLink.setAttribute('href', manifestURL);
-                document.head.appendChild(manifestLink);
+            // MutationObserver para barrar qualquer recriação de tags pelo Streamlit
+            const observer = new MutationObserver(function() {{
+                const targetDoc = window.top.document || document;
+                if (!targetDoc.querySelector('link[rel="apple-touch-icon"]')) {{
+                    forceDonMaxBranding();
+                }}
+            }});
+            
+            const targetDoc = window.top.document || document;
+            if (targetDoc.head) {{
+                observer.observe(targetDoc.head, {{ childList: true, subtree: true }});
             }}
-
-            // 3. Atualizar as tags Apple Touch Icon (iOS Safari)
-            let appleIcon = document.querySelector('link[rel="apple-touch-icon"]');
-            if (!appleIcon) {{
-                appleIcon = document.createElement('link');
-                appleIcon.setAttribute('rel', 'apple-touch-icon');
-                document.head.appendChild(appleIcon);
-            }}
-            appleIcon.setAttribute('href', '{logo_src}');
+        }})();
         </script>
     """
-    st.components.v1.html(manifest_script, height=0)
+    st.components.v1.html(pwa_override_js, height=0)
 
 # =========================================================
 # 4. INJEÇÃO DE CSS CUSTOMIZADO (Mobile PWA Style)

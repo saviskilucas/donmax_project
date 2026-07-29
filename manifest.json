@@ -1,0 +1,24 @@
+{
+  "short_name": "Don Max",
+  "name": "Don Max Buffet",
+  "description": "Controle Diário de Pesagem e Buffet - Don Max",
+  "icons": [
+    {
+      "src": "logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "./index.html",
+  "background_color": "#D32F2F",
+  "theme_color": "#D32F2F",
+  "display": "standalone",
+  "orientation": "portrait"
+}
