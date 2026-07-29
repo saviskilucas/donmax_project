@@ -17,36 +17,36 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Estado de navegação interno (Sem F5 / Sem Tela Preta)
+# Gerenciamento de Estado da Aba Ativa
 if "aba_ativa" not in st.session_state:
     st.session_state["aba_ativa"] = "pesagem"
 
 # =========================================================
-# 2. INJEÇÃO DE CSS (MENU NATIVO FIXO A 80PX & TRANSIÇÃO)
+# 2. CSS CUSTOMIZADO (RODAPÉ CONGELADO + DESIGN MODERNO)
 # =========================================================
 st.markdown("""
     <style>
-    /* Configuração do Fundo da Aplicação */
+    /* Configuração de Fundo */
     html, body, [data-testid="stApp"], .stApp {
         background-color: #F8F9FA !important;
     }
 
-    /* Recuo inferior de segurança para o formulário */
+    /* Margem para o formulário rolar sem ficar escondido pelo menu */
     .block-container {
         padding-top: 3.8rem !important;
-        padding-bottom: 8.5rem !important; 
+        padding-bottom: 9.0rem !important; 
         padding-left: 0.8rem !important;
         padding-right: 0.8rem !important;
         max-width: 100% !important;
     }
 
-    /* Ocultar cabeçalho e rodapé padrão do Streamlit */
+    /* Ocultar elementos padrão do Streamlit */
     #MainMenu, header, .stDeployButton, footer, [data-testid="stFooter"] {
         display: none !important;
         visibility: hidden !important;
     }
 
-    /* ANIMAÇÃO DE TRANSIÇÃO SUAVE (SEM PISCAR TELA) */
+    /* TRANSIÇÃO SUAVE AO TROCAR DE TELA */
     .main-content-animated {
         animation: fadeIn 0.2s ease-out forwards;
     }
@@ -84,11 +84,11 @@ st.markdown("""
     }
 
     /* =========================================================
-       INJEÇÃO DE ESTILO INQUEBRÁVEL PARA O MENU A 80PX
+       NHOQUE/CÁPSULA FIXA DO MENU (NOVA ABORDAGEM DE ENVOLTÓRIO)
        ========================================================= */
-    div[data-testid="stHorizontalBlock"]:has(button[key^="nav_btn_"]) {
+    .fixed-nav-wrapper {
         position: fixed !important;
-        bottom: 80px !important; /* TRAVADO A 80PX DO RODAPÉ */
+        bottom: 80px !important; /* TRAVADO NOS 80PX */
         left: 50% !important;
         transform: translateX(-50%) !important;
         width: 280px !important;
@@ -98,23 +98,23 @@ st.markdown("""
         box-shadow: 0px 8px 25px rgba(0, 0, 0, 0.35) !important;
         z-index: 999999 !important;
         display: flex !important;
-        flex-direction: row !important;
         align-items: center !important;
         justify-content: space-around !important;
         padding: 0 8px !important;
         border: 2px solid #FFFFFF !important;
     }
 
-    div[data-testid="stHorizontalBlock"]:has(button[key^="nav_btn_"]) > div {
-        flex: 1 1 0% !important;
-        width: 33.33% !important;
-        padding: 0 !important;
-        margin: 0 !important;
-        display: flex !important;
-        justify-content: center !important;
+    /* FORÇA A BARRA FIXA DO STREAMLIT A FICAR CONGELADA */
+    div[element-id="menu_flutuante_fixo"] {
+        position: fixed !important;
+        bottom: 80px !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        z-index: 999999 !important;
     }
 
-    div[data-testid="stHorizontalBlock"]:has(button[key^="nav_btn_"]) button {
+    /* Estilização dos botões nativos dentro do menu */
+    .fixed-nav-wrapper button {
         width: 70px !important;
         height: 44px !important;
         background-color: transparent !important;
@@ -130,14 +130,14 @@ st.markdown("""
         justify-content: center !important;
     }
 
-    /* Estilo do Botão Ativo com Caixinha Branca Flutuante */
-    div[data-testid="stHorizontalBlock"]:has(button[key^="nav_btn_"]) button.active-nav-btn {
+    /* Botão Ativo com Caixinha Branca Flutuante */
+    .fixed-nav-wrapper button.active-btn {
         background-color: #FFFFFF !important;
         color: #D32F2F !important;
         box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2) !important;
     }
 
-    /* CAMPOS DO FORMULÁRIO */
+    /* ESTILIZAÇÃO DOS FORMULÁRIOS */
     label {
         font-size: 0.98rem !important;
         font-weight: 700 !important;
@@ -203,7 +203,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # =========================================================
-# 5. CONTEÚDO DAS ABAS
+# 5. CONTEÚDO DA TELA
 # =========================================================
 st.markdown("<div class='main-content-animated'>", unsafe_allow_html=True)
 
@@ -272,41 +272,50 @@ elif aba == "config":
 st.markdown("</div>", unsafe_allow_html=True)
 
 # =========================================================
-# 6. RODAPÉ FIXO NATIVO (IMPEDIDO DE SUMIR + SEM TELA PRETA)
+# 6. NOVO CONTAINER FIXO E INQUEBRÁVEL NO RODAPÉ (80PX)
 # =========================================================
-col1, col2, col3 = st.columns(3)
+# Usamos um container nativo isolado envolvido pela classe CSS fixa
+st.markdown('<div class="fixed-nav-wrapper">', unsafe_allow_html=True)
+c1, c2, c3 = st.columns(3)
 
-with col1:
-    if st.button("🏠", key="nav_btn_pesagem"):
+with c1:
+    btn_1 = st.button("🏠", key="btn_pesagem")
+    if btn_1:
         st.session_state["aba_ativa"] = "pesagem"
         st.rerun()
 
-with col2:
-    if st.button("📋", key="nav_btn_historico"):
+with c2:
+    btn_2 = st.button("📋", key="btn_historico")
+    if btn_2:
         st.session_state["aba_ativa"] = "historico"
         st.rerun()
 
-with col3:
-    if st.button("👤", key="nav_btn_config"):
+with c3:
+    btn_3 = st.button("👤", key="btn_config")
+    if btn_3:
         st.session_state["aba_ativa"] = "config"
         st.rerun()
 
-# Aplica a caixinha branca no ícone ativo via classe estrita
-js_active = f"""
+st.markdown('</div>', unsafe_allow_html=True)
+
+# Aplicação imediata da caixinha branca no ícone ativo sem quebrar o layout
+st.components.v1.html(f"""
     <script>
     setTimeout(function() {{
         const parentDoc = window.parent.document;
-        const btns = parentDoc.querySelectorAll('button[key^="nav_btn_"]');
-        btns.forEach(b => b.classList.remove('active-nav-btn'));
-        
-        if ("{aba}" === "pesagem" && btns[0]) {{
-            btns[0].classList.add('active-nav-btn');
-        }} else if ("{aba}" === "historico" && btns[1]) {{
-            btns[1].classList.add('active-nav-btn');
-        }} else if ("{aba}" === "config" && btns[2]) {{
-            btns[2].classList.add('active-nav-btn');
+        const wrapper = parentDoc.querySelector('.fixed-nav-wrapper');
+        if (wrapper) {{
+            const btns = wrapper.querySelectorAll('button');
+            btns.forEach(b => b.classList.remove('active-btn'));
+            
+            if ("{aba}" === "pesagem" && btns[0]) {{
+                btns[0].classList.add('active-btn');
+            }} else if ("{aba}" === "historico" && btns[1]) {{
+                btns[1].classList.add('active-btn');
+            }} else if ("{aba}" === "config" && btns[2]) {{
+                btns[2].classList.add('active-btn');
+            }}
         }}
-    }}, 30);
+    }}, 20);
     </script>
-"""
-st.components.v1.html(js_active, height=0)
+""", height=0)
