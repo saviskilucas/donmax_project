@@ -3,19 +3,26 @@ import pandas as pd
 import gspread
 from google.oauth2.service_account import Credentials
 from datetime import date
+import os
 
 # =========================================================
-# 1. CONFIGURAÇÃO DA PÁGINA (Layout Mobile Compacto)
+# 1. NOME DA LOGO LOCAL NO REPOSITÓRIO
+# =========================================================
+# Certifique-se de subir o arquivo com o nome 'logo.png' na raiz do seu repositório do GitHub
+NOME_ARQUIVO_LOGO = "logo.png"
+
+# =========================================================
+# 2. CONFIGURAÇÃO DA PÁGINA (PWA & MOBILE LAYOUT)
 # =========================================================
 st.set_page_config(
     page_title="Don Max - Buffet",
-    page_icon="🍲",
+    page_icon=NOME_ARQUIVO_LOGO if os.path.exists(NOME_ARQUIVO_LOGO) else "🍲",
     layout="centered",
     initial_sidebar_state="collapsed"
 )
 
 # =========================================================
-# 2. INJEÇÃO DE CSS CUSTOMIZADO (Mobile PWA Style)
+# 3. INJEÇÃO DE CSS CUSTOMIZADO (Mobile PWA Style)
 # =========================================================
 st.markdown("""
     <style>
@@ -86,8 +93,18 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+# Meta tags HTML para garantir o ícone ao "Adicionar à Tela Inicial"
+if os.path.exists(NOME_ARQUIVO_LOGO):
+    st.markdown(f"""
+        <head>
+            <link rel="apple-touch-icon" href="{NOME_ARQUIVO_LOGO}">
+            <meta name="apple-mobile-web-app-title" content="Don Max">
+            <meta name="application-name" content="Don Max">
+        </head>
+    """, unsafe_allow_html=True)
+
 # =========================================================
-# 3. FUNÇÃO DE CONEXÃO COM O GOOGLE SHEETS
+# 4. FUNÇÃO DE CONEXÃO COM O GOOGLE SHEETS
 # =========================================================
 @st.cache_resource
 def conectar_gsheets():
@@ -106,20 +123,19 @@ def conectar_gsheets():
     return sheet
 
 # =========================================================
-# 4. CABEÇALHO (LOGO E NOME DO RESTAURANTE)
+# 5. CABEÇALHO (LOGO E NOME DO RESTAURANTE)
 # =========================================================
-# Exibe a logo do Don Max centralizada
 col_l1, col_l2, col_l3 = st.columns([1, 2, 1])
 with col_l2:
-    st.image(
-        "https://www.appsheet.com:443/fsimage.png?appid=33166895-21f5-4355-9589-9a260ced39c5#view=Inicio",
-        use_container_width=True
-    )
+    if os.path.exists(NOME_ARQUIVO_LOGO):
+        st.image(NOME_ARQUIVO_LOGO, use_container_width=True)
+    else:
+        st.markdown("<h1 style='text-align: center;'>🍲</h1>", unsafe_allow_html=True)
 
 st.markdown("<h3 style='text-align: center; margin-top: -10px; color: #222;'>Controle de Buffet</h3>", unsafe_allow_html=True)
 
 # =========================================================
-# 5. FORMULÁRIO OPERACIONAL DA COZINHA
+# 6. FORMULÁRIO OPERACIONAL DA COZINHA
 # =========================================================
 with st.form("form_pesagem", clear_on_submit=True):
 
@@ -140,7 +156,6 @@ with st.form("form_pesagem", clear_on_submit=True):
 
     st.markdown("<div class='section-header'>3. MEDIÇÕES DA BALANÇA (KG)</div>", unsafe_allow_html=True)
 
-    # Organização em 2 colunas para melhor encaixe no celular
     col1, col2 = st.columns(2)
     with col1:
         prod_inicial = st.number_input("Produção Inicial", min_value=0.0, step=0.1, format="%.2f")
@@ -153,11 +168,10 @@ with st.form("form_pesagem", clear_on_submit=True):
 
     observacoes = st.text_area("Observações (Opcional)", placeholder="Ex: Sobra de carne devido ao tempo chuvoso...")
 
-    # Botão de Salvar Grande para a Cozinha
     btn_salvar = st.form_submit_button("💾 SALVAR PESAGEM")
 
     # =========================================================
-    # 6. LÓGICA DE PROCESSAMENTO E GRAVAÇÃO
+    # 7. LÓGICA DE PROCESSAMENTO E GRAVAÇÃO
     # =========================================================
     if btn_salvar:
         if not responsavel.strip():
@@ -166,7 +180,6 @@ with st.form("form_pesagem", clear_on_submit=True):
             try:
                 sheet = conectar_gsheets()
                 
-                # Monta a linha com a ordem exata das colunas do Google Sheets
                 nova_linha = [
                     str(data_sel),
                     responsavel.strip(),
@@ -180,7 +193,6 @@ with st.form("form_pesagem", clear_on_submit=True):
                     observacoes.strip()
                 ]
 
-                # Insere os dados na planilha
                 sheet.append_row(nova_linha)
                 
                 st.success(f"✅ **{prato_sel}** registrado com sucesso!")
