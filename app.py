@@ -4,12 +4,21 @@ import gspread
 from google.oauth2.service_account import Credentials
 from datetime import date
 import os
+import base64
 
 # =========================================================
-# 1. NOME DA LOGO LOCAL NO REPOSITÓRIO
+# 1. CARREGAMENTO E CONFIGURAÇÃO DA LOGO LOCAL (PNG)
 # =========================================================
-# Certifique-se de subir o arquivo com o nome 'logo.png' na raiz do seu repositório do GitHub
 NOME_ARQUIVO_LOGO = "logo.png"
+
+# Converte a logo local em Base64 para garantir a exibição no HTML/JS
+logo_b64 = ""
+if os.path.exists(NOME_ARQUIVO_LOGO):
+    with open(NOME_ARQUIVO_LOGO, "rb") as f:
+        logo_b64 = base64.b64encode(f.read()).decode("utf-8")
+        logo_src = f"data:image/png;base64,{logo_b64}"
+else:
+    logo_src = ""
 
 # =========================================================
 # 2. CONFIGURAÇÃO DA PÁGINA (PWA & MOBILE LAYOUT)
@@ -22,7 +31,61 @@ st.set_page_config(
 )
 
 # =========================================================
-# 3. INJEÇÃO DE CSS CUSTOMIZADO (Mobile PWA Style)
+# 3. INJEÇÃO DE MANIFESTO PWA VIA JAVASCRIPT (SOLUÇÃO DE ÍCONE E NOME)
+# =========================================================
+if logo_src:
+    # Cria o manifesto PWA dinâmico embutido
+    manifest_script = f"""
+        <script>
+            // 1. Alterar o título do aplicativo no navegador
+            document.title = "Don Max - Buffet";
+
+            # 2. Criar e injetar o Web App Manifest dinamicamente
+            const myManifest = {{
+                "short_name": "Don Max",
+                "name": "Don Max Buffet",
+                "icons": [
+                    {{
+                        "src": "{logo_src}",
+                        "sizes": "192x192 512x512",
+                        "type": "image/png",
+                        "purpose": "any maskable"
+                    }}
+                ],
+                "start_url": ".",
+                "background_color": "#D32F2F",
+                "theme_color": "#D32F2F",
+                "display": "standalone"
+            }};
+
+            const stringManifest = JSON.stringify(myManifest);
+            const blob = new Blob([stringManifest], {{type: 'application/json'}});
+            const manifestURL = URL.createObjectURL(blob);
+            
+            let manifestLink = document.querySelector('link[rel="manifest"]');
+            if (manifestLink) {{
+                manifestLink.setAttribute('href', manifestURL);
+            }} else {{
+                manifestLink = document.createElement('link');
+                manifestLink.setAttribute('rel', 'manifest');
+                manifestLink.setAttribute('href', manifestURL);
+                document.head.appendChild(manifestLink);
+            }}
+
+            // 3. Atualizar as tags Apple Touch Icon (iOS Safari)
+            let appleIcon = document.querySelector('link[rel="apple-touch-icon"]');
+            if (!appleIcon) {{
+                appleIcon = document.createElement('link');
+                appleIcon.setAttribute('rel', 'apple-touch-icon');
+                document.head.appendChild(appleIcon);
+            }}
+            appleIcon.setAttribute('href', '{logo_src}');
+        </script>
+    """
+    st.components.v1.html(manifest_script, height=0)
+
+# =========================================================
+# 4. INJEÇÃO DE CSS CUSTOMIZADO (Mobile PWA Style)
 # =========================================================
 st.markdown("""
     <style>
@@ -93,18 +156,8 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Meta tags HTML para garantir o ícone ao "Adicionar à Tela Inicial"
-if os.path.exists(NOME_ARQUIVO_LOGO):
-    st.markdown(f"""
-        <head>
-            <link rel="apple-touch-icon" href="{NOME_ARQUIVO_LOGO}">
-            <meta name="apple-mobile-web-app-title" content="Don Max">
-            <meta name="application-name" content="Don Max">
-        </head>
-    """, unsafe_allow_html=True)
-
 # =========================================================
-# 4. FUNÇÃO DE CONEXÃO COM O GOOGLE SHEETS
+# 5. FUNÇÃO DE CONEXÃO COM O GOOGLE SHEETS
 # =========================================================
 @st.cache_resource
 def conectar_gsheets():
@@ -112,18 +165,16 @@ def conectar_gsheets():
         "https://www.googleapis.com/auth/spreadsheets",
         "https://www.googleapis.com/auth/drive"
     ]
-    # Carrega as credenciais da Service Account do Google dos Secrets do Streamlit
     credentials = Credentials.from_service_account_info(
         st.secrets["gcp_service_account"],
         scopes=scope
     )
     client = gspread.authorize(credentials)
-    # Abre a planilha pelo nome exato da aba de lançamentos
     sheet = client.open("Planilha Don Max").worksheet("Lancamentos_Diarios")
     return sheet
 
 # =========================================================
-# 5. CABEÇALHO (LOGO E NOME DO RESTAURANTE)
+# 6. CABEÇALHO (LOGO E NOME DO RESTAURANTE)
 # =========================================================
 col_l1, col_l2, col_l3 = st.columns([1, 2, 1])
 with col_l2:
@@ -135,7 +186,7 @@ with col_l2:
 st.markdown("<h3 style='text-align: center; margin-top: -10px; color: #222;'>Controle de Buffet</h3>", unsafe_allow_html=True)
 
 # =========================================================
-# 6. FORMULÁRIO OPERACIONAL DA COZINHA
+# 7. FORMULÁRIO OPERACIONAL DA COZINHA
 # =========================================================
 with st.form("form_pesagem", clear_on_submit=True):
 
@@ -171,7 +222,7 @@ with st.form("form_pesagem", clear_on_submit=True):
     btn_salvar = st.form_submit_button("💾 SALVAR PESAGEM")
 
     # =========================================================
-    # 7. LÓGICA DE PROCESSAMENTO E GRAVAÇÃO
+    # 8. LÓGICA DE PROCESSAMENTO E GRAVAÇÃO
     # =========================================================
     if btn_salvar:
         if not responsavel.strip():
