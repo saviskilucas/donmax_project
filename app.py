@@ -27,7 +27,7 @@ if "aba_ativa" not in st.session_state:
     st.session_state["aba_ativa"] = "Pesagem"
 
 # =========================================================
-# 4. INJEÇÃO DE CSS REFORÇADO (RODAPÉ 100% TRAVADO IGUAL À FOTO)
+# 4. INJEÇÃO DE CSS (RODAPÉ ARREDONDADO IGUAL À FOTO)
 # =========================================================
 st.markdown("""
     <style>
@@ -36,18 +36,20 @@ st.markdown("""
         background-color: #F8F9FA !important;
     }
 
-    /* Recuo inferior para o formulário rolar por trás do menu fixo */
+    /* Espaço para o formulário rolar entre as barras */
     .block-container {
-        padding-top: 4.0rem !important;
+        padding-top: 4.2rem !important;
         padding-bottom: 6.5rem !important;
         padding-left: 0.8rem !important;
         padding-right: 0.8rem !important;
         max-width: 100% !important;
     }
 
-    /* Ocultar elementos padrão do Streamlit */
-    #MainMenu, header, .stDeployButton, footer {
+    /* OCULTAR APENAS A MARCA D'ÁGUA E CABEÇALHOS NATIVOS DO STREAMLIT */
+    #MainMenu, header, .stDeployButton, footer, [data-testid="stFooter"] {
         display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
     }
 
     /* =========================================================
@@ -86,9 +88,8 @@ st.markdown("""
     }
 
     /* =========================================================
-       2. BARRA INFERIOR TRAVADA / CONGELADA (ESTILO FOTO DE REFERÊNCIA)
+       2. BARRA INFERIOR CONGELADA (FORMATO DE CARTÃO DA FOTO)
        ========================================================= */
-    /* Trava o container horizontal das colunas no rodapé da janela */
     div[data-testid="stHorizontalBlock"] {
         position: fixed !important;
         bottom: 0 !important;
@@ -97,11 +98,11 @@ st.markdown("""
         width: 100vw !important;
         height: 65px !important;
         background-color: #D32F2F !important;
-        border-radius: 22px 22px 0 0 !important; /* Arredondado igual à foto */
-        box-shadow: 0px -6px 20px rgba(0, 0, 0, 0.2) !important;
+        border-radius: 22px 22px 0 0 !important; /* Borda arredondada igual à foto */
+        box-shadow: 0px -6px 20px rgba(0, 0, 0, 0.25) !important;
         z-index: 999999 !important;
 
-        /* Força alinhamento estritamente HORIZONTAL */
+        /* Forçar alinhamento horizontal lado a lado */
         display: flex !important;
         flex-direction: row !important;
         align-items: center !important;
@@ -110,7 +111,6 @@ st.markdown("""
         margin: 0 !important;
     }
 
-    /* Garante que cada coluna fique lado a lado dividindo a tela igualmente */
     div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {
         flex: 1 1 0% !important;
         width: 33.33% !important;
@@ -122,7 +122,7 @@ st.markdown("""
         align-items: center !important;
     }
 
-    /* Estilo dos Botões/Ícones estilo App */
+    /* Ícones do Menu */
     div[data-testid="stHorizontalBlock"] button {
         width: 80% !important;
         height: 46px !important;
@@ -139,7 +139,7 @@ st.markdown("""
         margin: 0 !important;
     }
 
-    /* Botão Ativo: Caixinha Branca em destaque (Idêntico à foto) */
+    /* Caixa branca flutuante do botão selecionado (Idêntico à foto de referência) */
     div[data-testid="stHorizontalBlock"] button.btn-active {
         background-color: #FFFFFF !important;
         color: #D32F2F !important;
@@ -147,7 +147,7 @@ st.markdown("""
     }
 
     /* =========================================================
-       3. CAMPOS DO FORMULÁRIO
+       3. ESTILIZAÇÃO DOS INPUTS
        ========================================================= */
     label {
         font-size: 0.98rem !important;
@@ -315,7 +315,7 @@ elif st.session_state["aba_ativa"] == "Histórico":
     except Exception as e:
         st.error(f"Erro ao carregar dados do Google Sheets: {e}")
 
-# --- ABA 3: CONFIGURAÇÕES / SOBRE ---
+# --- ABA 3: CONFIGURAÇÕES ---
 elif st.session_state["aba_ativa"] == "Config":
     st.markdown("<div class='section-header'>⚙️ CONFIGURAÇÕES</div>", unsafe_allow_html=True)
     
@@ -336,7 +336,7 @@ elif st.session_state["aba_ativa"] == "Config":
         st.success("Conexão atualizada com sucesso!")
 
 # =========================================================
-# 8. RODAPÉ FIXO LADO A LADO (EXATAMENTE IGUAL À FOTO)
+# 8. RODAPÉ FIXO LADO A LADO (MODERNO)
 # =========================================================
 col_nav1, col_nav2, col_nav3 = st.columns(3)
 
@@ -355,7 +355,7 @@ with col_nav3:
         st.session_state["aba_ativa"] = "Config"
         st.rerun()
 
-# Script de injeção JS para marcar o botão ativo com a caixa branca flutuante
+# Destaque dinâmico no botão ativo
 aba_ativa_str = st.session_state["aba_ativa"]
 st.components.v1.html(f"""
     <script>
