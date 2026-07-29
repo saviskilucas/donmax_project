@@ -17,31 +17,39 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# LEITURA DA ABA SOLICITADA PELO MENU
-aba_atual = st.query_params.get("aba", "pesagem")
+# Gerenciamento da aba via session_state
+if "aba_ativa" not in st.session_state:
+    st.session_state["aba_ativa"] = "pesagem"
+
+# Captura evento de clique nos botões do menu interno
+if "aba" in st.query_params:
+    st.session_state["aba_ativa"] = st.query_params["aba"]
 
 # =========================================================
-# 2. INJEÇÃO DE CSS
+# 2. INJEÇÃO DE CSS DA TELA E DO MENU FIXO INTERNO
 # =========================================================
 st.markdown("""
     <style>
+    /* Configuração Geral da Tela Mobile */
     html, body, [data-testid="stApp"], .stApp {
         background-color: #F8F9FA !important;
     }
 
     .block-container {
         padding-top: 3.8rem !important;
-        padding-bottom: 2.0rem !important;
+        padding-bottom: 5.0rem !important;
         padding-left: 0.8rem !important;
         padding-right: 0.8rem !important;
         max-width: 100% !important;
     }
 
+    /* Ocultar elementos padrão do Streamlit */
     #MainMenu, header, .stDeployButton, footer, [data-testid="stFooter"] {
         display: none !important;
         visibility: hidden !important;
     }
 
+    /* BARRA SUPERIOR FIXA */
     .modern-header {
         position: fixed;
         top: 0;
@@ -55,7 +63,7 @@ st.markdown("""
         align-items: center;
         justify-content: space-between;
         padding: 0 18px;
-        z-index: 999999 !important;
+        z-index: 99999 !important;
         box-shadow: 0px 4px 12px rgba(211, 47, 47, 0.25);
         border-radius: 0 0 16px 16px;
     }
@@ -68,6 +76,47 @@ st.markdown("""
         gap: 10px;
     }
 
+    /* MENU FLUTUANTE FIXO NO MEIO DA TELA (INJETADO NATIVAMENTE) */
+    .middle-navbar-internal {
+        position: fixed !important;
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        width: 280px !important;
+        height: 60px !important;
+        background-color: #D32F2F !important;
+        border-radius: 30px !important;
+        box-shadow: 0px 8px 25px rgba(0, 0, 0, 0.4) !important;
+        z-index: 999999 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-around !important;
+        padding: 0 10px !important;
+        border: 2px solid #FFFFFF !important;
+    }
+
+    .nav-btn-int {
+        width: 70px;
+        height: 44px;
+        background: transparent;
+        border: none;
+        border-radius: 18px;
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 1.3rem;
+        text-decoration: none !important;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+    }
+
+    .nav-btn-int.active {
+        background-color: #FFFFFF !important;
+        color: #D32F2F !important;
+        box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2) !important;
+    }
+
+    /* CAMPOS DO FORMULÁRIO */
     label {
         font-size: 0.98rem !important;
         font-weight: 700 !important;
@@ -118,7 +167,9 @@ def conectar_gsheets():
     client = gspread.authorize(credentials)
     return client.open("Planilha Don Max").worksheet("Lancamentos_Diarios")
 
-# HEADER SUPERIOR
+# =========================================================
+# 4. BARRA SUPERIOR FIXA
+# =========================================================
 st.markdown("""
     <div class="modern-header">
         <div class="modern-header-title">
@@ -131,9 +182,25 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # =========================================================
-# 4. EXIBIÇÃO DAS ABAS
+# 5. BARRA DE MENU NO MEIO DA TELA (INJETADA NO PYTHON)
 # =========================================================
-if aba_atual == "pesagem":
+aba = st.session_state["aba_ativa"]
+act_p = "active" if aba == "pesagem" else ""
+act_h = "active" if aba == "historico" else ""
+act_c = "active" if aba == "config" else ""
+
+st.markdown(f"""
+    <div class="middle-navbar-internal">
+        <a href="?aba=pesagem" target="_self" class="nav-btn-int {act_p}">🏠</a>
+        <a href="?aba=historico" target="_self" class="nav-btn-int {act_h}">📋</a>
+        <a href="?aba=config" target="_self" class="nav-btn-int {act_c}">👤</a>
+    </div>
+""", unsafe_allow_html=True)
+
+# =========================================================
+# 6. EXIBIÇÃO DAS ABAS
+# =========================================================
+if aba == "pesagem":
     with st.form("form_pesagem", clear_on_submit=True):
         st.markdown("<div class='section-header'>1. INFORMAÇÕES DO DIA</div>", unsafe_allow_html=True)
         data_sel = st.date_input("Data do Serviço", value=date.today())
@@ -170,7 +237,7 @@ if aba_atual == "pesagem":
                 except Exception as e:
                     st.error(f"❌ Erro ao salvar na planilha: {e}")
 
-elif aba_atual == "historico":
+elif aba == "historico":
     st.markdown("<div class='section-header'>📊 ÚLTIMOS LANÇAMENTOS</div>", unsafe_allow_html=True)
     try:
         sheet = conectar_gsheets()
@@ -186,7 +253,7 @@ elif aba_atual == "historico":
     except Exception as e:
         st.error(f"Erro ao carregar dados do Google Sheets: {e}")
 
-elif aba_atual == "config":
+elif aba == "config":
     st.markdown("<div class='section-header'>⚙️ CONFIGURAÇÕES</div>", unsafe_allow_html=True)
     st.markdown("**Don Max Buffet v1.0**\n*Sistema Integrado de Controle de Pesagens*\n\n---\n\n**Instruções para a Cozinha:**\n1. Realize as pesagens sempre ao final do turno.\n2. Certifique-se de zerar a tara da balança.\n3. Dúvidas ou problemas falar com a gerência.")
     if st.button("🔄 Atualizar Conexão com a Planilha"):
