@@ -21,12 +21,11 @@
             margin: 0;
             padding: 0;
             user-select: none;
-            touch-action: none;
         }
 
         html, body {
-            width: 100%;
-            height: 100%;
+            width: 100vw;
+            height: 100vh;
             overflow: hidden !important;
             background-color: #F8F9FA;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -40,6 +39,7 @@
             width: 100vw;
             height: 100vh;
             border: none;
+            z-index: 1;
         }
 
         iframe {
@@ -47,56 +47,43 @@
             height: 100%;
             border: none;
             display: block;
-            touch-action: auto;
         }
 
-        /* MENU FLUTUANTE ARRASTÁVEL (NO MEIO DA TELA POR PADRÃO) */
-        .draggable-menu {
-            position: fixed;
-            top: 50%; /* Posiciona no meio da tela */
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 280px;
-            height: 60px;
-            background-color: #D32F2F;
-            border-radius: 30px; /* Cartão 100% arredondado */
-            box-shadow: 0px 8px 24px rgba(0, 0, 0, 0.35);
-            z-index: 9999999;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 10px;
-            cursor: grab;
-            border: 2px solid #FFFFFF;
+        /* BARRA DE MENU FIXA LITERALMENTE NO MEIO DA TELA */
+        .middle-navbar {
+            position: fixed !important;
+            top: 50% !important;
+            left: 50% !important;
+            transform: translate(-50%, -50%) !important;
+            width: 290px !important;
+            height: 65px !important;
+            background-color: #D32F2F !important;
+            border-radius: 25px !important; /* Cartão Arredondado */
+            box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.4) !important;
+            z-index: 99999999 !important; /* Prioridade máxima sobre tudo */
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-around !important;
+            padding: 0 10px !important;
+            border: 2px solid #FFFFFF !important;
         }
 
-        .draggable-menu:active {
-            cursor: grabbing;
-        }
-
-        /* ALÇA PARA ARRASTAR */
-        .drag-handle {
-            color: rgba(255, 255, 255, 0.6);
-            font-size: 1.2rem;
-            padding: 0 6px;
-            cursor: grab;
-        }
-
-        .nav-group {
+        .nav-item {
             flex: 1;
             display: flex;
             align-items: center;
-            justify-content: space-around;
+            justify-content: center;
+            height: 100%;
         }
 
         .nav-btn {
-            width: 50px;
-            height: 42px;
+            width: 70px;
+            height: 48px;
             background: transparent;
             border: none;
-            border-radius: 20px;
+            border-radius: 16px;
             color: rgba(255, 255, 255, 0.8);
-            font-size: 1.3rem;
+            font-size: 1.4rem;
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -106,9 +93,9 @@
 
         /* DESTAQUE DA ABA ATIVA (CAIXA BRANCA FLUTUANTE) */
         .nav-btn.active {
-            background-color: #FFFFFF;
-            color: #D32F2F;
-            box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.2);
+            background-color: #FFFFFF !important;
+            color: #D32F2F !important;
+            box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.25) !important;
         }
     </style>
 </head>
@@ -116,15 +103,19 @@
 
     <!-- APLICAÇÃO STREAMLIT -->
     <div class="app-container">
+        <!-- Substitua a URL abaixo pela URL exata do seu Streamlit caso tenha mudado -->
         <iframe id="streamlit-frame" src="https://donmax-buffet.streamlit.app/?embed=true&aba=pesagem"></iframe>
     </div>
 
-    <!-- MENU ARRASTÁVEL -->
-    <div class="draggable-menu" id="floatingMenu">
-        <div class="drag-handle">⋮⋮</div>
-        <div class="nav-group">
+    <!-- MENU LITERALMENTE NO MEIO DA TELA -->
+    <div class="middle-navbar">
+        <div class="nav-item">
             <button class="nav-btn active" onclick="navegar('pesagem', this)">🏠</button>
+        </div>
+        <div class="nav-item">
             <button class="nav-btn" onclick="navegar('historico', this)">📋</button>
+        </div>
+        <div class="nav-item">
             <button class="nav-btn" onclick="navegar('config', this)">👤</button>
         </div>
     </div>
@@ -133,61 +124,14 @@
         const STREAMLIT_BASE_URL = "https://donmax.streamlit.app/?embed=true";
 
         function navegar(aba, element) {
+            // Alterna destaque do botão ativo
             const buttons = document.querySelectorAll('.nav-btn');
             buttons.forEach(btn => btn.classList.remove('active'));
             element.classList.add('active');
 
+            // Atualiza o iframe do Streamlit com a nova aba
             const iframe = document.getElementById('streamlit-frame');
             iframe.src = STREAMLIT_BASE_URL + "&aba=" + aba;
-        }
-
-        // LÓGICA DE ARRASTAR O MENU NA TELA (TOUCH / MOUSE)
-        const menu = document.getElementById("floatingMenu");
-        let isDragging = false;
-        let offsetX = 0, offsetY = 0;
-
-        menu.addEventListener("touchstart", dragStart, {passive: false});
-        menu.addEventListener("touchend", dragEnd, {passive: false});
-        menu.addEventListener("touchmove", drag, {passive: false});
-
-        menu.addEventListener("mousedown", dragStart);
-        document.addEventListener("mouseup", dragEnd);
-        document.addEventListener("mousemove", drag);
-
-        function dragStart(e) {
-            if (e.type === "touchstart") {
-                offsetX = e.touches[0].clientX - menu.getBoundingClientRect().left;
-                offsetY = e.touches[0].clientY - menu.getBoundingClientRect().top;
-            } else {
-                offsetX = e.clientX - menu.getBoundingClientRect().left;
-                offsetY = e.clientY - menu.getBoundingClientRect().top;
-            }
-            if (e.target.tagName !== "BUTTON") {
-                isDragging = true;
-            }
-        }
-
-        function dragEnd() {
-            isDragging = false;
-        }
-
-        function drag(e) {
-            if (!isDragging) return;
-            e.preventDefault();
-
-            let clientX = e.type === "touchmove" ? e.touches[0].clientX : e.clientX;
-            let clientY = e.type === "touchmove" ? e.touches[0].clientY : e.clientY;
-
-            let left = clientX - offsetX;
-            let top = clientY - offsetY;
-
-            // Restrições para não sumir da tela
-            left = Math.max(10, Math.min(window.innerWidth - menu.offsetWidth - 10, left));
-            top = Math.max(10, Math.min(window.innerHeight - menu.offsetHeight - 10, top));
-
-            menu.style.left = left + "px";
-            menu.style.top = top + "px";
-            menu.style.transform = "none";
         }
     </script>
 </body>

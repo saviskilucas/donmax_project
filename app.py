@@ -17,10 +17,12 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# LEITURA DA ABA SOLICITADA
+# LEITURA DA ABA SOLICITADA PELO MENU
 aba_atual = st.query_params.get("aba", "pesagem")
 
-# CSS
+# =========================================================
+# 2. INJEÇÃO DE CSS
+# =========================================================
 st.markdown("""
     <style>
     html, body, [data-testid="stApp"], .stApp {
@@ -29,7 +31,7 @@ st.markdown("""
 
     .block-container {
         padding-top: 3.8rem !important;
-        padding-bottom: 3.0rem !important;
+        padding-bottom: 2.0rem !important;
         padding-left: 0.8rem !important;
         padding-right: 0.8rem !important;
         max-width: 100% !important;
@@ -106,7 +108,9 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# CONEXÃO GOOGLE SHEETS
+# =========================================================
+# 3. CONEXÃO GOOGLE SHEETS
+# =========================================================
 @st.cache_resource
 def conectar_gsheets():
     scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
@@ -126,7 +130,9 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# ABA 1: PESAGEM
+# =========================================================
+# 4. EXIBIÇÃO DAS ABAS
+# =========================================================
 if aba_atual == "pesagem":
     with st.form("form_pesagem", clear_on_submit=True):
         st.markdown("<div class='section-header'>1. INFORMAÇÕES DO DIA</div>", unsafe_allow_html=True)
@@ -164,7 +170,6 @@ if aba_atual == "pesagem":
                 except Exception as e:
                     st.error(f"❌ Erro ao salvar na planilha: {e}")
 
-# ABA 2: HISTÓRICO
 elif aba_atual == "historico":
     st.markdown("<div class='section-header'>📊 ÚLTIMOS LANÇAMENTOS</div>", unsafe_allow_html=True)
     try:
@@ -181,7 +186,6 @@ elif aba_atual == "historico":
     except Exception as e:
         st.error(f"Erro ao carregar dados do Google Sheets: {e}")
 
-# ABA 3: CONFIGURAÇÕES
 elif aba_atual == "config":
     st.markdown("<div class='section-header'>⚙️ CONFIGURAÇÕES</div>", unsafe_allow_html=True)
     st.markdown("**Don Max Buffet v1.0**\n*Sistema Integrado de Controle de Pesagens*\n\n---\n\n**Instruções para a Cozinha:**\n1. Realize as pesagens sempre ao final do turno.\n2. Certifique-se de zerar a tara da balança.\n3. Dúvidas ou problemas falar com a gerência.")
