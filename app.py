@@ -11,7 +11,7 @@ import os
 NOME_ARQUIVO_LOGO = "logo.png"
 
 # =========================================================
-# 2. CONFIGURAÇÃO DA PÁGINA (PWA & MOBILE LAYOUT)
+# 2. CONFIGURAÇÃO DA PÁGINA
 # =========================================================
 st.set_page_config(
     page_title="Don Max - Buffet",
@@ -21,40 +21,33 @@ st.set_page_config(
 )
 
 # =========================================================
-# 3. GERENCIAMENTO DE ESTADO DA NAVEGAÇÃO
+# 3. LEITURA DA ABA SOLICITADA PELO HTML EXTERNO
 # =========================================================
-if "aba_ativa" not in st.session_state:
-    st.session_state["aba_ativa"] = "Pesagem"
+aba_atual = st.query_params.get("aba", "pesagem")
 
 # =========================================================
-# 4. INJEÇÃO DE CSS (RODAPÉ ARREDONDADO IGUAL À FOTO)
+# 4. INJEÇÃO DE CSS DA TELA INTERNA
 # =========================================================
 st.markdown("""
     <style>
-    /* Configuração da Tela Mobile */
     html, body, [data-testid="stApp"], .stApp {
         background-color: #F8F9FA !important;
     }
 
-    /* Espaço para o formulário rolar entre as barras */
     .block-container {
-        padding-top: 4.2rem !important;
-        padding-bottom: 6.5rem !important;
+        padding-top: 3.8rem !important;
+        padding-bottom: 2.0rem !important;
         padding-left: 0.8rem !important;
         padding-right: 0.8rem !important;
         max-width: 100% !important;
     }
 
-    /* OCULTAR APENAS A MARCA D'ÁGUA E CABEÇALHOS NATIVOS DO STREAMLIT */
     #MainMenu, header, .stDeployButton, footer, [data-testid="stFooter"] {
         display: none !important;
         visibility: hidden !important;
-        opacity: 0 !important;
     }
 
-    /* =========================================================
-       1. BARRA SUPERIOR CONGELADA (HEADER MODERNO)
-       ========================================================= */
+    /* BARRA SUPERIOR FIXA DO DON MAX */
     .modern-header {
         position: fixed;
         top: 0;
@@ -87,68 +80,7 @@ st.markdown("""
         font-size: 1.25rem;
     }
 
-    /* =========================================================
-       2. BARRA INFERIOR CONGELADA (FORMATO DE CARTÃO DA FOTO)
-       ========================================================= */
-    div[data-testid="stHorizontalBlock"] {
-        position: fixed !important;
-        bottom: 0 !important;
-        left: 0 !important;
-        right: 0 !important;
-        width: 100vw !important;
-        height: 65px !important;
-        background-color: #D32F2F !important;
-        border-radius: 22px 22px 0 0 !important; /* Borda arredondada igual à foto */
-        box-shadow: 0px -6px 20px rgba(0, 0, 0, 0.25) !important;
-        z-index: 999999 !important;
-
-        /* Forçar alinhamento horizontal lado a lado */
-        display: flex !important;
-        flex-direction: row !important;
-        align-items: center !important;
-        justify-content: space-around !important;
-        padding: 0 12px !important;
-        margin: 0 !important;
-    }
-
-    div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {
-        flex: 1 1 0% !important;
-        width: 33.33% !important;
-        min-width: 0 !important;
-        padding: 0 !important;
-        margin: 0 !important;
-        display: flex !important;
-        justify-content: center !important;
-        align-items: center !important;
-    }
-
-    /* Ícones do Menu */
-    div[data-testid="stHorizontalBlock"] button {
-        width: 80% !important;
-        height: 46px !important;
-        background-color: transparent !important;
-        border: none !important;
-        border-radius: 14px !important;
-        box-shadow: none !important;
-        color: rgba(255, 255, 255, 0.75) !important;
-        font-size: 1.35rem !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        padding: 0 !important;
-        margin: 0 !important;
-    }
-
-    /* Caixa branca flutuante do botão selecionado (Idêntico à foto de referência) */
-    div[data-testid="stHorizontalBlock"] button.btn-active {
-        background-color: #FFFFFF !important;
-        color: #D32F2F !important;
-        box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.15) !important;
-    }
-
-    /* =========================================================
-       3. ESTILIZAÇÃO DOS INPUTS
-       ========================================================= */
+    /* ESTILIZAÇÃO DOS INPUTS E CAMPOS */
     label {
         font-size: 0.98rem !important;
         font-weight: 700 !important;
@@ -227,11 +159,11 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # =========================================================
-# 7. CONTEÚDO DAS ABAS NAVEGÁVEIS
+# 7. EXIBIÇÃO DA TELA SELECIONADA
 # =========================================================
 
 # --- ABA 1: FORMULÁRIO DE PESAGEM ---
-if st.session_state["aba_ativa"] == "Pesagem":
+if aba_atual == "pesagem":
     with st.form("form_pesagem", clear_on_submit=True):
 
         st.markdown("<div class='section-header'>1. INFORMAÇÕES DO DIA</div>", unsafe_allow_html=True)
@@ -290,7 +222,7 @@ if st.session_state["aba_ativa"] == "Pesagem":
                     st.error(f"❌ Erro ao salvar na planilha: {e}")
 
 # --- ABA 2: HISTÓRICO DA PLANILHA ---
-elif st.session_state["aba_ativa"] == "Histórico":
+elif aba_atual == "historico":
     st.markdown("<div class='section-header'>📊 ÚLTIMOS LANÇAMENTOS</div>", unsafe_allow_html=True)
     
     try:
@@ -316,7 +248,7 @@ elif st.session_state["aba_ativa"] == "Histórico":
         st.error(f"Erro ao carregar dados do Google Sheets: {e}")
 
 # --- ABA 3: CONFIGURAÇÕES ---
-elif st.session_state["aba_ativa"] == "Config":
+elif aba_atual == "config":
     st.markdown("<div class='section-header'>⚙️ CONFIGURAÇÕES</div>", unsafe_allow_html=True)
     
     st.markdown("""
@@ -334,46 +266,3 @@ elif st.session_state["aba_ativa"] == "Config":
     if st.button("🔄 Atualizar Conexão com a Planilha"):
         st.cache_resource.clear()
         st.success("Conexão atualizada com sucesso!")
-
-# =========================================================
-# 8. RODAPÉ FIXO LADO A LADO (MODERNO)
-# =========================================================
-col_nav1, col_nav2, col_nav3 = st.columns(3)
-
-with col_nav1:
-    if st.button("🏠", key="btn_nav_1"):
-        st.session_state["aba_ativa"] = "Pesagem"
-        st.rerun()
-
-with col_nav2:
-    if st.button("📋", key="btn_nav_2"):
-        st.session_state["aba_ativa"] = "Histórico"
-        st.rerun()
-
-with col_nav3:
-    if st.button("👤", key="btn_nav_3"):
-        st.session_state["aba_ativa"] = "Config"
-        st.rerun()
-
-# Destaque dinâmico no botão ativo
-aba_ativa_str = st.session_state["aba_ativa"]
-st.components.v1.html(f"""
-    <script>
-    setTimeout(function() {{
-        const parentDoc = window.parent.document;
-        const navContainer = parentDoc.querySelector('div[data-testid="stHorizontalBlock"]');
-        if (navContainer) {{
-            const btns = navContainer.querySelectorAll('button');
-            btns.forEach(b => b.classList.remove('btn-active'));
-            
-            if ("{aba_ativa_str}" === "Pesagem" && btns[0]) {{
-                btns[0].classList.add('btn-active');
-            }} else if ("{aba_ativa_str}" === "Histórico" && btns[1]) {{
-                btns[1].classList.add('btn-active');
-            }} else if ("{aba_ativa_str}" === "Config" && btns[2]) {{
-                btns[2].classList.add('btn-active');
-            }}
-        }}
-    }}, 80);
-    </script>
-""", height=0)
