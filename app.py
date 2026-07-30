@@ -238,13 +238,13 @@ aba_selecionada = st.radio(
 )
 
 # Atualização silenciosa de estado sem F5
-if aba_selecionada == "🏠" and st.session_state["aba_ativa"] != "pesagem":
+if aba_selecionada == "Início" and st.session_state["aba_ativa"] != "pesagem":
     st.session_state["aba_ativa"] = "pesagem"
     st.rerun()
-elif aba_selecionada == "📋" and st.session_state["aba_ativa"] != "historico":
+elif aba_selecionada == "Planilha" and st.session_state["aba_ativa"] != "historico":
     st.session_state["aba_ativa"] = "historico"
     st.rerun()
-elif aba_selecionada == "👤" and st.session_state["aba_ativa"] != "config":
+elif aba_selecionada == "Painel" and st.session_state["aba_ativa"] != "config":
     st.session_state["aba_ativa"] = "config"
     st.rerun()
 
