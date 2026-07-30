@@ -17,20 +17,24 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
+# Gerenciamento do Estado da Aba Ativa
+if "aba_ativa" not in st.session_state:
+    st.session_state["aba_ativa"] = "pesagem"
+
 # =========================================================
-# 2. CSS DA NOVA ABORDAGEM (TRANSFORMA ST.RADIO EM CÁPSULA FIXA A 80PX)
+# 2. INJEÇÃO DE CSS LIMPO (MANTÉM APENAS O MENU BONITO NO RODAPÉ)
 # =========================================================
 st.markdown("""
     <style>
-    /* Configuração Geral do App */
+    /* Configuração de Fundo */
     html, body, [data-testid="stApp"], .stApp {
         background-color: #F8F9FA !important;
     }
 
-    /* Margem inferior para o conteúdo rolar limpo atrás do menu */
+    /* Margem para o formulário rolar sem ser coberto pelo menu */
     .block-container {
         padding-top: 3.8rem !important;
-        padding-bottom: 9.0rem !important; 
+        padding-bottom: 8.5rem !important; 
         padding-left: 0.8rem !important;
         padding-right: 0.8rem !important;
         max-width: 100% !important;
@@ -80,7 +84,7 @@ st.markdown("""
     }
 
     /* =========================================================
-       TRAVAMENTO DO ST.RADIO COMO CÁPSULA REDONDA A 80PX
+       TRAVA EXCLUSIVA DO MENU NO RODAPÉ (80PX)
        ========================================================= */
     div[data-testid="stElementContainer"]:has(div[data-testid="stRadio"]) {
         position: fixed !important;
@@ -92,12 +96,18 @@ st.markdown("""
         z-index: 9999999 !important;
     }
 
-    /* Esconde o label do radio ("Navegação") */
-    div[data-testid="stRadio"] > label {
+    /* OCULTA TOTALMENTE O TÍTULO "Navegação" */
+    div[data-testid="stRadio"] label[data-testid="stWidgetLabel"],
+    div[data-testid="stRadio"] > label,
+    div[data-testid="stRadio"] p:contains("Navegação") {
         display: none !important;
+        visibility: hidden !important;
+        height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
     }
 
-    /* Transforma o grupo do Radio na Cápsula Vermelha */
+    /* Transforma o Radio na Cápsula Vermelha da foto de referência */
     div[data-testid="stRadio"] > div {
         background-color: #D32F2F !important;
         border-radius: 30px !important;
@@ -112,12 +122,12 @@ st.markdown("""
         padding: 0 6px !important;
     }
 
-    /* Esconde o circulinho nativo do radio button */
+    /* ESCONDE AS BOLINHAS PRETAS/VERMELHAS DE SELEÇÃO */
     div[data-testid="stRadio"] label > div:first-child {
         display: none !important;
     }
 
-    /* Estilização dos itens da opção */
+    /* Estilização dos Botões/Ícones */
     div[data-testid="stRadio"] label {
         flex: 1 !important;
         height: 44px !important;
@@ -131,7 +141,6 @@ st.markdown("""
         transition: all 0.2s ease-in-out !important;
     }
 
-    /* Texto do ícone */
     div[data-testid="stRadio"] label p {
         font-size: 1.35rem !important;
         margin: 0 !important;
@@ -214,28 +223,33 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # =========================================================
-# 5. MENU DE NAVEGAÇÃO REORGANIZADO VIA ST.RADIO
+# 5. O ÚNICO MENU DA APLICAÇÃO (RADIO REFORMATADO NATIVO)
 # =========================================================
 opcoes_menu = ["🏠", "📋", "👤"]
+aba = st.session_state["aba_ativa"]
+idx_atual = 0 if aba == "pesagem" else (1 if aba == "historico" else 2)
 
 aba_selecionada = st.radio(
-    "Navegação",
-    opcoes_menu,
-    index=0,
+    label="",
+    options=opcoes_menu,
+    index=idx_atual,
     horizontal=True,
     label_visibility="collapsed"
 )
 
-# Mapeamento do ícone para a tela correspondente
-if aba_selecionada == "🏠":
-    aba = "pesagem"
-elif aba_selecionada == "📋":
-    aba = "historico"
-else:
-    aba = "config"
+# Atualização silenciosa de estado sem F5
+if aba_selecionada == "🏠" and st.session_state["aba_ativa"] != "pesagem":
+    st.session_state["aba_ativa"] = "pesagem"
+    st.rerun()
+elif aba_selecionada == "📋" and st.session_state["aba_ativa"] != "historico":
+    st.session_state["aba_ativa"] = "historico"
+    st.rerun()
+elif aba_selecionada == "👤" and st.session_state["aba_ativa"] != "config":
+    st.session_state["aba_ativa"] = "config"
+    st.rerun()
 
 # =========================================================
-# 6. CONTEÚDO DAS ABAS (COM TRANSIÇÃO SUAVE)
+# 6. CONTEÚDO DAS ABAS
 # =========================================================
 st.markdown("<div class='main-content-animated'>", unsafe_allow_html=True)
 
