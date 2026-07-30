@@ -24,7 +24,7 @@ if "aba_ativa" not in st.session_state:
 aba = st.session_state["aba_ativa"]
 
 # =========================================================
-# 2. INJEÇÃO DE CSS (MODO ESCURO + HOVER + CENTRALIZAÇÃO TOTAL)
+# 2. INJEÇÃO DE CSS (MODO ESCURO + HOVER BRANCO + CENTRALIZAÇÃO EXATA)
 # =========================================================
 st.markdown("""
     <style>
@@ -143,13 +143,15 @@ st.markdown("""
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
-        transition: background-color 0.2s ease, transform 0.1s ease !important;
+        transition: all 0.2s ease-in-out !important;
     }
 
-    /* CENTRALIZAÇÃO DO TEXTO/ÍCONE DENTRO DO BOTÃO DO STREAMLIT */
+    /* CENTRALIZAÇÃO RIGOROSA DOS ELEMENTOS INTERNOS DOS BOTÕES */
+    div.st-key-nav_bar_container button *,
     div.st-key-nav_bar_container button div,
-    div.st-key-nav_bar_container button p {
-        margin: 0 auto !important;
+    div.st-key-nav_bar_container button p,
+    div.st-key-nav_bar_container button [data-testid="stMarkdownContainer"] {
+        margin: 0 !important;
         padding: 0 !important;
         text-align: center !important;
         width: 100% !important;
@@ -158,16 +160,23 @@ st.markdown("""
         justify-content: center !important;
         font-size: 0.85rem !important;
         font-weight: 700 !important;
+        line-height: 1 !important;
     }
 
-    /* EFEITO HOVER (PASSAR O MOUSE / TOQUE) NOS BOTÕES INATIVOS */
+    /* HOVER NOS BOTÕES INATIVOS (FUNDO BRANCO + TEXTO VERMELHO) */
     div.st-key-nav_bar_container button:hover:not(.active-btn) {
-        background-color: #D32F2F !important;
-        color: #FFFFFF !important;
+        background-color: #FFFFFF !important;
+        color: #B71C1C !important;
         cursor: pointer !important;
+        box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3) !important;
     }
 
-    /* ESTILO DO BOTÃO SELECIONADO (CAIXINHA BRANCA DESTACADA) */
+    div.st-key-nav_bar_container button:hover:not(.active-btn) *,
+    div.st-key-nav_bar_container button:hover:not(.active-btn) p {
+        color: #B71C1C !important;
+    }
+
+    /* BOTÃO SELECIONADO / ATIVO (FUNDO BRANCO FIXO + TEXTO VERMELHO) */
     div.st-key-nav_bar_container button.active-btn,
     div.st-key-nav_bar_container button.active-btn:hover,
     div.st-key-nav_bar_container button.active-btn:focus {
@@ -176,6 +185,7 @@ st.markdown("""
         box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.4) !important;
     }
 
+    div.st-key-nav_bar_container button.active-btn *,
     div.st-key-nav_bar_container button.active-btn p {
         color: #B71C1C !important;
         font-weight: 800 !important;
@@ -319,7 +329,7 @@ elif aba == "config":
         st.success("Conexão atualizada com sucesso!")
 
 # =========================================================
-# 6. RODAPÉ FIXO DE BOTÕES NATIVOS (ENGRENAGEM NO CONFIG)
+# 6. RODAPÉ FIXO DE BOTÕES NATIVOS (SÓ A ENGRENAGEM NO CONFIG)
 # =========================================================
 nav_bar = st.container(key="nav_bar_container")
 with nav_bar:
