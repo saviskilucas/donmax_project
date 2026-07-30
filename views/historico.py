@@ -45,7 +45,6 @@ def converter_para_numero(serie):
     ).fillna(0.0)
 
 def render():
-    # Estilização CSS para Cards Quadrados em Grade Dark/Red
     st.markdown("""
         <style>
         .metric-card {
@@ -93,7 +92,6 @@ def render():
     if dados:
         df = pd.DataFrame(dados)
         
-        # Leitura e Tratamento Numérico
         prod_ini = converter_para_numero(df['Prod_Inicial_KG']) if 'Prod_Inicial_KG' in df.columns else pd.Series([0]*len(df))
         reposicao = converter_para_numero(df['Reposicao_KG']) if 'Reposicao_KG' in df.columns else pd.Series([0]*len(df))
         sobra_limpa = converter_para_numero(df['Sobra_Limpa_KG']) if 'Sobra_Limpa_KG' in df.columns else pd.Series([0]*len(df))
@@ -101,7 +99,6 @@ def render():
         descarte = converter_para_numero(df['Descarte_KG']) if 'Descarte_KG' in df.columns else pd.Series([0]*len(df))
         clientes = converter_para_numero(df['Clientes_Atendidos']) if 'Clientes_Atendidos' in df.columns else pd.Series([0]*len(df))
 
-        # Totais
         tot_prod = float((prod_ini + reposicao).sum())
         tot_descarte = float(descarte.sum())
         tot_sobra_limpa = float(sobra_limpa.sum())
@@ -110,12 +107,18 @@ def render():
         
         descarte_por_cliente_g = (tot_descarte / tot_clientes * 1000) if tot_clientes > 0 else 0.0
 
+        # Configuração para desabilitar zoom e rolagem no celular
+        config_plotly_mobile = {
+            'displayModeBar': False,
+            'scrollZoom': False,
+            'doubleClick': False
+        }
+
         # =========================================================
         # METRIC CARDS - GRADE 2x2 QUADRADA
         # =========================================================
         st.markdown("##### 📌 Indicadores Gerais")
         
-        # LINHA 1 (2 Cards)
         c1, c2 = st.columns(2)
         with c1:
             st.markdown(f"""
@@ -135,7 +138,6 @@ def render():
                 </div>
             """, unsafe_allow_html=True)
 
-        # LINHA 2 (2 Cards)
         c3, c4 = st.columns(2)
         with c3:
             st.markdown(f"""
@@ -155,7 +157,6 @@ def render():
                 </div>
             """, unsafe_allow_html=True)
 
-        # CARD INFORMATIVO DE CLIENTES
         st.markdown(f"""
             <div class="metric-card" style="border-left-color: #AB47BC; margin-top: -4px;">
                 <div class="metric-card-title">Atendimento & Média de Descarte</div>
@@ -166,7 +167,7 @@ def render():
         st.markdown("<br>", unsafe_allow_html=True)
 
         # =========================================================
-        # GRÁFICO 1: BALANÇO DE PRODUÇÃO (BARRAS ESTILIZADAS)
+        # GRÁFICO 1: BALANÇO DE PRODUÇÃO
         # =========================================================
         st.markdown("##### ⚖️ Balanço da Cozinha")
         df_balanco = pd.DataFrame({
@@ -189,15 +190,15 @@ def render():
             showlegend=False,
             paper_bgcolor='rgba(0,0,0,0)',
             plot_bgcolor='rgba(0,0,0,0)',
-            font=dict(color="#E0E0E0", family="Sans-serif"),
+            font=dict(color="#E0E0E0"),
             margin=dict(l=5, r=5, t=25, b=5),
-            xaxis=dict(showgrid=False),
-            yaxis=dict(showgrid=True, gridcolor='#2D2D2D')
+            xaxis=dict(showgrid=False, fixedrange=True),
+            yaxis=dict(showgrid=True, gridcolor='#2D2D2D', fixedrange=True)
         )
-        st.plotly_chart(fig_balanco, use_container_width=True, config={'displayModeBar': False})
+        st.plotly_chart(fig_balanco, use_container_width=True, config=config_plotly_mobile)
 
         # =========================================================
-        # GRÁFICO 2: DESCARTE POR PRATO (HORIZONTAL RESPONSIVO)
+        # GRÁFICO 2: DESCARTE POR PRATO
         # =========================================================
         if 'ID_Prato' in df.columns:
             st.markdown("##### 🍲 Descarte Acumulado por Prato")
@@ -214,10 +215,10 @@ def render():
                 font=dict(color="#E0E0E0"),
                 margin=dict(l=5, r=5, t=10, b=5),
                 coloraxis_showscale=False,
-                xaxis=dict(showgrid=True, gridcolor='#2D2D2D'),
-                yaxis=dict(showgrid=False)
+                xaxis=dict(showgrid=True, gridcolor='#2D2D2D', fixedrange=True),
+                yaxis=dict(showgrid=False, fixedrange=True)
             )
-            st.plotly_chart(fig_bar, use_container_width=True, config={'displayModeBar': False})
+            st.plotly_chart(fig_bar, use_container_width=True, config=config_plotly_mobile)
 
         # =========================================================
         # GRÁFICO 3: PROPORÇÃO DE SOBRAS (DONUT)
@@ -238,7 +239,7 @@ def render():
                 margin=dict(l=5, r=5, t=10, b=5),
                 legend=dict(orientation="h", yanchor="bottom", y=-0.2, xanchor="center", x=0.5)
             )
-            st.plotly_chart(fig_pie, use_container_width=True, config={'displayModeBar': False})
+            st.plotly_chart(fig_pie, use_container_width=True, config=config_plotly_mobile)
 
         # =========================================================
         # GRÁFICO 4: EVOLUÇÃO TEMPORAL
@@ -257,10 +258,10 @@ def render():
                 plot_bgcolor='rgba(0,0,0,0)',
                 font=dict(color="#E0E0E0"),
                 margin=dict(l=5, r=5, t=10, b=5),
-                xaxis=dict(showgrid=False),
-                yaxis=dict(showgrid=True, gridcolor='#2D2D2D')
+                xaxis=dict(showgrid=False, fixedrange=True),
+                yaxis=dict(showgrid=True, gridcolor='#2D2D2D', fixedrange=True)
             )
-            st.plotly_chart(fig_line, use_container_width=True, config={'displayModeBar': False})
+            st.plotly_chart(fig_line, use_container_width=True, config=config_plotly_mobile)
 
         # =========================================================
         # TABELA DE REGISTROS
