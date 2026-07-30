@@ -23,43 +23,34 @@ if "aba_ativa" not in st.session_state:
 
 aba = st.session_state["aba_ativa"]
 
-# Mapeamento exato da key do botão que DEVE ficar branco
-mapa_keys = {
-    "inicio": "btn_inicio",
-    "pesagem": "btn_pesagem",
-    "historico": "btn_historico",
-    "config": "btn_config"
-}
-key_ativa = mapa_keys.get(aba, "btn_inicio")
-
 # =========================================================
-# 2. INJEÇÃO DE CSS (MODO ESCURO + HOVER BRANCO + BOTÃO ATIVO DIRETO NO CSS)
+# 2. INJEÇÃO DE CSS (MODO ESCURO + CÁPSULA ESTÁVEL)
 # =========================================================
-st.markdown(f"""
+st.markdown("""
     <style>
     /* MODO ESCURO FORÇADO EM TUDO */
-    html, body, [data-testid="stApp"], .stApp {{
+    html, body, [data-testid="stApp"], .stApp {
         background-color: #121212 !important;
         color: #F8F9FA !important;
-    }}
+    }
 
     /* Espaçamento para o conteúdo rolar limpo atrás das barras */
-    .block-container {{
+    .block-container {
         padding-top: 3.8rem !important;
         padding-bottom: 9.5rem !important; 
         padding-left: 0.8rem !important;
         padding-right: 0.8rem !important;
         max-width: 100% !important;
-    }}
+    }
 
     /* Ocultar topo e rodapé padrão do Streamlit */
-    #MainMenu, header, .stDeployButton, footer, [data-testid="stFooter"] {{
+    #MainMenu, header, .stDeployButton, footer, [data-testid="stFooter"] {
         display: none !important;
         visibility: hidden !important;
-    }}
+    }
 
     /* BARRA SUPERIOR FIXA */
-    .modern-header {{
+    .modern-header {
         position: fixed;
         top: 0;
         left: 0;
@@ -75,19 +66,21 @@ st.markdown(f"""
         z-index: 99999 !important;
         box-shadow: 0px 4px 14px rgba(0, 0, 0, 0.6);
         border-radius: 0 0 16px 16px;
-    }}
+    }
 
-    .modern-header-title {{
+    .modern-header-title {
         font-size: 1.15rem;
         font-weight: 800;
         display: flex;
         align-items: center;
         gap: 10px;
-    }}
+    }
 
-    /* CÁPSULA TRAVADA NO RODAPÉ */
+    /* =========================================================
+       CÁPSULA TRAVADA NO RODAPÉ
+       ========================================================= */
     div[data-testid="stElementContainer"]:has(div.st-key-nav_bar_container),
-    div:has(> div.st-key-nav_bar_container) {{
+    div:has(> div.st-key-nav_bar_container) {
         position: fixed !important;
         bottom: 30px !important;
         left: 50% !important;
@@ -95,10 +88,10 @@ st.markdown(f"""
         width: 360px !important;
         max-width: 95vw !important;
         z-index: 99999999 !important;
-    }}
+    }
 
-    /* Cápsula Vermelha que envolve as 4 colunas */
-    div.st-key-nav_bar_container div[data-testid="stHorizontalBlock"] {{
+    /* Cápsula Vermelha que envolve as colunas */
+    div.st-key-nav_bar_container div[data-testid="stHorizontalBlock"] {
         background-color: #B71C1C !important;
         border-radius: 30px !important;
         box-shadow: 0px 8px 25px rgba(0, 0, 0, 0.8) !important;
@@ -109,11 +102,11 @@ st.markdown(f"""
         align-items: center !important;
         justify-content: space-between !important;
         gap: 0 !important;
-    }}
+    }
 
     /* FORÇA COLUNAS COM LARGURA IGUAL */
     div.st-key-nav_bar_container div[data-testid="stColumn"],
-    div.st-key-nav_bar_container div[data-testid="stHorizontalBlock"] > div {{
+    div.st-key-nav_bar_container div[data-testid="stHorizontalBlock"] > div {
         flex: 1 1 0% !important;
         width: 100% !important;
         min-width: 0 !important;
@@ -123,11 +116,11 @@ st.markdown(f"""
         justify-content: center !important;
         align-items: center !important;
         position: relative !important;
-    }}
+    }
 
-    /* Divisória vertical sutil */
+    /* Divisória vertical sutil entre os botões */
     div.st-key-nav_bar_container div[data-testid="stColumn"]:not(:last-child)::after,
-    div.st-key-nav_bar_container div[data-testid="stHorizontalBlock"] > div:not(:last-child)::after {{
+    div.st-key-nav_bar_container div[data-testid="stHorizontalBlock"] > div:not(:last-child)::after {
         content: "" !important;
         position: absolute !important;
         right: 0 !important;
@@ -136,42 +129,39 @@ st.markdown(f"""
         width: 1px !important;
         background-color: rgba(255, 255, 255, 0.2) !important;
         pointer-events: none !important;
-    }}
+    }
 
     /* WRAPPER INTERNO DOS BOTÕES */
     div.st-key-nav_bar_container div[data-testid="stElementContainer"],
-    div.st-key-nav_bar_container div[data-testid="stButton"] {{
+    div.st-key-nav_bar_container div[data-testid="stButton"] {
         width: 100% !important;
         margin: 0 !important;
         padding: 0 !important;
         display: flex !important;
         justify-content: center !important;
         align-items: center !important;
-    }}
+    }
 
-    /* ESTILO PADRÃO DOS BOTÕES (INATIVOS) */
-    div.st-key-nav_bar_container button {{
+    /* ESTILO BASE DOS BOTÕES */
+    div.st-key-nav_bar_container button {
         width: 90% !important;
         height: 44px !important;
-        background-color: transparent !important;
-        color: #E0E0E0 !important;
         font-size: 0.85rem !important;
         font-weight: 700 !important;
         border-radius: 20px !important;
         border: none !important;
-        box-shadow: none !important;
         margin: 0 auto !important;
         padding: 0 !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
         transition: all 0.2s ease-in-out !important;
-    }}
+    }
 
     div.st-key-nav_bar_container button *,
     div.st-key-nav_bar_container button div,
     div.st-key-nav_bar_container button p,
-    div.st-key-nav_bar_container button [data-testid="stMarkdownContainer"] {{
+    div.st-key-nav_bar_container button [data-testid="stMarkdownContainer"] {
         margin: 0 auto !important;
         padding: 0 !important;
         text-align: center !important;
@@ -182,61 +172,62 @@ st.markdown(f"""
         font-size: 0.85rem !important;
         font-weight: 700 !important;
         line-height: 1 !important;
-    }}
+    }
 
-    /* HOVER APENAS NOS BOTÕES QUE NÃO ESTÃO ATIVOS */
-    div.st-key-nav_bar_container div[data-testid="stElementContainer"]:not([data-testid="stKey-{key_ativa}"]) button:hover {{
+    /* BOTÕES INATIVOS: Transparente + Texto Claro */
+    div.st-key-nav_bar_container button[kind="secondary"] {
+        background-color: transparent !important;
+        color: #E0E0E0 !important;
+        box-shadow: none !important;
+    }
+
+    div.st-key-nav_bar_container button[kind="secondary"]:hover {
         background-color: #FFFFFF !important;
         color: #B71C1C !important;
         cursor: pointer !important;
-        box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3) !important;
-    }}
+    }
 
-    div.st-key-nav_bar_container div[data-testid="stElementContainer"]:not([data-testid="stKey-{key_ativa}"]) button:hover *,
-    div.st-key-nav_bar_container div[data-testid="stElementContainer"]:not([data-testid="stKey-{key_ativa}"]) button:hover p {{
+    div.st-key-nav_bar_container button[kind="secondary"]:hover * {
         color: #B71C1C !important;
-    }}
+    }
 
-    /* =========================================================
-       REGRA MASTER: BOTÃO ATIVO FORÇADO DIRETAMENTE VIA CSS
-       ========================================================= */
-    div.st-key-nav_bar_container div[data-testid="stKey-{key_ativa}"] button,
-    div.st-key-nav_bar_container div[data-testid="stKey-{key_ativa}"] button:hover,
-    div.st-key-nav_bar_container div[data-testid="stKey-{key_ativa}"] button:focus,
-    div.st-key-nav_bar_container div[data-testid="stKey-{key_ativa}"] button:active {{
+    /* BOTÃO ATIVO: Fundo Branco + Texto Vermelho (Baseado no tipo 'primary') */
+    div.st-key-nav_bar_container button[kind="primary"],
+    div.st-key-nav_bar_container button[kind="primary"]:hover,
+    div.st-key-nav_bar_container button[kind="primary"]:focus {
         background-color: #FFFFFF !important;
         color: #B71C1C !important;
         box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.4) !important;
-    }}
+    }
 
-    div.st-key-nav_bar_container div[data-testid="stKey-{key_ativa}"] button *,
-    div.st-key-nav_bar_container div[data-testid="stKey-{key_ativa}"] button p {{
+    div.st-key-nav_bar_container button[kind="primary"] *,
+    div.st-key-nav_bar_container button[kind="primary"] p {
         color: #B71C1C !important;
         font-weight: 800 !important;
-    }}
+    }
 
     /* FORMULÁRIO DARK MODE */
-    label {{
+    label {
         font-size: 0.95rem !important;
         font-weight: 700 !important;
         color: #E0E0E0 !important;
         margin-bottom: 0.2rem !important;
-    }}
+    }
 
-    div[data-baseweb="input"] input, div[data-baseweb="select"], textarea {{
+    div[data-baseweb="input"] input, div[data-baseweb="select"], textarea {
         font-size: 1.05rem !important;
         background-color: #1E1E1E !important;
         color: #FFFFFF !important;
         border: 1px solid #333333 !important;
         border-radius: 10px !important;
-    }}
+    }
 
-    div[data-baseweb="select"] * {{
+    div[data-baseweb="select"] * {
         color: #FFFFFF !important;
         background-color: #1E1E1E !important;
-    }}
+    }
 
-    .section-header {{
+    .section-header {
         font-size: 0.95rem;
         font-weight: 800;
         color: #FF5252;
@@ -245,11 +236,11 @@ st.markdown(f"""
         margin-top: 15px;
         margin-bottom: 12px;
         text-transform: uppercase;
-    }}
+    }
 
-    [data-testid="stMetricValue"] {{
+    [data-testid="stMetricValue"] {
         color: #FF5252 !important;
-    }}
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -366,24 +357,28 @@ elif aba == "config":
         st.success("Cache limpo com sucesso!")
 
 # =========================================================
-# 6. RODAPÉ FIXO DE BOTÕES NATIVOS
+# 6. RODAPÉ FIXO COM TIPO NATIVO DO STREAMLIT (PRIMARY / SECONDARY)
 # =========================================================
 nav_bar = st.container(key="nav_bar_container")
 with nav_bar:
     c1, c2, c3, c4 = st.columns(4)
     with c1:
-        if st.button("Início", key="btn_inicio"):
+        tipo = "primary" if aba == "inicio" else "secondary"
+        if st.button("Início", key="btn_inicio", type=tipo):
             st.session_state["aba_ativa"] = "inicio"
             st.rerun()
     with c2:
-        if st.button("Formulário", key="btn_pesagem"):
+        tipo = "primary" if aba == "pesagem" else "secondary"
+        if st.button("Formulário", key="btn_pesagem", type=tipo):
             st.session_state["aba_ativa"] = "pesagem"
             st.rerun()
     with c3:
-        if st.button("Painel", key="btn_historico"):
+        tipo = "primary" if aba == "historico" else "secondary"
+        if st.button("Painel", key="btn_historico", type=tipo):
             st.session_state["aba_ativa"] = "historico"
             st.rerun()
     with c4:
-        if st.button("⚙️", key="btn_config"):
+        tipo = "primary" if aba == "config" else "secondary"
+        if st.button("⚙️", key="btn_config", type=tipo):
             st.session_state["aba_ativa"] = "config"
             st.rerun()
