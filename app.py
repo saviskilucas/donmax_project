@@ -17,25 +17,24 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Lista oficial de opções do menu (Usadas para validação)
-OPCOES_MENU = ["Início", "Formulário", "Painel", "⚙️ Config"]
+# Estado inicial da aba
+if "aba_ativa" not in st.session_state:
+    st.session_state["aba_ativa"] = "inicio"
 
-# Gerenciamento seguro do estado inicial da aba
-if "aba_ativa" not in st.session_state or st.session_state["aba_ativa"] not in OPCOES_MENU:
-    st.session_state["aba_ativa"] = "Início"
+aba = st.session_state["aba_ativa"]
 
 # =========================================================
-# 2. INJEÇÃO DE CSS (MODO ESCURO + CÁPSULA PERFEITA NO RODAPÉ)
+# 2. INJEÇÃO DE CSS (DARK MODE + RODAPÉ FIXO DE BOTÕES)
 # =========================================================
 st.markdown("""
     <style>
-    /* MODO ESCURO FORÇADO DEFINITIVO */
+    /* MODO ESCURO FORÇADO EM TUDO */
     html, body, [data-testid="stApp"], .stApp {
         background-color: #121212 !important;
         color: #F8F9FA !important;
     }
 
-    /* Recuo inferior para rolar o conteúdo sem cobrir */
+    /* Espaçamento para o conteúdo não ser coberto pelo topo e rodapé */
     .block-container {
         padding-top: 3.8rem !important;
         padding-bottom: 9.5rem !important; 
@@ -44,20 +43,10 @@ st.markdown("""
         max-width: 100% !important;
     }
 
-    /* Ocultar elementos padrão do Streamlit */
+    /* Ocultar elementos padrão */
     #MainMenu, header, .stDeployButton, footer, [data-testid="stFooter"] {
         display: none !important;
         visibility: hidden !important;
-    }
-
-    /* TRANSIÇÃO SUAVE DE CONTEÚDO */
-    .main-content-animated {
-        animation: fadeIn 0.15s ease-out forwards;
-    }
-
-    @keyframes fadeIn {
-        from { opacity: 0.5; transform: translateY(2px); }
-        to { opacity: 1; transform: translateY(0); }
     }
 
     /* BARRA SUPERIOR FIXA */
@@ -88,60 +77,62 @@ st.markdown("""
     }
 
     /* =========================================================
-       TRAVA DO SEGMENTED CONTROL NO RODAPÉ (CÁPSULA REDONDA)
+       RODAPÉ FIXO: FIXA O CONTAINER DE BOTÕES NO RODAPÉ
        ========================================================= */
-    div[data-testid="stElementContainer"]:has(div[data-testid="stSegmentedControl"]) {
+    div[data-testid="stElementContainer"]:has(div.st-key-nav_bar_container) {
         position: fixed !important;
         bottom: 80px !important;
         left: 50% !important;
         transform: translateX(-50%) !important;
         width: 360px !important;
         max-width: 95vw !important;
-        height: 60px !important;
         z-index: 9999999 !important;
     }
 
-    /* Esconde rótulo do widget */
-    div[data-testid="stSegmentedControl"] label {
-        display: none !important;
-    }
-
-    /* Container da Cápsula Vermelha */
-    div[data-testid="stSegmentedControl"] > div {
+    /* Formatação da Cápsula Vermelha nas Colunas */
+    div.st-key-nav_bar_container div[data-testid="stHorizontalBlock"] {
         background-color: #B71C1C !important;
         border-radius: 30px !important;
         box-shadow: 0px 8px 25px rgba(0, 0, 0, 0.7) !important;
         border: 2px solid #2D2D2D !important;
         height: 60px !important;
-        width: 100% !important;
         padding: 0 4px !important;
-        gap: 4px !important;
         display: flex !important;
         align-items: center !important;
+        justify-content: space-between !important;
+        gap: 2px !important;
     }
 
-    /* Botões individuais do Segmented Control */
-    div[data-testid="stSegmentedControl"] button {
+    /* Ajuste de cada coluna dentro da barra */
+    div.st-key-nav_bar_container div[data-testid="stHorizontalBlock"] > div {
         flex: 1 !important;
+        min-width: 0 !important;
+    }
+
+    /* Estilização dos Botões da Barra */
+    div.st-key-nav_bar_container button {
+        width: 100% !important;
         height: 44px !important;
-        border-radius: 20px !important;
-        border: none !important;
         background-color: transparent !important;
         color: #E0E0E0 !important;
-        font-size: 0.85rem !important;
+        font-size: 0.82rem !important;
         font-weight: 700 !important;
-        transition: all 0.15s ease-in-out !important;
+        border-radius: 20px !important;
+        border: none !important;
+        box-shadow: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
     }
 
-    /* BOTÃO SELECIONADO (CAIXINHA BRANCA EM DESTAQUE) */
-    div[data-testid="stSegmentedControl"] button[aria-selected="true"] {
+    /* Destaque da Aba Ativa (Caixinha Branca) */
+    div.st-key-nav_bar_container button.active-btn {
         background-color: #FFFFFF !important;
         color: #B71C1C !important;
         font-weight: 800 !important;
         box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.4) !important;
     }
 
-    /* CAMPOS DO FORMULÁRIO (MODO ESCURO) */
+    /* FORMULÁRIO DARK MODE */
     label {
         font-size: 0.95rem !important;
         font-weight: 700 !important;
@@ -160,19 +151,6 @@ st.markdown("""
     div[data-baseweb="select"] * {
         color: #FFFFFF !important;
         background-color: #1E1E1E !important;
-    }
-
-    .stButton > button {
-        width: 100% !important;
-        height: 3.5rem !important;
-        font-size: 1.15rem !important;
-        font-weight: 800 !important;
-        background-color: #B71C1C !important;
-        color: #FFFFFF !important;
-        border-radius: 12px !important;
-        border: none !important;
-        box-shadow: 0px 4px 14px rgba(183, 28, 28, 0.4) !important;
-        margin-top: 0.8rem !important;
     }
 
     .section-header {
@@ -217,26 +195,9 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # =========================================================
-# 5. MENU DE CÁPSULA (SEM PISCADA E SEM BOLINHAS)
+# 5. CONTEÚDO DAS ABAS
 # =========================================================
-aba_selecionada = st.segmented_control(
-    label="",
-    options=OPCOES_MENU,
-    default=st.session_state["aba_ativa"],
-    label_visibility="collapsed"
-)
-
-if aba_selecionada:
-    st.session_state["aba_ativa"] = aba_selecionada
-
-aba = st.session_state["aba_ativa"]
-
-# =========================================================
-# 6. CONTEÚDO DAS ABAS
-# =========================================================
-st.markdown("<div class='main-content-animated'>", unsafe_allow_html=True)
-
-if aba == "Início":
+if aba == "inicio":
     st.markdown("<div class='section-header'>🔐 ACESSO AO SISTEMA</div>", unsafe_allow_html=True)
     st.write("Insira suas credenciais para acessar o painel de pesagens:")
     
@@ -248,7 +209,7 @@ if aba == "Início":
         if btn_login:
             st.info("ℹ️ Login demonstrativo em desenvolvimento. Use os menus abaixo para navegar.")
 
-elif aba == "Formulário":
+elif aba == "pesagem":
     with st.form("form_pesagem", clear_on_submit=True):
         st.markdown("<div class='section-header'>1. INFORMAÇÕES DO DIA</div>", unsafe_allow_html=True)
         data_sel = st.date_input("Data do Serviço", value=date.today())
@@ -285,7 +246,7 @@ elif aba == "Formulário":
                 except Exception as e:
                     st.error(f"❌ Erro ao salvar na planilha: {e}")
 
-elif aba == "Painel":
+elif aba == "historico":
     st.markdown("<div class='section-header'>📊 PAINEL DE CONTROLE DE DESCARTE</div>", unsafe_allow_html=True)
     try:
         sheet = conectar_gsheets()
@@ -301,11 +262,58 @@ elif aba == "Painel":
     except Exception as e:
         st.error(f"Erro ao carregar dados do Google Sheets: {e}")
 
-elif aba == "⚙️ Config":
+elif aba == "config":
     st.markdown("<div class='section-header'>⚙️ CONFIGURAÇÕES DO SISTEMA</div>", unsafe_allow_html=True)
     st.markdown("**Don Max Buffet v1.0**\n*Sistema Integrado de Controle de Pesagens*\n\n---\n\n**Instruções para a Cozinha:**\n1. Realize as pesagens sempre ao final do turno.\n2. Certifique-se de zerar a tara da balança.\n3. Dúvidas ou problemas falar com a gerência.")
     if st.button("🔄 Atualizar Conexão com a Planilha"):
         st.cache_resource.clear()
         st.success("Conexão atualizada com sucesso!")
 
-st.markdown("</div>", unsafe_allow_html=True)
+# =========================================================
+# 6. RODAPÉ FIXO COM 4 BOTÕES (COLUNAS EM CONTAINER)
+# =========================================================
+nav_bar = st.container(key="nav_bar_container")
+with nav_bar:
+    c1, c2, c3, c4 = st.columns(4)
+    with c1:
+        if st.button("Início", key="btn_inicio"):
+            st.session_state["aba_ativa"] = "inicio"
+            st.rerun()
+    with c2:
+        if st.button("Formulário", key="btn_pesagem"):
+            st.session_state["aba_ativa"] = "pesagem"
+            st.rerun()
+    with c3:
+        if st.button("Painel", key="btn_historico"):
+            st.session_state["aba_ativa"] = "historico"
+            st.rerun()
+    with c4:
+        if st.button("⚙️ Config", key="btn_config"):
+            st.session_state["aba_ativa"] = "config"
+            st.rerun()
+
+# Aplica classe 'active-btn' para destacar a caixinha branca no botão selecionado
+st.components.v1.html(f"""
+    <script>
+    setTimeout(function() {{
+        const doc = window.parent.document;
+        const mapa = {{
+            'inicio': 'btn_inicio',
+            'pesagem': 'btn_pesagem',
+            'historico': 'btn_historico',
+            'config': 'btn_config'
+        }};
+        
+        Object.values(mapa).forEach(k => {{
+            const btn = doc.querySelector('div[data-testid="stButton"]:has(button[key="' + k + '"]) button') || doc.querySelector('button[key="' + k + '"]');
+            if (btn) btn.classList.remove('active-btn');
+        }});
+
+        const ativoKey = mapa['{aba}'];
+        if (ativoKey) {{
+            const btnAtivo = doc.querySelector('div[data-testid="stButton"]:has(button[key="' + ativoKey + '"]) button') || doc.querySelector('button[key="' + ativoKey + '"]');
+            if (btnAtivo) btnAtivo.classList.add('active-btn');
+        }}
+    }}, 40);
+    </script>
+""", height=0)
