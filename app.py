@@ -24,7 +24,7 @@ if "aba_ativa" not in st.session_state:
 aba = st.session_state["aba_ativa"]
 
 # =========================================================
-# 2. INJEÇÃO DE CSS (MODO ESCURO + CENTRALIZAÇÃO DE COLUNAS)
+# 2. INJEÇÃO DE CSS (MODO ESCURO + HOVER BRANCO + CENTRALIZAÇÃO EXATA)
 # =========================================================
 st.markdown("""
     <style>
@@ -77,7 +77,7 @@ st.markdown("""
     }
 
     /* =========================================================
-       CÁPSULA TRAVADA NO RODAPÉ COM CENTRALIZAÇÃO SIMÉTRICA
+       CÁPSULA TRAVADA NO RODAPÉ COM CENTRALIZAÇÃO ABSOLUTA
        ========================================================= */
     div[data-testid="stElementContainer"]:has(div.st-key-nav_bar_container),
     div:has(> div.st-key-nav_bar_container) {
@@ -366,7 +366,7 @@ with nav_bar:
             st.session_state["aba_ativa"] = "config"
             st.rerun()
 
-# SCRIPT QUE APLICA O DESTAQUE BRANCO AO BOTÃO ATIVO
+# SCRIPT QUE CONTINUA VERIFICANDO ATÉ ABRIR E PINTAR DE BRANCO O BOTÃO DA ABA ATIVA
 st.components.v1.html(f"""
     <script>
     function updateActiveButton() {{
@@ -389,8 +389,14 @@ st.components.v1.html(f"""
             btnsAtivos.forEach(btn => btn.classList.add('active-btn'));
         }}
     }}
+    
+    // Execução imediata e persistente para resistir a carregamentos assíncronos (como Google Sheets)
     updateActiveButton();
-    setTimeout(updateActiveButton, 50);
-    setTimeout(updateActiveButton, 150);
+    let counter = 0;
+    const intervalId = setInterval(() => {{
+        updateActiveButton();
+        counter++;
+        if (counter > 15) clearInterval(intervalId);
+    }}, 100);
     </script>
 """, height=0)
