@@ -24,7 +24,7 @@ if "aba_ativa" not in st.session_state:
 aba = st.session_state["aba_ativa"]
 
 # =========================================================
-# 2. INJEÇÃO DE CSS (DARK MODE + RODAPÉ FIXO DE BOTÕES)
+# 2. INJEÇÃO DE CSS (DARK MODE + CÁPSULA FIXA NO RODAPÉ)
 # =========================================================
 st.markdown("""
     <style>
@@ -34,7 +34,7 @@ st.markdown("""
         color: #F8F9FA !important;
     }
 
-    /* Espaçamento para o conteúdo não ser coberto pelo topo e rodapé */
+    /* Espaçamento para o conteúdo rolar limpo atrás das barras */
     .block-container {
         padding-top: 3.8rem !important;
         padding-bottom: 9.5rem !important; 
@@ -43,7 +43,7 @@ st.markdown("""
         max-width: 100% !important;
     }
 
-    /* Ocultar elementos padrão */
+    /* Ocultar topo e rodapé padrão do Streamlit */
     #MainMenu, header, .stDeployButton, footer, [data-testid="stFooter"] {
         display: none !important;
         visibility: hidden !important;
@@ -77,9 +77,9 @@ st.markdown("""
     }
 
     /* =========================================================
-       RODAPÉ FIXO: FIXA O CONTAINER DE BOTÕES NO RODAPÉ
+       TRAVA DEFINITIVA DA CÁPSULA NO RODAPÉ (80PX FIXO)
        ========================================================= */
-    div[data-testid="stElementContainer"]:has(div.st-key-nav_bar_container) {
+    [data-testid="stVerticalBlock"]:has(div.st-key-nav_bar_container) {
         position: fixed !important;
         bottom: 80px !important;
         left: 50% !important;
@@ -89,42 +89,44 @@ st.markdown("""
         z-index: 9999999 !important;
     }
 
-    /* Formatação da Cápsula Vermelha nas Colunas */
-    div.st-key-nav_bar_container div[data-testid="stHorizontalBlock"] {
+    /* Cápsula Vermelha que envolve as 4 colunas */
+    div.st-key-nav_bar_container [data-testid="stHorizontalBlock"] {
         background-color: #B71C1C !important;
         border-radius: 30px !important;
         box-shadow: 0px 8px 25px rgba(0, 0, 0, 0.7) !important;
         border: 2px solid #2D2D2D !important;
         height: 60px !important;
-        padding: 0 4px !important;
+        padding: 0 6px !important;
         display: flex !important;
         align-items: center !important;
         justify-content: space-between !important;
-        gap: 2px !important;
+        gap: 4px !important;
     }
 
-    /* Ajuste de cada coluna dentro da barra */
-    div.st-key-nav_bar_container div[data-testid="stHorizontalBlock"] > div {
+    /* Colunas individuais */
+    div.st-key-nav_bar_container [data-testid="stHorizontalBlock"] > div {
         flex: 1 !important;
         min-width: 0 !important;
+        padding: 0 !important;
     }
 
-    /* Estilização dos Botões da Barra */
+    /* Estilo padrão dos 4 botões */
     div.st-key-nav_bar_container button {
         width: 100% !important;
         height: 44px !important;
         background-color: transparent !important;
         color: #E0E0E0 !important;
-        font-size: 0.82rem !important;
+        font-size: 0.85rem !important;
         font-weight: 700 !important;
         border-radius: 20px !important;
         border: none !important;
         box-shadow: none !important;
         margin: 0 !important;
         padding: 0 !important;
+        transition: all 0.15s ease-in-out !important;
     }
 
-    /* Destaque da Aba Ativa (Caixinha Branca) */
+    /* Destaque do Botão Ativo (Caixinha Branca em Destaque) */
     div.st-key-nav_bar_container button.active-btn {
         background-color: #FFFFFF !important;
         color: #B71C1C !important;
@@ -270,7 +272,7 @@ elif aba == "config":
         st.success("Conexão atualizada com sucesso!")
 
 # =========================================================
-# 6. RODAPÉ FIXO COM 4 BOTÕES (COLUNAS EM CONTAINER)
+# 6. RODAPÉ FIXO (CÁPSULA COM 4 BOTÕES)
 # =========================================================
 nav_bar = st.container(key="nav_bar_container")
 with nav_bar:
@@ -292,10 +294,10 @@ with nav_bar:
             st.session_state["aba_ativa"] = "config"
             st.rerun()
 
-# Aplica classe 'active-btn' para destacar a caixinha branca no botão selecionado
+# Script leve que aplica a caixinha branca no botão da aba ativa
 st.components.v1.html(f"""
     <script>
-    setTimeout(function() {{
+    function updateActiveButton() {{
         const doc = window.parent.document;
         const mapa = {{
             'inicio': 'btn_inicio',
@@ -314,6 +316,8 @@ st.components.v1.html(f"""
             const btnAtivo = doc.querySelector('div[data-testid="stButton"]:has(button[key="' + ativoKey + '"]) button') || doc.querySelector('button[key="' + ativoKey + '"]');
             if (btnAtivo) btnAtivo.classList.add('active-btn');
         }}
-    }}, 40);
+    }}
+    updateActiveButton();
+    setTimeout(updateActiveButton, 50);
     </script>
 """, height=0)
