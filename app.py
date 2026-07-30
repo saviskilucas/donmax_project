@@ -17,8 +17,15 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Estado inicial da aba
+# Estados de sessão
+if "usuario_logado" not in st.session_state:
+    st.session_state["usuario_logado"] = None
+
 if "aba_ativa" not in st.session_state:
+    st.session_state["aba_ativa"] = "inicio"
+
+# Se o usuário NÃO estiver logado, força o aplicativo a ficar travado na aba inicio
+if not st.session_state["usuario_logado"]:
     st.session_state["aba_ativa"] = "inicio"
 
 aba = st.session_state["aba_ativa"]
@@ -76,9 +83,7 @@ st.markdown("""
         gap: 10px;
     }
 
-    /* =========================================================
-       CÁPSULA TRAVADA NO RODAPÉ
-       ========================================================= */
+    /* CÁPSULA TRAVADA NO RODAPÉ */
     div[data-testid="stElementContainer"]:has(div.st-key-nav_bar_container),
     div:has(> div.st-key-nav_bar_container) {
         position: fixed !important;
@@ -174,7 +179,7 @@ st.markdown("""
         line-height: 1 !important;
     }
 
-    /* BOTÕES INATIVOS: Transparente + Texto Claro */
+    /* BOTÕES INATIVOS */
     div.st-key-nav_bar_container button[kind="secondary"] {
         background-color: transparent !important;
         color: #E0E0E0 !important;
@@ -191,7 +196,7 @@ st.markdown("""
         color: #B71C1C !important;
     }
 
-    /* BOTÃO ATIVO: Fundo Branco + Texto Vermelho (Baseado no tipo 'primary') */
+    /* BOTÃO ATIVO */
     div.st-key-nav_bar_container button[kind="primary"],
     div.st-key-nav_bar_container button[kind="primary"]:hover,
     div.st-key-nav_bar_container button[kind="primary"]:focus {
@@ -245,22 +250,32 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # =========================================================
-# 3. CONEXÃO E LEITURA CACHEADA DO GOOGLE SHEETS
+# 3. CONEXÃO E BANCO DE DADOS GOOGLE SHEETS
 # =========================================================
 @st.cache_resource
 def conectar_gsheets():
     scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
     credentials = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scope)
-    client = gspread.authorize(credentials)
-    return client.open("Planilha Don Max").worksheet("Lancamentos_Diarios")
+    return gspread.authorize(credentials).open("Planilha Don Max")
 
 @st.cache_data(ttl=300)
 def carregar_dados_painel():
     try:
-        sheet = conectar_gsheets()
+        sheet = conectar_gsheets().worksheet("Lancamentos_Diarios")
         return sheet.get_all_records()
     except Exception:
         return []
+
+def buscar_usuarios():
+    try:
+        sheet = conectar_gsheets().worksheet("Usuarios")
+        return sheet.get_all_records()
+    except Exception:
+        return []
+
+def cadastrar_usuario(nome, email, senha):
+    sheet = conectar_gsheets().worksheet("Usuarios")
+    sheet.append_row([nome, email, senha])
 
 # =========================================================
 # 4. BARRA SUPERIOR FIXA
@@ -271,31 +286,111 @@ st.markdown("""
             <span>Don Max Buffet</span>
         </div>
         <div>
-            <span onclick="window.location.reload();" style="cursor:pointer;">🔄</span>
+            <span onclick="window.location.reload();" style="cursor:pointer;" title="Recarregar">🔄</span>
         </div>
     </div>
 """, unsafe_allow_html=True)
+
+# Botão de Logout se o usuário estiver logado
+if st.session_state["usuario_logado"]:
+    col_head1, col_head2 = st.columns([0.7, 0.3])
+    with col_head2:
+        if st.button("🚪 Sair", key="btn_logout"):
+            st.session_state["usuario_logado"] = None
+            st.session_state["aba_ativa"] = "inicio"
+            st.rerun()
 
 # =========================================================
 # 5. CONTEÚDO DAS ABAS
 # =========================================================
 if aba == "inicio":
-    st.markdown("<div class='section-header'>🔐 ACESSO AO SISTEMA</div>", unsafe_allow_html=True)
-    st.write("Insira suas credenciais para acessar o painel de pesagens:")
-    
-    with st.form("form_login"):
-        usuario = st.text_input("Usuário", placeholder="Ex: gerencia")
-        senha = st.text_input("Senha", type="password", placeholder="••••••••")
-        btn_login = st.form_submit_button("ENTRAR NO SISTEMA")
+    if not st.session_state["usuario_logado"]:
+        st.markdown("<div class='section-header'>🔐 ACESSO AO SISTEMA</div>", unsafe_allow_html=True)
         
-        if btn_login:
-            st.info("ℹ️ Login demonstrativo em desenvolvimento. Use os menus abaixo para navegar.")
+        tab_login, tab_cadastro, tab_esqueci = st.tabs(["🔐 Entrar", "📝 Criar Conta", "🔑 Esqueci a Senha"])
+        
+        # ABA 1: LOGIN
+        with tab_login:
+            with st.form("form_login"):
+                email_login = st.text_input("E-mail", placeholder="seuemail@exemplo.com")
+                senha_login = st.text_input("Senha", type="password", placeholder="••••••••")
+                btn_login = st.form_submit_button("ENTRAR NO SISTEMA")
+                
+                if btn_login:
+                    if not email_login or not senha_login:
+                        st.warning("⚠️ Preencha todos os campos para continuar.")
+                    else:
+                        usuarios = buscar_usuarios()
+                        usuario_encontrado = None
+                        for u in usuarios:
+                            if str(u.get("Email", "")).strip().lower() == email_login.strip().lower() and str(u.get("Senha", "")) == senha_login:
+                                usuario_encontrado = u
+                                break
+                        
+                        if usuario_encontrado:
+                            st.session_state["usuario_logado"] = usuario_encontrado.get("Nome", "Usuário")
+                            st.session_state["aba_ativa"] = "pesagem"
+                            st.success(f"Bem-vindo(a), {st.session_state['usuario_logado']}!")
+                            st.rerun()
+                        else:
+                            st.error("❌ E-mail ou senha incorretos.")
 
-elif aba == "pesagem":
+        # ABA 2: CADASTRO
+        with tab_cadastro:
+            with st.form("form_cadastro"):
+                nome_cad = st.text_input("Nome Completo", placeholder="Ex: João Silva")
+                email_cad = st.text_input("E-mail de Acesso", placeholder="seuemail@exemplo.com")
+                senha_cad = st.text_input("Senha", type="password", placeholder="••••••••")
+                btn_cadastrar = st.form_submit_button("CRIAR MINHA CONTA")
+                
+                if btn_cadastrar:
+                    if not nome_cad or not email_cad or not senha_cad:
+                        st.warning("⚠️ Por favor, preencha todos os campos do cadastro.")
+                    else:
+                        usuarios = buscar_usuarios()
+                        ja_existe = any(str(u.get("Email", "")).strip().lower() == email_cad.strip().lower() for u in usuarios)
+                        
+                        if ja_existe:
+                            st.error("⚠️ Este e-mail já está cadastrado. Faça login ou recupere sua senha.")
+                        else:
+                            try:
+                                cadastrar_usuario(nome_cad.strip(), email_cad.strip().lower(), senha_cad.strip())
+                                st.success("✅ Conta criada com sucesso! Você já pode fazer login na aba 'Entrar'.")
+                            except Exception as e:
+                                st.error(f"❌ Erro ao salvar cadastro: {e}")
+
+        # ABA 3: ESQUECI A SENHA
+        with tab_esqueci:
+            with st.form("form_esqueci"):
+                email_recup = st.text_input("Insira seu E-mail Cadastrado", placeholder="seuemail@exemplo.com")
+                btn_recuperar = st.form_submit_button("RECUPERAR MINHA SENHA")
+                
+                if btn_recuperar:
+                    if not email_recup:
+                        st.warning("⚠️ Digite o e-mail para buscar a senha.")
+                    else:
+                        usuarios = buscar_usuarios()
+                        senha_achada = None
+                        for u in usuarios:
+                            if str(u.get("Email", "")).strip().lower() == email_recup.strip().lower():
+                                senha_achada = u.get("Senha")
+                                break
+                        
+                        if senha_achada:
+                            st.info(f"🔑 **Sua senha cadastrada é:** `{senha_achada}`")
+                        else:
+                            st.error("❌ E-mail não localizado na base de usuários.")
+
+    else:
+        st.markdown(f"<div class='section-header'>👋 BEM-VINDO, {st.session_state['usuario_logado'].upper()}!</div>", unsafe_allow_html=True)
+        st.write("Você está conectado ao sistema do **Don Max Buffet**.")
+        st.info("Utilize os menus no rodapé da tela para registrar pesagens ou visualizar relatórios.")
+
+elif aba == "pesagem" and st.session_state["usuario_logado"]:
     with st.form("form_pesagem", clear_on_submit=True):
         st.markdown("<div class='section-header'>1. INFORMAÇÕES DO DIA</div>", unsafe_allow_html=True)
         data_sel = st.date_input("Data do Serviço", value=date.today())
-        responsavel = st.text_input("Responsável pelo Turno", placeholder="Ex: João Silva")
+        responsavel = st.text_input("Responsável pelo Turno", value=st.session_state["usuario_logado"])
         clientes = st.number_input("Clientes Atendidos no Dia", min_value=0, step=1, value=0)
 
         st.markdown("<div class='section-header'>2. PREPARAÇÃO / PRATO</div>", unsafe_allow_html=True)
@@ -320,7 +415,7 @@ elif aba == "pesagem":
                 st.error("⚠️ Preencha o nome do Responsável antes de salvar.")
             else:
                 try:
-                    sheet = conectar_gsheets()
+                    sheet = conectar_gsheets().worksheet("Lancamentos_Diarios")
                     nova_linha = [str(data_sel), responsavel.strip(), int(clientes), prato_sel, float(prod_inicial), float(reposicao), float(sobra_limpa), float(sobra_buffet), float(descarte), observacoes.strip()]
                     sheet.append_row(nova_linha)
                     st.cache_data.clear()
@@ -329,7 +424,7 @@ elif aba == "pesagem":
                 except Exception as e:
                     st.error(f"❌ Erro ao salvar na planilha: {e}")
 
-elif aba == "historico":
+elif aba == "historico" and st.session_state["usuario_logado"]:
     st.markdown("<div class='section-header'>📊 PAINEL DE CONTROLE DE DESCARTE</div>", unsafe_allow_html=True)
     
     col_a, col_b = st.columns([0.7, 0.3])
@@ -348,7 +443,7 @@ elif aba == "historico":
     else:
         st.info("Nenhum registro encontrado na planilha ainda.")
 
-elif aba == "config":
+elif aba == "config" and st.session_state["usuario_logado"]:
     st.markdown("<div class='section-header'>⚙️ CONFIGURAÇÕES DO SISTEMA</div>", unsafe_allow_html=True)
     st.markdown("**Don Max Buffet v1.0**\n*Sistema Integrado de Controle de Pesagens*\n\n---\n\n**Instruções para a Cozinha:**\n1. Realize as pesagens sempre ao final do turno.\n2. Certifique-se de zerar a tara da balança.\n3. Dúvidas ou problemas falar com a gerência.")
     if st.button("🔄 Limpar Cache Geral"):
@@ -357,28 +452,29 @@ elif aba == "config":
         st.success("Cache limpo com sucesso!")
 
 # =========================================================
-# 6. RODAPÉ FIXO COM TIPO NATIVO DO STREAMLIT (PRIMARY / SECONDARY)
+# 6. RODAPÉ FIXO (SÓ EXIBE SE ESTIVER LOGADO)
 # =========================================================
-nav_bar = st.container(key="nav_bar_container")
-with nav_bar:
-    c1, c2, c3, c4 = st.columns(4)
-    with c1:
-        tipo = "primary" if aba == "inicio" else "secondary"
-        if st.button("Início", key="btn_inicio", type=tipo):
-            st.session_state["aba_ativa"] = "inicio"
-            st.rerun()
-    with c2:
-        tipo = "primary" if aba == "pesagem" else "secondary"
-        if st.button("Formulário", key="btn_pesagem", type=tipo):
-            st.session_state["aba_ativa"] = "pesagem"
-            st.rerun()
-    with c3:
-        tipo = "primary" if aba == "historico" else "secondary"
-        if st.button("Painel", key="btn_historico", type=tipo):
-            st.session_state["aba_ativa"] = "historico"
-            st.rerun()
-    with c4:
-        tipo = "primary" if aba == "config" else "secondary"
-        if st.button("⚙️", key="btn_config", type=tipo):
-            st.session_state["aba_ativa"] = "config"
-            st.rerun()
+if st.session_state["usuario_logado"]:
+    nav_bar = st.container(key="nav_bar_container")
+    with nav_bar:
+        c1, c2, c3, c4 = st.columns(4)
+        with c1:
+            tipo = "primary" if aba == "inicio" else "secondary"
+            if st.button("Início", key="btn_inicio", type=tipo):
+                st.session_state["aba_ativa"] = "inicio"
+                st.rerun()
+        with c2:
+            tipo = "primary" if aba == "pesagem" else "secondary"
+            if st.button("Formulário", key="btn_pesagem", type=tipo):
+                st.session_state["aba_ativa"] = "pesagem"
+                st.rerun()
+        with c3:
+            tipo = "primary" if aba == "historico" else "secondary"
+            if st.button("Painel", key="btn_historico", type=tipo):
+                st.session_state["aba_ativa"] = "historico"
+                st.rerun()
+        with c4:
+            tipo = "primary" if aba == "config" else "secondary"
+            if st.button("⚙️", key="btn_config", type=tipo):
+                st.session_state["aba_ativa"] = "config"
+                st.rerun()
