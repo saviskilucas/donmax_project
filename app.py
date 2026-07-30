@@ -17,12 +17,12 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Gerenciamento de Estado da Aba Ativa (Padrão: Início)
+# Gerenciamento de Estado da Aba Ativa
 if "aba_ativa" not in st.session_state:
     st.session_state["aba_ativa"] = "inicio"
 
 # =========================================================
-# 2. INJEÇÃO DE CSS (MODO ESCURO + CÁPSULA FIXA NATIVA SEM BOLINHA)
+# 2. INJEÇÃO DE CSS (MODO ESCURO + REMOÇÃO ABSOLUTA DA BOLINHA)
 # =========================================================
 st.markdown("""
     <style>
@@ -32,7 +32,6 @@ st.markdown("""
         color: #F8F9FA !important;
     }
 
-    /* Recuo inferior para rolar o conteúdo sem cobrir */
     .block-container {
         padding-top: 3.8rem !important;
         padding-bottom: 9.5rem !important; 
@@ -41,7 +40,6 @@ st.markdown("""
         max-width: 100% !important;
     }
 
-    /* Ocultar elementos padrão do Streamlit */
     #MainMenu, header, .stDeployButton, footer, [data-testid="stFooter"] {
         display: none !important;
         visibility: hidden !important;
@@ -85,7 +83,7 @@ st.markdown("""
     }
 
     /* =========================================================
-       TRAVA DO MENU RADIO NO RODAPÉ (80PX FIXO E INQUEBRÁVEL)
+       TRAVA DO MENU RODAPÉ (80PX FIXO A 360PX)
        ========================================================= */
     div[data-testid="stElementContainer"]:has(div[data-testid="stRadio"]) {
         position: fixed !important;
@@ -98,17 +96,15 @@ st.markdown("""
         z-index: 9999999 !important;
     }
 
-    /* Oculta o título principal do widget */
     div[data-testid="stRadio"] label[data-testid="stWidgetLabel"],
     div[data-testid="stRadio"] > label {
         display: none !important;
-        visibility: hidden !important;
         height: 0 !important;
         margin: 0 !important;
         padding: 0 !important;
     }
 
-    /* Cápsula Vermelha Escura */
+    /* Cápsula Vermelha */
     div[data-testid="stRadio"] > div {
         background-color: #B71C1C !important;
         border-radius: 30px !important;
@@ -120,24 +116,12 @@ st.markdown("""
         flex-direction: row !important;
         align-items: center !important;
         justify-content: space-around !important;
-        padding: 0 4px !important;
+        padding: 0 6px !important;
     }
 
     /* =========================================================
-       SUMIR COM A BOLINHA SEM APAGAR O TEXTO (OCULTA APENAS O RADIO INPUT/SVG)
+       EXTIRPAÇÃO DA BOLINHA (ANULANDO LARGURA, ALTURA E OPACIDADE)
        ========================================================= */
-    div[data-testid="stRadio"] label input[type="radio"],
-    div[data-testid="stRadio"] label svg,
-    div[data-testid="stRadio"] label [data-testid="stRadioOption"] > div:first-child {
-        display: none !important;
-        width: 0 !important;
-        height: 0 !important;
-        opacity: 0 !important;
-        position: absolute !important;
-        pointer-events: none !important;
-    }
-
-    /* Configuração do botão de texto */
     div[data-testid="stRadio"] label {
         flex: 1 !important;
         height: 44px !important;
@@ -149,9 +133,27 @@ st.markdown("""
         justify-content: center !important;
         cursor: pointer !important;
         transition: all 0.2s ease-in-out !important;
+        position: relative !important;
     }
 
-    /* Garantia que o texto fica visível, branco e centralizado */
+    /* Esconde o circulinho nativo zerando as dimensões físicas */
+    div[data-testid="stRadio"] label input,
+    div[data-testid="stRadio"] label svg,
+    div[data-testid="stRadio"] label > div:first-child {
+        position: absolute !important;
+        width: 0px !important;
+        height: 0px !important;
+        min-width: 0px !important;
+        min-height: 0px !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden !important;
+        border: none !important;
+    }
+
+    /* TEXTO TOTALMENTE VISÍVEL E CENTRALIZADO */
     div[data-testid="stRadio"] label p {
         font-size: 0.85rem !important;
         font-weight: 700 !important;
@@ -162,9 +164,11 @@ st.markdown("""
         text-align: center !important;
         width: 100% !important;
         display: block !important;
+        position: relative !important;
+        z-index: 2 !important;
     }
 
-    /* DESTAQUE DA ABA ATIVA (CAIXINHA BRANCA RECORTE PERFEITO) */
+    /* DESTAQUE DA ABA ATIVA */
     div[data-testid="stRadio"] label:has(input:checked) {
         background-color: #FFFFFF !important;
         box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.4) !important;
@@ -175,7 +179,7 @@ st.markdown("""
         font-weight: 800 !important;
     }
 
-    /* CAMPOS DO FORMULÁRIO (MODO ESCURO) */
+    /* FORMULÁRIO DARK MODE */
     label {
         font-size: 0.95rem !important;
         font-weight: 700 !important;
@@ -251,7 +255,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # =========================================================
-# 5. OS 4 MENUS DE NAVEGAÇÃO NATIVOS FIXOS NO RODAPÉ
+# 5. OS 4 MENUS DE NAVEGAÇÃO
 # =========================================================
 opcoes_menu = ["Início", "Formulário", "Painel", "⚙️ Config"]
 aba = st.session_state["aba_ativa"]
