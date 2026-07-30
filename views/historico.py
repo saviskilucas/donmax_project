@@ -46,9 +46,15 @@ def converter_para_numero(serie):
     ).fillna(0.0)
 
 def render():
-    # Estilização CSS para 2 colunas no celular + liberação do touch scroll nos gráficos
+    # Estilização CSS: 2 colunas no celular + liberação do touch scroll + DESABILITA ESCRITA NO CALENDÁRIO
     st.markdown("""
         <style>
+        /* Desabilita a digitação manual no campo de Data (Força clique/calendário) */
+        div[data-baseweb="input"] input {
+            caret-color: transparent !important;
+            user-select: none !important;
+        }
+
         /* Força colunas a manterem 50% no mobile sem empilhar */
         div[data-testid="stHorizontalBlock"] {
             display: flex !important;
@@ -128,14 +134,14 @@ def render():
             df['Data_DT'] = date.today()
 
         # =========================================================
-        # FILTRO DE DATA POR PERÍODO
+        # FILTRO DE DATA POR PERÍODO (SOMENTE SELEÇÃO)
         # =========================================================
         data_min = df['Data_DT'].min() if not df['Data_DT'].dropna().empty else date.today()
         data_max = df['Data_DT'].max() if not df['Data_DT'].dropna().empty else date.today()
 
         st.markdown("##### 📅 Filtrar por Período")
         filtro_datas = st.date_input(
-            "Selecione o intervalo:",
+            "Selecione o intervalo no calendário:",
             value=(data_min, data_max),
             min_value=data_min,
             max_value=data_max,
@@ -168,9 +174,8 @@ def render():
         
         descarte_por_cliente_g = (tot_descarte / tot_clientes * 1000) if tot_clientes > 0 else 0.0
 
-        # CONFIGURAÇÃO DE LIBERAÇÃO DE SCROLL MOBILE
         config_plotly_mobile = {
-            'staticPlot': True,         # Desativa interceptação de gestos no celular
+            'staticPlot': True,
             'displayModeBar': False
         }
 
