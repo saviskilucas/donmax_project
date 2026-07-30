@@ -23,7 +23,7 @@ if "aba_ativa" not in st.session_state:
 
 aba = st.session_state["aba_ativa"]
 
-# Mapeamento do botão ativo para injeção direta via CSS
+# Mapeamento exato da key do botão que DEVE ficar branco
 mapa_keys = {
     "inicio": "btn_inicio",
     "pesagem": "btn_pesagem",
@@ -33,7 +33,7 @@ mapa_keys = {
 key_ativa = mapa_keys.get(aba, "btn_inicio")
 
 # =========================================================
-# 2. INJEÇÃO DE CSS (MODO ESCURO + HOVER BRANCO + CENTRALIZAÇÃO EXATA)
+# 2. INJEÇÃO DE CSS (MODO ESCURO + HOVER BRANCO + BOTÃO ATIVO DIRETO NO CSS)
 # =========================================================
 st.markdown(f"""
     <style>
@@ -85,9 +85,7 @@ st.markdown(f"""
         gap: 10px;
     }}
 
-    /* =========================================================
-       CÁPSULA TRAVADA NO RODAPÉ COM CENTRALIZAÇÃO ABSOLUTA
-       ========================================================= */
+    /* CÁPSULA TRAVADA NO RODAPÉ */
     div[data-testid="stElementContainer"]:has(div.st-key-nav_bar_container),
     div:has(> div.st-key-nav_bar_container) {{
         position: fixed !important;
@@ -113,7 +111,7 @@ st.markdown(f"""
         gap: 0 !important;
     }}
 
-    /* FORÇA TODAS AS COLUNAS A TEREM LARGURA IGUAL E CENTRO ABSOLUTO */
+    /* FORÇA COLUNAS COM LARGURA IGUAL */
     div.st-key-nav_bar_container div[data-testid="stColumn"],
     div.st-key-nav_bar_container div[data-testid="stHorizontalBlock"] > div {{
         flex: 1 1 0% !important;
@@ -127,7 +125,7 @@ st.markdown(f"""
         position: relative !important;
     }}
 
-    /* Divisória vertical sutil entre os botões */
+    /* Divisória vertical sutil */
     div.st-key-nav_bar_container div[data-testid="stColumn"]:not(:last-child)::after,
     div.st-key-nav_bar_container div[data-testid="stHorizontalBlock"] > div:not(:last-child)::after {{
         content: "" !important;
@@ -140,7 +138,7 @@ st.markdown(f"""
         pointer-events: none !important;
     }}
 
-    /* WRAPPER INTERNO DO BOTÃO STREAMLIT */
+    /* WRAPPER INTERNO DOS BOTÕES */
     div.st-key-nav_bar_container div[data-testid="stElementContainer"],
     div.st-key-nav_bar_container div[data-testid="stButton"] {{
         width: 100% !important;
@@ -151,7 +149,7 @@ st.markdown(f"""
         align-items: center !important;
     }}
 
-    /* ESTILO DOS BOTÕES (INATIVOS) */
+    /* ESTILO PADRÃO DOS BOTÕES (INATIVOS) */
     div.st-key-nav_bar_container button {{
         width: 90% !important;
         height: 44px !important;
@@ -170,7 +168,6 @@ st.markdown(f"""
         transition: all 0.2s ease-in-out !important;
     }}
 
-    /* CENTRALIZAÇÃO RIGOROSA DO TEXTO E ÍCONE */
     div.st-key-nav_bar_container button *,
     div.st-key-nav_bar_container button div,
     div.st-key-nav_bar_container button p,
@@ -187,33 +184,33 @@ st.markdown(f"""
         line-height: 1 !important;
     }}
 
-    /* HOVER NOS BOTÕES INATIVOS */
-    div.st-key-nav_bar_container button:hover {{
+    /* HOVER APENAS NOS BOTÕES QUE NÃO ESTÃO ATIVOS */
+    div.st-key-nav_bar_container div[data-testid="stElementContainer"]:not([data-testid="stKey-{key_ativa}"]) button:hover {{
         background-color: #FFFFFF !important;
         color: #B71C1C !important;
         cursor: pointer !important;
         box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3) !important;
     }}
 
-    div.st-key-nav_bar_container button:hover *,
-    div.st-key-nav_bar_container button:hover p {{
+    div.st-key-nav_bar_container div[data-testid="stElementContainer"]:not([data-testid="stKey-{key_ativa}"]) button:hover *,
+    div.st-key-nav_bar_container div[data-testid="stElementContainer"]:not([data-testid="stKey-{key_ativa}"]) button:hover p {{
         color: #B71C1C !important;
     }}
 
-    /* REGRA CSS DIRETA DE BOTÃO ATIVO VIA KEY DO STREAMLIT (SINTAXE MODERNA) */
+    /* =========================================================
+       REGRA MASTER: BOTÃO ATIVO FORÇADO DIRETAMENTE VIA CSS
+       ========================================================= */
     div.st-key-nav_bar_container div[data-testid="stKey-{key_ativa}"] button,
     div.st-key-nav_bar_container div[data-testid="stKey-{key_ativa}"] button:hover,
-    div.st-key-nav_bar_container button.active-btn,
-    div.st-key-nav_bar_container button.active-btn:hover {{
+    div.st-key-nav_bar_container div[data-testid="stKey-{key_ativa}"] button:focus,
+    div.st-key-nav_bar_container div[data-testid="stKey-{key_ativa}"] button:active {{
         background-color: #FFFFFF !important;
         color: #B71C1C !important;
         box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.4) !important;
     }}
 
     div.st-key-nav_bar_container div[data-testid="stKey-{key_ativa}"] button *,
-    div.st-key-nav_bar_container div[data-testid="stKey-{key_ativa}"] button p,
-    div.st-key-nav_bar_container button.active-btn *,
-    div.st-key-nav_bar_container button.active-btn p {{
+    div.st-key-nav_bar_container div[data-testid="stKey-{key_ativa}"] button p {{
         color: #B71C1C !important;
         font-weight: 800 !important;
     }}
@@ -390,30 +387,3 @@ with nav_bar:
         if st.button("⚙️", key="btn_config"):
             st.session_state["aba_ativa"] = "config"
             st.rerun()
-
-# SCRIPT QUE CONTINUAMENTE VALIDA A MARCAÇÃO DO BOTÃO
-st.components.v1.html(f"""
-    <script>
-    function applyActiveStyle() {{
-        const doc = window.parent.document;
-        const targetKey = "{key_ativa}";
-        
-        const container = doc.querySelector('div[data-testid="stKey-' + targetKey + '"]');
-        if (container) {{
-            const btn = container.querySelector('button');
-            if (btn && !btn.classList.contains('active-btn')) {{
-                // Remove de outros
-                const allBtns = doc.querySelectorAll('div.st-key-nav_bar_container button');
-                allBtns.forEach(b => b.classList.remove('active-btn'));
-                // Adiciona no correto
-                btn.classList.add('active-btn');
-            }}
-        }}
-    }}
-
-    // Execução contínua leve para suportar renderizações demoradas da planilha
-    applyActiveStyle();
-    const interval = setInterval(applyActiveStyle, 100);
-    setTimeout(() => clearInterval(interval), 4000);
-    </script>
-""", height=0)
