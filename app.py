@@ -194,7 +194,8 @@ st.markdown("""
     /* BOTÃO SELECIONADO / ATIVO (FUNDO BRANCO FIXO + TEXTO VERMELHO) */
     div.st-key-nav_bar_container button.active-btn,
     div.st-key-nav_bar_container button.active-btn:hover,
-    div.st-key-nav_bar_container button.active-btn:focus {
+    div.st-key-nav_bar_container button.active-btn:focus,
+    div.st-key-nav_bar_container button.active-btn:active {
         background-color: #FFFFFF !important;
         color: #B71C1C !important;
         box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.4) !important;
@@ -254,7 +255,7 @@ def conectar_gsheets():
     client = gspread.authorize(credentials)
     return client.open("Planilha Don Max").worksheet("Lancamentos_Diarios")
 
-@st.cache_data(ttl=300) # Mantém os dados salvos em memória por 5 minutos (evita requisições travadas)
+@st.cache_data(ttl=300)
 def carregar_dados_painel():
     try:
         sheet = conectar_gsheets()
@@ -323,7 +324,6 @@ elif aba == "pesagem":
                     sheet = conectar_gsheets()
                     nova_linha = [str(data_sel), responsavel.strip(), int(clientes), prato_sel, float(prod_inicial), float(reposicao), float(sobra_limpa), float(sobra_buffet), float(descarte), observacoes.strip()]
                     sheet.append_row(nova_linha)
-                    # Limpa o cache para que o painel traga o novo registro na próxima leitura
                     st.cache_data.clear()
                     st.success(f"✅ **{prato_sel}** registrado com sucesso!")
                     st.balloons()
@@ -380,10 +380,10 @@ with nav_bar:
             st.session_state["aba_ativa"] = "config"
             st.rerun()
 
-# SCRIPT QUE GARANTE O DESTAQUE BRANCO IMEDIATO AO BOTÃO ATIVO
+# SCRIPT DE OBSERVAÇÃO DE DOM (REAPLICAÇÃO GARANTIDA DA CLASSE ATIVA)
 st.components.v1.html(f"""
     <script>
-    function updateActiveButton() {{
+    function highlightActive() {{
         const doc = window.parent.document;
         const mapa = {{
             'inicio': 'btn_inicio',
@@ -392,18 +392,36 @@ st.components.v1.html(f"""
             'config': 'btn_config'
         }};
         
-        Object.values(mapa).forEach(k => {{
-            const btns = doc.querySelectorAll('button[key="' + k + '"]');
-            btns.forEach(btn => btn.classList.remove('active-btn'));
-        }});
+        const chaveAtiva = mapa['{aba}'];
+        
+        // Remove active-btn de todos os botões do nav_bar
+        const todosBotoes = doc.querySelectorAll('div.st-key-nav_bar_container button');
+        todosBotoes.forEach(b => b.classList.remove('active-btn'));
 
-        const ativoKey = mapa['{aba}'];
-        if (ativoKey) {{
-            const btnsAtivos = doc.querySelectorAll('button[key="' + ativoKey + '"]');
-            btnsAtivos.forEach(btn => btn.classList.add('active-btn'));
+        // Procura o container do botão ativo pelo data-testid do Streamlit
+        if (chaveAtiva) {{
+            const containerAtivo = doc.querySelector('div[data-testid="stKey-' + chaveAtiva + '"]');
+            if (containerAtivo) {{
+                const btn = containerAtivo.querySelector('button');
+                if (btn) {{
+                    btn.classList.add('active-btn');
+                }}
+            }}
         }}
     }}
-    updateActiveButton();
-    setTimeout(updateActiveButton, 20);
+
+    // Executa imediatamente
+    highlightActive();
+
+    // Configura um Observer para manter o highlight mesmo se a renderização do Streamlit atrasar
+    const parentDoc = window.parent.document;
+    const observer = new MutationObserver(() => {{
+        highlightActive();
+    }});
+
+    observer.observe(parentDoc.body, {{ childList: true, subtree: true }});
+
+    // Desconecta o observer após 2 segundos para evitar uso excessivo de memória
+    setTimeout(() => observer.disconnect(), 2000);
     </script>
 """, height=0)
