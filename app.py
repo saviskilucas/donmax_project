@@ -17,21 +17,24 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Gerenciamento de Estado da Aba Ativa
+# Gerenciamento de Estado da Aba Ativa (Padrão: Início)
 if "aba_ativa" not in st.session_state:
     st.session_state["aba_ativa"] = "inicio"
 
 # =========================================================
-# 2. INJEÇÃO DE CSS (MODO ESCURO + OCULTAÇÃO DE BOLINHAS)
+# 2. INJEÇÃO DE CSS (MODO ESCURO + CÁPSULA PERFEITA SEM BOLINHAS)
 # =========================================================
 st.markdown("""
     <style>
-    /* MODO ESCURO FORÇADO */
+    /* =========================================================
+       MODO ESCURO FORÇADO DEFINITIVO
+       ========================================================= */
     html, body, [data-testid="stApp"], .stApp {
         background-color: #121212 !important;
         color: #F8F9FA !important;
     }
 
+    /* Margem para rolagem do conteúdo */
     .block-container {
         padding-top: 3.8rem !important;
         padding-bottom: 9.5rem !important; 
@@ -40,12 +43,13 @@ st.markdown("""
         max-width: 100% !important;
     }
 
+    /* Esconder topo e rodapé nativo do Streamlit */
     #MainMenu, header, .stDeployButton, footer, [data-testid="stFooter"] {
         display: none !important;
         visibility: hidden !important;
     }
 
-    /* TRANSIÇÃO SUAVE */
+    /* TRANSIÇÃO SUAVE DE TELA */
     .main-content-animated {
         animation: fadeIn 0.2s ease-out forwards;
     }
@@ -83,7 +87,7 @@ st.markdown("""
     }
 
     /* =========================================================
-       TRAVA DO MENU RODAPÉ (80PX FIXO A 360PX)
+       TRAVA DA CÁPSULA DO MENU NO RODAPÉ (80PX)
        ========================================================= */
     div[data-testid="stElementContainer"]:has(div[data-testid="stRadio"]) {
         position: fixed !important;
@@ -96,6 +100,7 @@ st.markdown("""
         z-index: 9999999 !important;
     }
 
+    /* Esconde o título do radio */
     div[data-testid="stRadio"] label[data-testid="stWidgetLabel"],
     div[data-testid="stRadio"] > label {
         display: none !important;
@@ -104,8 +109,8 @@ st.markdown("""
         padding: 0 !important;
     }
 
-    /* Cápsula Vermelha */
-    div[data-testid="stRadio"] > div {
+    /* Fundo Vermelho da Cápsula */
+    div[data-testid="stRadio"] [role="radiogroup"] {
         background-color: #B71C1C !important;
         border-radius: 30px !important;
         box-shadow: 0px 8px 25px rgba(0, 0, 0, 0.7) !important;
@@ -119,8 +124,15 @@ st.markdown("""
         padding: 0 6px !important;
     }
 
-    /* ESTILO DOS BOTÕES DE TEXTO */
-    div[data-testid="stRadio"] label {
+    /* Esconde EXCLUSIVAMENTE o elemento da bolinha */
+    div[data-testid="stRadio"] [role="radiogroup"] label > div:first-child {
+        display: none !important;
+        width: 0 !important;
+        height: 0 !important;
+    }
+
+    /* Container de cada opção/botão */
+    div[data-testid="stRadio"] [role="radiogroup"] label {
         flex: 1 !important;
         height: 44px !important;
         margin: 0 2px !important;
@@ -133,8 +145,16 @@ st.markdown("""
         transition: all 0.2s ease-in-out !important;
     }
 
-    /* TEXTO VISÍVEL E CENTRALIZADO */
-    div[data-testid="stRadio"] label p {
+    /* GARANTE QUE O CONTAINER DO TEXTO FIQUE SEMPRE VISÍVEL */
+    div[data-testid="stRadio"] [role="radiogroup"] label [data-testid="stMarkdownContainer"] {
+        display: block !important;
+        visibility: visible !important;
+        width: 100% !important;
+        text-align: center !important;
+    }
+
+    /* Estilo do Texto */
+    div[data-testid="stRadio"] [role="radiogroup"] label [data-testid="stMarkdownContainer"] p {
         font-size: 0.85rem !important;
         font-weight: 700 !important;
         color: #E0E0E0 !important;
@@ -142,22 +162,24 @@ st.markdown("""
         padding: 0 !important;
         white-space: nowrap !important;
         text-align: center !important;
-        width: 100% !important;
         display: block !important;
+        visibility: visible !important;
     }
 
-    /* DESTAQUE DA ABA ATIVA */
-    div[data-testid="stRadio"] label:has(input:checked) {
+    /* DESTAQUE DO BOTÃO SELECIONADO (CAIXINHA BRANCA) */
+    div[data-testid="stRadio"] [role="radiogroup"] label:has(input:checked) {
         background-color: #FFFFFF !important;
         box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.4) !important;
     }
     
-    div[data-testid="stRadio"] label:has(input:checked) p {
+    div[data-testid="stRadio"] [role="radiogroup"] label:has(input:checked) [data-testid="stMarkdownContainer"] p {
         color: #B71C1C !important;
         font-weight: 800 !important;
     }
 
-    /* FORMULÁRIO DARK MODE */
+    /* =========================================================
+       FORMULÁRIOS E INPUTS NO MODO ESCURO
+       ========================================================= */
     label {
         font-size: 0.95rem !important;
         font-weight: 700 !important;
@@ -233,7 +255,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # =========================================================
-# 5. OS 4 MENUS DE NAVEGAÇÃO
+# 5. OS 4 MENUS DE NAVEGAÇÃO NATIVOS FIXOS NO RODAPÉ
 # =========================================================
 opcoes_menu = ["Início", "Formulário", "Painel", "⚙️ Config"]
 aba = st.session_state["aba_ativa"]
@@ -340,32 +362,3 @@ elif aba == "config":
         st.success("Conexão atualizada com sucesso!")
 
 st.markdown("</div>", unsafe_allow_html=True)
-
-# =========================================================
-# 7. INJEÇÃO JAVASCRIPT: FORCE REMOVE DAS BOLINHAS NO DOM
-# =========================================================
-st.components.v1.html("""
-<script>
-    function removeRadioDots() {
-        const doc = window.parent.document;
-        const labels = doc.querySelectorAll('div[data-testid="stRadio"] label');
-        labels.forEach(label => {
-            // Seleciona a primeira div dentro do label (que contém o círculo) ou o input nativo e esconde
-            const firstChild = label.querySelector('div:first-child');
-            const inputRadio = label.querySelector('input[type="radio"]');
-            const svgRadio = label.querySelector('svg');
-            
-            if (firstChild && label.children.length > 1) {
-                firstChild.style.display = 'none';
-            }
-            if (inputRadio) inputRadio.style.display = 'none';
-            if (svgRadio) svgRadio.style.display = 'none';
-        });
-    }
-
-    // Executa imediatamente e agenda verificações para garantir após render do Streamlit
-    removeRadioDots();
-    setTimeout(removeRadioDots, 50);
-    setTimeout(removeRadioDots, 200);
-</script>
-""", height=0)
