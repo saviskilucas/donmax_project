@@ -24,7 +24,7 @@ if "aba_ativa" not in st.session_state:
 aba = st.session_state["aba_ativa"]
 
 # =========================================================
-# 2. INJEÇÃO DE CSS (MODO ESCURO + CÁPSULA FIXA DE BOTÕES)
+# 2. INJEÇÃO DE CSS (FIXAÇÃO ABSOLUTA + NEGRITO + SELEÇÃO BRANCA)
 # =========================================================
 st.markdown("""
     <style>
@@ -47,16 +47,6 @@ st.markdown("""
     #MainMenu, header, .stDeployButton, footer, [data-testid="stFooter"] {
         display: none !important;
         visibility: hidden !important;
-    }
-
-    /* TRANSIÇÃO SUAVE */
-    .main-content-animated {
-        animation: fadeIn 0.15s ease-out forwards;
-    }
-
-    @keyframes fadeIn {
-        from { opacity: 0.4; transform: translateY(3px); }
-        to { opacity: 1; transform: translateY(0); }
     }
 
     /* BARRA SUPERIOR FIXA */
@@ -87,23 +77,24 @@ st.markdown("""
     }
 
     /* =========================================================
-       TRAVA DA CÁPSULA DE BOTÕES NO RODAPÉ (80PX FIXO)
+       1) FIXAÇÃO 100% TRAVADA NO RODAPÉ DA TELA (NÃO SE MEXE)
        ========================================================= */
-    div[data-testid="stElementContainer"]:has(div.st-key-nav_bar_container) {
+    div[data-testid="stElementContainer"]:has(div.st-key-nav_bar_container),
+    div:has(> div.st-key-nav_bar_container) {
         position: fixed !important;
-        bottom: 80px !important;
+        bottom: 30px !important;
         left: 50% !important;
         transform: translateX(-50%) !important;
         width: 360px !important;
         max-width: 95vw !important;
-        z-index: 9999999 !important;
+        z-index: 99999999 !important;
     }
 
     /* Cápsula Vermelha que envolve as 4 colunas */
     div.st-key-nav_bar_container div[data-testid="stHorizontalBlock"] {
         background-color: #B71C1C !important;
         border-radius: 30px !important;
-        box-shadow: 0px 8px 25px rgba(0, 0, 0, 0.7) !important;
+        box-shadow: 0px 8px 25px rgba(0, 0, 0, 0.8) !important;
         border: 2px solid #2D2D2D !important;
         height: 60px !important;
         padding: 0 4px !important;
@@ -120,14 +111,17 @@ st.markdown("""
         padding: 0 !important;
     }
 
-    /* Estilo padrão dos 4 botões (sem bolinhas) */
+    /* =========================================================
+       2) TEXTO EM NEGRITO PROFISSIONAL (TODOS OS BOTÕES)
+       ========================================================= */
     div.st-key-nav_bar_container button {
         width: 100% !important;
         height: 44px !important;
         background-color: transparent !important;
         color: #E0E0E0 !important;
         font-size: 0.85rem !important;
-        font-weight: 700 !important;
+        font-weight: 800 !important; /* NEGRITO */
+        letter-spacing: 0.3px !important;
         border-radius: 20px !important;
         border: none !important;
         box-shadow: none !important;
@@ -136,12 +130,14 @@ st.markdown("""
         transition: all 0.15s ease-in-out !important;
     }
 
-    /* Destaque do Botão Ativo (Caixinha Branca) */
+    /* =========================================================
+       3) BOTÃO SELECIONADO (FICA BRANCO E DESTACADO)
+       ========================================================= */
     div.st-key-nav_bar_container button.active-btn {
         background-color: #FFFFFF !important;
         color: #B71C1C !important;
-        font-weight: 800 !important;
-        box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.4) !important;
+        font-weight: 900 !important;
+        box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.5) !important;
     }
 
     /* FORMULÁRIO DARK MODE */
@@ -209,8 +205,6 @@ st.markdown("""
 # =========================================================
 # 5. CONTEÚDO DAS ABAS
 # =========================================================
-st.markdown("<div class='main-content-animated'>", unsafe_allow_html=True)
-
 if aba == "inicio":
     st.markdown("<div class='section-header'>🔐 ACESSO AO SISTEMA</div>", unsafe_allow_html=True)
     st.write("Insira suas credenciais para acessar o painel de pesagens:")
@@ -283,10 +277,8 @@ elif aba == "config":
         st.cache_resource.clear()
         st.success("Conexão atualizada com sucesso!")
 
-st.markdown("</div>", unsafe_allow_html=True)
-
 # =========================================================
-# 6. RODAPÉ FIXO DE BOTÕES NATIVOS (SEM BOLINHAS)
+# 6. RODAPÉ FIXO DE BOTÕES NATIVOS
 # =========================================================
 nav_bar = st.container(key="nav_bar_container")
 with nav_bar:
@@ -308,7 +300,7 @@ with nav_bar:
             st.session_state["aba_ativa"] = "config"
             st.rerun()
 
-# Aplica a caixinha branca no botão da aba selecionada
+# Script que aplica o destaque da pílula branca no botão da aba ativa
 st.components.v1.html(f"""
     <script>
     function updateActiveButton() {{
@@ -321,17 +313,17 @@ st.components.v1.html(f"""
         }};
         
         Object.values(mapa).forEach(k => {{
-            const btn = doc.querySelector('div[data-testid="stButton"]:has(button[key="' + k + '"]) button') || doc.querySelector('button[key="' + k + '"]');
-            if (btn) btn.classList.remove('active-btn');
+            const btns = doc.querySelectorAll('button[key="' + k + '"]');
+            btns.forEach(btn => btn.classList.remove('active-btn'));
         }});
 
         const ativoKey = mapa['{aba}'];
         if (ativoKey) {{
-            const btnAtivo = doc.querySelector('div[data-testid="stButton"]:has(button[key="' + ativoKey + '"]) button') || doc.querySelector('button[key="' + ativoKey + '"]');
-            if (btnAtivo) btnAtivo.classList.add('active-btn');
+            const btnsAtivos = doc.querySelectorAll('button[key="' + ativoKey + '"]');
+            btnsAtivos.forEach(btn => btn.classList.add('active-btn'));
         }}
     }}
     updateActiveButton();
-    setTimeout(updateActiveButton, 50);
+    setTimeout(updateActiveButton, 60);
     </script>
 """, height=0)
