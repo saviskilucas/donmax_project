@@ -24,7 +24,7 @@ if "aba_ativa" not in st.session_state:
 aba = st.session_state["aba_ativa"]
 
 # =========================================================
-# 2. INJEÇÃO DE CSS (FIXAÇÃO ABSOLUTA + NEGRITO + SELEÇÃO BRANCA)
+# 2. INJEÇÃO DE CSS (MODO ESCURO + SIMETRIA + DESTAQUE BRANCO)
 # =========================================================
 st.markdown("""
     <style>
@@ -34,7 +34,7 @@ st.markdown("""
         color: #F8F9FA !important;
     }
 
-    /* Espaçamento para o conteúdo rolar sem cobrir o topo ou rodapé */
+    /* Espaçamento para o conteúdo rolar limpo atrás das barras */
     .block-container {
         padding-top: 3.8rem !important;
         padding-bottom: 9.5rem !important; 
@@ -43,7 +43,7 @@ st.markdown("""
         max-width: 100% !important;
     }
 
-    /* Ocultar elementos padrão do Streamlit */
+    /* Ocultar topo e rodapé padrão do Streamlit */
     #MainMenu, header, .stDeployButton, footer, [data-testid="stFooter"] {
         display: none !important;
         visibility: hidden !important;
@@ -77,7 +77,7 @@ st.markdown("""
     }
 
     /* =========================================================
-       1) FIXAÇÃO 100% TRAVADA NO RODAPÉ DA TELA (NÃO SE MEXE)
+       CÁPSULA TRAVADA NO RODAPÉ COM SIMETRIA E DIVISÓRIAS
        ========================================================= */
     div[data-testid="stElementContainer"]:has(div.st-key-nav_bar_container),
     div:has(> div.st-key-nav_bar_container) {
@@ -97,47 +97,65 @@ st.markdown("""
         box-shadow: 0px 8px 25px rgba(0, 0, 0, 0.8) !important;
         border: 2px solid #2D2D2D !important;
         height: 60px !important;
-        padding: 0 4px !important;
+        padding: 4px 6px !important;
         display: flex !important;
         align-items: center !important;
         justify-content: space-between !important;
-        gap: 2px !important;
+        gap: 0 !important;
     }
 
-    /* Colunas individuais */
+    /* Colunas individuais com largura exatamente igual e divisória sutil */
     div.st-key-nav_bar_container div[data-testid="stHorizontalBlock"] > div {
-        flex: 1 !important;
+        flex: 1 1 0% !important;
         min-width: 0 !important;
         padding: 0 !important;
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        position: relative !important;
     }
 
-    /* =========================================================
-       2) TEXTO EM NEGRITO PROFISSIONAL (TODOS OS BOTÕES)
-       ========================================================= */
+    /* Divisória vertical entre os botões (exceto no último) */
+    div.st-key-nav_bar_container div[data-testid="stHorizontalBlock"] > div:not(:last-child)::after {
+        content: "" !important;
+        position: absolute !important;
+        right: 0 !important;
+        top: 25% !important;
+        height: 50% !important;
+        width: 1px !important;
+        background-color: rgba(255, 255, 255, 0.2) !important;
+        pointer-events: none !important;
+    }
+
+    /* ESTILO DOS BOTÕES (INATIVOS) */
     div.st-key-nav_bar_container button {
         width: 100% !important;
         height: 44px !important;
         background-color: transparent !important;
         color: #E0E0E0 !important;
-        font-size: 0.85rem !important;
-        font-weight: 800 !important; /* NEGRITO */
-        letter-spacing: 0.3px !important;
+        font-size: 0.82rem !important;
+        font-weight: 700 !important;
         border-radius: 20px !important;
         border: none !important;
         box-shadow: none !important;
         margin: 0 !important;
-        padding: 0 !important;
-        transition: all 0.15s ease-in-out !important;
+        padding: 0 4px !important;
+        white-space: nowrap !important;
+        transition: all 0.2s ease-in-out !important;
     }
 
-    /* =========================================================
-       3) BOTÃO SELECIONADO (FICA BRANCO E DESTACADO)
-       ========================================================= */
+    /* ESTILO DO BOTÃO SELECIONADO (SELEÇÃO BRANCA DESTACADA) */
     div.st-key-nav_bar_container button.active-btn {
         background-color: #FFFFFF !important;
         color: #B71C1C !important;
-        font-weight: 900 !important;
-        box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.5) !important;
+        font-weight: 800 !important;
+        box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.4) !important;
+    }
+
+    /* Remove a divisória vizinha para o botão selecionado sobressair limpo */
+    div.st-key-nav_bar_container div[data-testid="stHorizontalBlock"] > div:has(button.active-btn)::after,
+    div.st-key-nav_bar_container div[data-testid="stHorizontalBlock"] > div:has(+ div button.active-btn)::after {
+        opacity: 0 !important;
     }
 
     /* FORMULÁRIO DARK MODE */
@@ -203,7 +221,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # =========================================================
-# 5. CONTEÚDO DAS ABAS
+# 5. CONTEÚDO DAS ABAS (FUNCIONALIDADE INTACTA)
 # =========================================================
 if aba == "inicio":
     st.markdown("<div class='section-header'>🔐 ACESSO AO SISTEMA</div>", unsafe_allow_html=True)
@@ -278,7 +296,7 @@ elif aba == "config":
         st.success("Conexão atualizada com sucesso!")
 
 # =========================================================
-# 6. RODAPÉ FIXO DE BOTÕES NATIVOS
+# 6. RODAPÉ FIXO DE BOTÕES NATIVOS (ESTRUTURA MANTIDA)
 # =========================================================
 nav_bar = st.container(key="nav_bar_container")
 with nav_bar:
@@ -300,7 +318,7 @@ with nav_bar:
             st.session_state["aba_ativa"] = "config"
             st.rerun()
 
-# Script que aplica o destaque da pílula branca no botão da aba ativa
+# SCRIPT QUE APLICA A CLASSE 'active-btn' AO BOTÃO SELECIONADO
 st.components.v1.html(f"""
     <script>
     function updateActiveButton() {{
