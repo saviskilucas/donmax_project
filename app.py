@@ -22,7 +22,7 @@ if "aba_ativa" not in st.session_state:
     st.session_state["aba_ativa"] = "inicio"
 
 # =========================================================
-# 2. INJEÇÃO DE CSS (MODO ESCURO + CÁPSULA EXPANDIDA SEM BOLINHAS)
+# 2. INJEÇÃO DE CSS (MODO ESCURO + REMOÇÃO TOTAL DA BOLINHA)
 # =========================================================
 st.markdown("""
     <style>
@@ -85,14 +85,14 @@ st.markdown("""
     }
 
     /* =========================================================
-       TRAVA DO MENU RODAPÉ (80PX) - ALARGADO E SEM ESPAÇO DA BOLINHA
+       TRAVA DO MENU RODAPÉ (80PX) - 360PX LARGURA
        ========================================================= */
     div[data-testid="stElementContainer"]:has(div[data-testid="stRadio"]) {
         position: fixed !important;
         bottom: 80px !important;
         left: 50% !important;
         transform: translateX(-50%) !important;
-        width: 360px !important; /* ALARGADO PARA MAIS RESPIRO */
+        width: 360px !important;
         max-width: 95vw !important;
         height: 60px !important;
         z-index: 9999999 !important;
@@ -123,8 +123,12 @@ st.markdown("""
         padding: 0 6px !important;
     }
 
-    /* REMOVE A BOLINHA E O ESPAÇO RESERVADO DELA COMPLETAMENTE */
-    div[data-testid="stRadio"] label > div:first-child {
+    /* =========================================================
+       REMOÇÃO DEFINITIVA DA BOLINHA E DO ESPAÇAMENTO DA BOLINHA
+       ========================================================= */
+    div[data-testid="stRadio"] label > div,
+    div[data-testid="stRadio"] label input,
+    div[data-testid="stRadio"] label svg {
         display: none !important;
         width: 0 !important;
         height: 0 !important;
@@ -132,7 +136,7 @@ st.markdown("""
         padding: 0 !important;
     }
 
-    /* O Texto vira o próprio botão flutuante */
+    /* O Texto vira o próprio botão flutuante centrado */
     div[data-testid="stRadio"] label {
         flex: 1 !important;
         height: 44px !important;
@@ -154,9 +158,10 @@ st.markdown("""
         padding: 0 !important;
         white-space: nowrap !important;
         text-align: center !important;
+        width: 100% !important;
     }
 
-    /* DESTAQUE DA ABA ATIVA (CAIXINHA BRANCA RECORTE PERFEITO) */
+    /* DESTAQUE DA ABA ATIVA (CAIXINHA BRANCA NO MODO ESCURO) */
     div[data-testid="stRadio"] label:has(input:checked) {
         background-color: #FFFFFF !important;
         box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.4) !important;
