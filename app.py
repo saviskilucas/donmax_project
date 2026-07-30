@@ -22,19 +22,17 @@ if "aba_ativa" not in st.session_state:
     st.session_state["aba_ativa"] = "inicio"
 
 # =========================================================
-# 2. INJEÇÃO DE CSS (MODO ESCURO FORÇADO + 4 MENUS NO RODAPÉ)
+# 2. INJEÇÃO DE CSS (MODO ESCURO + CÁPSULA EXPANDIDA SEM BOLINHAS)
 # =========================================================
 st.markdown("""
     <style>
-    /* =========================================================
-       MODO ESCURO FORÇADO (BLACK / DARK THEME DEFINITIVO)
-       ========================================================= */
+    /* MODO ESCURO FORÇADO */
     html, body, [data-testid="stApp"], .stApp {
         background-color: #121212 !important;
         color: #F8F9FA !important;
     }
 
-    /* Margem para o formulário rolar limpo atrás do menu */
+    /* Recuo inferior para rolar o conteúdo sem cobrir */
     .block-container {
         padding-top: 3.8rem !important;
         padding-bottom: 9.5rem !important; 
@@ -49,7 +47,7 @@ st.markdown("""
         visibility: hidden !important;
     }
 
-    /* TRANSIÇÃO SUAVE DE CONTEÚDO */
+    /* TRANSIÇÃO SUAVE */
     .main-content-animated {
         animation: fadeIn 0.2s ease-out forwards;
     }
@@ -59,7 +57,7 @@ st.markdown("""
         to { opacity: 1; transform: translateY(0); }
     }
 
-    /* BARRA SUPERIOR FIXA (DARK RED) */
+    /* BARRA SUPERIOR FIXA */
     .modern-header {
         position: fixed;
         top: 0;
@@ -87,20 +85,20 @@ st.markdown("""
     }
 
     /* =========================================================
-       TRAVA DO MENU RADIO NO RODAPÉ (80PX) - 4 BOTÕES LADO A LADO
+       TRAVA DO MENU RODAPÉ (80PX) - ALARGADO E SEM ESPAÇO DA BOLINHA
        ========================================================= */
     div[data-testid="stElementContainer"]:has(div[data-testid="stRadio"]) {
         position: fixed !important;
         bottom: 80px !important;
         left: 50% !important;
         transform: translateX(-50%) !important;
-        width: 340px !important; /* Largura expandida para 4 opções */
+        width: 360px !important; /* ALARGADO PARA MAIS RESPIRO */
         max-width: 95vw !important;
         height: 60px !important;
         z-index: 9999999 !important;
     }
 
-    /* Oculta o título "Navegação" */
+    /* Oculta totalmente a label do widget */
     div[data-testid="stRadio"] label[data-testid="stWidgetLabel"],
     div[data-testid="stRadio"] > label {
         display: none !important;
@@ -121,19 +119,23 @@ st.markdown("""
         display: flex !important;
         flex-direction: row !important;
         align-items: center !important;
-        justify-content: space-between !important;
-        padding: 0 4px !important;
+        justify-content: space-around !important;
+        padding: 0 6px !important;
     }
 
-    /* Esconde o círculo do radio nativo */
+    /* REMOVE A BOLINHA E O ESPAÇO RESERVADO DELA COMPLETAMENTE */
     div[data-testid="stRadio"] label > div:first-child {
         display: none !important;
+        width: 0 !important;
+        height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
     }
 
-    /* Estilização dos 4 Botões com Texto */
+    /* O Texto vira o próprio botão flutuante */
     div[data-testid="stRadio"] label {
         flex: 1 !important;
-        height: 46px !important;
+        height: 44px !important;
         margin: 0 2px !important;
         padding: 0 !important;
         border-radius: 20px !important;
@@ -145,15 +147,16 @@ st.markdown("""
     }
 
     div[data-testid="stRadio"] label p {
-        font-size: 0.82rem !important;
+        font-size: 0.88rem !important;
         font-weight: 700 !important;
         color: #E0E0E0 !important;
         margin: 0 !important;
         padding: 0 !important;
         white-space: nowrap !important;
+        text-align: center !important;
     }
 
-    /* DESTAQUE DA ABA ATIVA (CAIXINHA BRANCA NO MODO ESCURO) */
+    /* DESTAQUE DA ABA ATIVA (CAIXINHA BRANCA RECORTE PERFEITO) */
     div[data-testid="stRadio"] label:has(input:checked) {
         background-color: #FFFFFF !important;
         box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.4) !important;
@@ -164,9 +167,7 @@ st.markdown("""
         font-weight: 800 !important;
     }
 
-    /* =========================================================
-       FORMULÁRIOS E INPUTS NO MODO ESCURO
-       ========================================================= */
+    /* CAMPOS DO FORMULÁRIO (MODO ESCURO) */
     label {
         font-size: 0.95rem !important;
         font-weight: 700 !important;
@@ -182,7 +183,6 @@ st.markdown("""
         border-radius: 10px !important;
     }
 
-    /* Cor do texto em dropdowns e inputs */
     div[data-baseweb="select"] * {
         color: #FFFFFF !important;
         background-color: #1E1E1E !important;
@@ -212,7 +212,6 @@ st.markdown("""
         text-transform: uppercase;
     }
 
-    /* Ajuste de tabelas e métricas para o Dark Mode */
     [data-testid="stMetricValue"] {
         color: #FF5252 !important;
     }
@@ -244,9 +243,9 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # =========================================================
-# 5. OS 4 MENUS DE NAVEGAÇÃO NATIVOS
+# 5. OS 4 MENUS DE NAVEGAÇÃO
 # =========================================================
-opcoes_menu = ["Início", "Formulário", "Painel", "⚙️"]
+opcoes_menu = ["Início", "Formulário", "Painel", "⚙️ Config"]
 aba = st.session_state["aba_ativa"]
 
 idx_atual = 0 if aba == "inicio" else (1 if aba == "pesagem" else (2 if aba == "historico" else 3))
@@ -259,7 +258,7 @@ aba_selecionada = st.radio(
     label_visibility="collapsed"
 )
 
-# Mapeamento do clique
+# Mapeamento de cliques
 if aba_selecionada == "Início" and st.session_state["aba_ativa"] != "inicio":
     st.session_state["aba_ativa"] = "inicio"
     st.rerun()
@@ -269,7 +268,7 @@ elif aba_selecionada == "Formulário" and st.session_state["aba_ativa"] != "pesa
 elif aba_selecionada == "Painel" and st.session_state["aba_ativa"] != "historico":
     st.session_state["aba_ativa"] = "historico"
     st.rerun()
-elif aba_selecionada == "⚙️" and st.session_state["aba_ativa"] != "config":
+elif aba_selecionada == "⚙️ Config" and st.session_state["aba_ativa"] != "config":
     st.session_state["aba_ativa"] = "config"
     st.rerun()
 
@@ -278,9 +277,6 @@ elif aba_selecionada == "⚙️" and st.session_state["aba_ativa"] != "config":
 # =========================================================
 st.markdown("<div class='main-content-animated'>", unsafe_allow_html=True)
 
-# ---------------------------------------------------------
-# ABA 1: INÍCIO (LOGIN BÁSICO DE DEMONSTRAÇÃO)
-# ---------------------------------------------------------
 if aba == "inicio":
     st.markdown("<div class='section-header'>🔐 ACESSO AO SISTEMA</div>", unsafe_allow_html=True)
     st.write("Insira suas credenciais para acessar o painel de pesagens:")
@@ -293,9 +289,6 @@ if aba == "inicio":
         if btn_login:
             st.info("ℹ️ Login demonstrativo em desenvolvimento. Use os menus abaixo para navegar.")
 
-# ---------------------------------------------------------
-# ABA 2: FORMULÁRIO (LANÇAMENTO DE PESAGENS)
-# ---------------------------------------------------------
 elif aba == "pesagem":
     with st.form("form_pesagem", clear_on_submit=True):
         st.markdown("<div class='section-header'>1. INFORMAÇÕES DO DIA</div>", unsafe_allow_html=True)
@@ -333,9 +326,6 @@ elif aba == "pesagem":
                 except Exception as e:
                     st.error(f"❌ Erro ao salvar na planilha: {e}")
 
-# ---------------------------------------------------------
-# ABA 3: PAINEL (HISTÓRICO E MÉTRICAS)
-# ---------------------------------------------------------
 elif aba == "historico":
     st.markdown("<div class='section-header'>📊 PAINEL DE CONTROLE DE DESCARTE</div>", unsafe_allow_html=True)
     try:
@@ -352,9 +342,6 @@ elif aba == "historico":
     except Exception as e:
         st.error(f"Erro ao carregar dados do Google Sheets: {e}")
 
-# ---------------------------------------------------------
-# ABA 4: CONFIGURAÇÕES
-# ---------------------------------------------------------
 elif aba == "config":
     st.markdown("<div class='section-header'>⚙️ CONFIGURAÇÕES DO SISTEMA</div>", unsafe_allow_html=True)
     st.markdown("**Don Max Buffet v1.0**\n*Sistema Integrado de Controle de Pesagens*\n\n---\n\n**Instruções para a Cozinha:**\n1. Realize as pesagens sempre ao final do turno.\n2. Certifique-se de zerar a tara da balança.\n3. Dúvidas ou problemas falar com a gerência.")
