@@ -17,24 +17,22 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Gerenciamento de Estado da Aba Ativa (Padrão: Início)
-if "aba_ativa" not in st.session_state:
-    st.session_state["aba_ativa"] = "inicio"
+# Gerenciamento de Navegação via Query Params (idêntico à barra superior)
+query_params = st.query_params
+aba_ativa = query_params.get("aba", "inicio")
 
 # =========================================================
-# 2. INJEÇÃO DE CSS (MODO ESCURO + CÁPSULA PERFEITA SEM BOLINHAS)
+# 2. INJEÇÃO DE CSS (DARK MODE + BARRA SUPERIOR + RODAPÉ FIXO EM HTML)
 # =========================================================
 st.markdown("""
     <style>
-    /* =========================================================
-       MODO ESCURO FORÇADO DEFINITIVO
-       ========================================================= */
+    /* MODO ESCURO FORÇADO */
     html, body, [data-testid="stApp"], .stApp {
         background-color: #121212 !important;
         color: #F8F9FA !important;
     }
 
-    /* Margem para rolagem do conteúdo */
+    /* Recuo de rolagem para não cobrir topo ou rodapé */
     .block-container {
         padding-top: 3.8rem !important;
         padding-bottom: 9.5rem !important; 
@@ -43,13 +41,13 @@ st.markdown("""
         max-width: 100% !important;
     }
 
-    /* Esconder topo e rodapé nativo do Streamlit */
+    /* Ocultar elementos padrão do Streamlit */
     #MainMenu, header, .stDeployButton, footer, [data-testid="stFooter"] {
         display: none !important;
         visibility: hidden !important;
     }
 
-    /* TRANSIÇÃO SUAVE DE TELA */
+    /* TRANSIÇÃO SUAVE */
     .main-content-animated {
         animation: fadeIn 0.2s ease-out forwards;
     }
@@ -87,99 +85,53 @@ st.markdown("""
     }
 
     /* =========================================================
-       TRAVA DA CÁPSULA DO MENU NO RODAPÉ (80PX)
+       RODAPÉ FIXO 100% HTML/CSS (MESMA LÓGICA DO TOPO)
        ========================================================= */
-    div[data-testid="stElementContainer"]:has(div[data-testid="stRadio"]) {
-        position: fixed !important;
-        bottom: 80px !important;
-        left: 50% !important;
-        transform: translateX(-50%) !important;
-        width: 360px !important;
-        max-width: 95vw !important;
-        height: 60px !important;
-        z-index: 9999999 !important;
+    .bottom-nav-container {
+        position: fixed;
+        bottom: 80px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 360px;
+        max-width: 95vw;
+        height: 60px;
+        background-color: #B71C1C;
+        border-radius: 30px;
+        box-shadow: 0px 8px 25px rgba(0, 0, 0, 0.7);
+        border: 2px solid #2D2D2D;
+        z-index: 9999999;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-around;
+        padding: 0 6px;
+        box-sizing: border-box;
     }
 
-    /* Esconde o título do radio */
-    div[data-testid="stRadio"] label[data-testid="stWidgetLabel"],
-    div[data-testid="stRadio"] > label {
-        display: none !important;
-        height: 0 !important;
-        margin: 0 !important;
-        padding: 0 !important;
-    }
-
-    /* Fundo Vermelho da Cápsula */
-    div[data-testid="stRadio"] [role="radiogroup"] {
-        background-color: #B71C1C !important;
-        border-radius: 30px !important;
-        box-shadow: 0px 8px 25px rgba(0, 0, 0, 0.7) !important;
-        border: 2px solid #2D2D2D !important;
-        height: 60px !important;
-        width: 100% !important;
-        display: flex !important;
-        flex-direction: row !important;
-        align-items: center !important;
-        justify-content: space-around !important;
-        padding: 0 6px !important;
-    }
-
-    /* Esconde EXCLUSIVAMENTE o elemento da bolinha */
-    div[data-testid="stRadio"] [role="radiogroup"] label > div:first-child {
-        display: none !important;
-        width: 0 !important;
-        height: 0 !important;
-    }
-
-    /* Container de cada opção/botão */
-    div[data-testid="stRadio"] [role="radiogroup"] label {
-        flex: 1 !important;
-        height: 44px !important;
-        margin: 0 2px !important;
-        padding: 0 !important;
-        border-radius: 20px !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        cursor: pointer !important;
-        transition: all 0.2s ease-in-out !important;
-    }
-
-    /* GARANTE QUE O CONTAINER DO TEXTO FIQUE SEMPRE VISÍVEL */
-    div[data-testid="stRadio"] [role="radiogroup"] label [data-testid="stMarkdownContainer"] {
-        display: block !important;
-        visibility: visible !important;
-        width: 100% !important;
-        text-align: center !important;
-    }
-
-    /* Estilo do Texto */
-    div[data-testid="stRadio"] [role="radiogroup"] label [data-testid="stMarkdownContainer"] p {
-        font-size: 0.85rem !important;
-        font-weight: 700 !important;
+    .nav-tab-item {
+        flex: 1;
+        height: 44px;
+        margin: 0 2px;
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none !important;
         color: #E0E0E0 !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        white-space: nowrap !important;
-        text-align: center !important;
-        display: block !important;
-        visibility: visible !important;
+        font-size: 0.85rem;
+        font-weight: 700;
+        transition: all 0.2s ease-in-out;
     }
 
-    /* DESTAQUE DO BOTÃO SELECIONADO (CAIXINHA BRANCA) */
-    div[data-testid="stRadio"] [role="radiogroup"] label:has(input:checked) {
+    /* ABA ATIVA (CAIXINHA BRANCA EM DESTAQUE) */
+    .nav-tab-item.active {
         background-color: #FFFFFF !important;
-        box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.4) !important;
-    }
-    
-    div[data-testid="stRadio"] [role="radiogroup"] label:has(input:checked) [data-testid="stMarkdownContainer"] p {
         color: #B71C1C !important;
-        font-weight: 800 !important;
+        font-weight: 800;
+        box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.4);
     }
 
-    /* =========================================================
-       FORMULÁRIOS E INPUTS NO MODO ESCURO
-       ========================================================= */
+    /* FORMULÁRIO DARK MODE */
     label {
         font-size: 0.95rem !important;
         font-weight: 700 !important;
@@ -255,41 +207,11 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # =========================================================
-# 5. OS 4 MENUS DE NAVEGAÇÃO NATIVOS FIXOS NO RODAPÉ
-# =========================================================
-opcoes_menu = ["Início", "Formulário", "Painel", "⚙️ Config"]
-aba = st.session_state["aba_ativa"]
-
-idx_atual = 0 if aba == "inicio" else (1 if aba == "pesagem" else (2 if aba == "historico" else 3))
-
-aba_selecionada = st.radio(
-    label="",
-    options=opcoes_menu,
-    index=idx_atual,
-    horizontal=True,
-    label_visibility="collapsed"
-)
-
-# Mapeamento de cliques
-if aba_selecionada == "Início" and st.session_state["aba_ativa"] != "inicio":
-    st.session_state["aba_ativa"] = "inicio"
-    st.rerun()
-elif aba_selecionada == "Formulário" and st.session_state["aba_ativa"] != "pesagem":
-    st.session_state["aba_ativa"] = "pesagem"
-    st.rerun()
-elif aba_selecionada == "Painel" and st.session_state["aba_ativa"] != "historico":
-    st.session_state["aba_ativa"] = "historico"
-    st.rerun()
-elif aba_selecionada == "⚙️ Config" and st.session_state["aba_ativa"] != "config":
-    st.session_state["aba_ativa"] = "config"
-    st.rerun()
-
-# =========================================================
-# 6. CONTEÚDO DAS ABAS
+# 5. CONTEÚDO DAS ABAS (DE ACORDO COM A URL)
 # =========================================================
 st.markdown("<div class='main-content-animated'>", unsafe_allow_html=True)
 
-if aba == "inicio":
+if aba_ativa == "inicio":
     st.markdown("<div class='section-header'>🔐 ACESSO AO SISTEMA</div>", unsafe_allow_html=True)
     st.write("Insira suas credenciais para acessar o painel de pesagens:")
     
@@ -301,7 +223,7 @@ if aba == "inicio":
         if btn_login:
             st.info("ℹ️ Login demonstrativo em desenvolvimento. Use os menus abaixo para navegar.")
 
-elif aba == "pesagem":
+elif aba_ativa == "pesagem":
     with st.form("form_pesagem", clear_on_submit=True):
         st.markdown("<div class='section-header'>1. INFORMAÇÕES DO DIA</div>", unsafe_allow_html=True)
         data_sel = st.date_input("Data do Serviço", value=date.today())
@@ -338,7 +260,7 @@ elif aba == "pesagem":
                 except Exception as e:
                     st.error(f"❌ Erro ao salvar na planilha: {e}")
 
-elif aba == "historico":
+elif aba_ativa == "historico":
     st.markdown("<div class='section-header'>📊 PAINEL DE CONTROLE DE DESCARTE</div>", unsafe_allow_html=True)
     try:
         sheet = conectar_gsheets()
@@ -354,7 +276,7 @@ elif aba == "historico":
     except Exception as e:
         st.error(f"Erro ao carregar dados do Google Sheets: {e}")
 
-elif aba == "config":
+elif aba_ativa == "config":
     st.markdown("<div class='section-header'>⚙️ CONFIGURAÇÕES DO SISTEMA</div>", unsafe_allow_html=True)
     st.markdown("**Don Max Buffet v1.0**\n*Sistema Integrado de Controle de Pesagens*\n\n---\n\n**Instruções para a Cozinha:**\n1. Realize as pesagens sempre ao final do turno.\n2. Certifique-se de zerar a tara da balança.\n3. Dúvidas ou problemas falar com a gerência.")
     if st.button("🔄 Atualizar Conexão com a Planilha"):
@@ -362,3 +284,20 @@ elif aba == "config":
         st.success("Conexão atualizada com sucesso!")
 
 st.markdown("</div>", unsafe_allow_html=True)
+
+# =========================================================
+# 6. CÁPSULA DO RODAPÉ (HTML PURO FIXO SEM NENHUM COMPONENTE STREAMLIT)
+# =========================================================
+c_inicio = "active" if aba_ativa == "inicio" else ""
+c_pesagem = "active" if aba_ativa == "pesagem" else ""
+c_historico = "active" if aba_ativa == "historico" else ""
+c_config = "active" if aba_ativa == "config" else ""
+
+st.markdown(f"""
+    <div class="bottom-nav-container">
+        <a href="?aba=inicio" target="_self" class="nav-tab-item {c_inicio}">Início</a>
+        <a href="?aba=pesagem" target="_self" class="nav-tab-item {c_pesagem}">Formulário</a>
+        <a href="?aba=historico" target="_self" class="nav-tab-item {c_historico}">Painel</a>
+        <a href="?aba=config" target="_self" class="nav-tab-item {c_config}">⚙️ Config</a>
+    </div>
+""", unsafe_allow_html=True)
