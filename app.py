@@ -24,7 +24,7 @@ if "aba_ativa" not in st.session_state:
 aba = st.session_state["aba_ativa"]
 
 # =========================================================
-# 2. INJEÇÃO DE CSS (MODO ESCURO + HOVER BRANCO + CENTRALIZAÇÃO EXATA)
+# 2. INJEÇÃO DE CSS (MODO ESCURO + CENTRALIZAÇÃO DE COLUNAS)
 # =========================================================
 st.markdown("""
     <style>
@@ -77,7 +77,7 @@ st.markdown("""
     }
 
     /* =========================================================
-       CÁPSULA TRAVADA NO RODAPÉ COM CENTRALIZAÇÃO ABSOLUTA
+       CÁPSULA TRAVADA NO RODAPÉ COM CENTRALIZAÇÃO SIMÉTRICA
        ========================================================= */
     div[data-testid="stElementContainer"]:has(div.st-key-nav_bar_container),
     div:has(> div.st-key-nav_bar_container) {
@@ -97,18 +97,21 @@ st.markdown("""
         box-shadow: 0px 8px 25px rgba(0, 0, 0, 0.8) !important;
         border: 2px solid #2D2D2D !important;
         height: 60px !important;
-        padding: 4px 6px !important;
+        padding: 4px !important;
         display: flex !important;
         align-items: center !important;
         justify-content: space-between !important;
         gap: 0 !important;
     }
 
-    /* Colunas individuais centralizadas */
+    /* FORÇA TODAS AS COLUNAS A TEREM LARGURA IGUAL E CENTRO ABSOLUTO */
+    div.st-key-nav_bar_container div[data-testid="stColumn"],
     div.st-key-nav_bar_container div[data-testid="stHorizontalBlock"] > div {
         flex: 1 1 0% !important;
+        width: 100% !important;
         min-width: 0 !important;
         padding: 0 !important;
+        margin: 0 !important;
         display: flex !important;
         justify-content: center !important;
         align-items: center !important;
@@ -116,6 +119,7 @@ st.markdown("""
     }
 
     /* Divisória vertical sutil entre os botões */
+    div.st-key-nav_bar_container div[data-testid="stColumn"]:not(:last-child)::after,
     div.st-key-nav_bar_container div[data-testid="stHorizontalBlock"] > div:not(:last-child)::after {
         content: "" !important;
         position: absolute !important;
@@ -127,9 +131,20 @@ st.markdown("""
         pointer-events: none !important;
     }
 
+    /* WRAPPER INTERNO DO BOTÃO STREAMLIT */
+    div.st-key-nav_bar_container div[data-testid="stElementContainer"],
+    div.st-key-nav_bar_container div[data-testid="stButton"] {
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+    }
+
     /* ESTILO DOS BOTÕES (INATIVOS) */
     div.st-key-nav_bar_container button {
-        width: 100% !important;
+        width: 90% !important;
         height: 44px !important;
         background-color: transparent !important;
         color: #E0E0E0 !important;
@@ -138,7 +153,7 @@ st.markdown("""
         border-radius: 20px !important;
         border: none !important;
         box-shadow: none !important;
-        margin: 0 !important;
+        margin: 0 auto !important;
         padding: 0 !important;
         display: flex !important;
         align-items: center !important;
@@ -146,12 +161,12 @@ st.markdown("""
         transition: all 0.2s ease-in-out !important;
     }
 
-    /* CENTRALIZAÇÃO RIGOROSA DOS ELEMENTOS INTERNOS DOS BOTÕES */
+    /* CENTRALIZAÇÃO RIGOROSA DO TEXTO E ÍCONE */
     div.st-key-nav_bar_container button *,
     div.st-key-nav_bar_container button div,
     div.st-key-nav_bar_container button p,
     div.st-key-nav_bar_container button [data-testid="stMarkdownContainer"] {
-        margin: 0 !important;
+        margin: 0 auto !important;
         padding: 0 !important;
         text-align: center !important;
         width: 100% !important;
@@ -329,7 +344,7 @@ elif aba == "config":
         st.success("Conexão atualizada com sucesso!")
 
 # =========================================================
-# 6. RODAPÉ FIXO DE BOTÕES NATIVOS (SÓ A ENGRENAGEM NO CONFIG)
+# 6. RODAPÉ FIXO DE BOTÕES NATIVOS
 # =========================================================
 nav_bar = st.container(key="nav_bar_container")
 with nav_bar:
