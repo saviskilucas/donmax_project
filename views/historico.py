@@ -10,13 +10,12 @@ def conectar_gsheets():
     credentials = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scope)
     return gspread.authorize(credentials).open("Planilha Don Max")
 
-@st.cache_data(ttl=60)
+@st.cache_data(ttl=30)
 def carregar_dados_painel():
     try:
         sheet = conectar_gsheets().worksheet("Lancamentos_Diarios")
         registros = sheet.get_all_records()
         
-        # Se get_all_records falhar ou vier vazio, tenta ler via get_all_values
         if not registros:
             valores = sheet.get_all_values()
             if len(valores) > 1:
@@ -24,7 +23,6 @@ def carregar_dados_painel():
                 linhas = valores[1:]
                 registros = [dict(zip(cabecalho, linha)) for linha in linhas]
         else:
-            # Limpa espaços nos nomes das chaves do dicionário
             registros_limpos = []
             for r in registros:
                 r_limpo = {str(k).strip(): v for k, v in r.items()}
@@ -47,6 +45,14 @@ def converter_para_numero(serie):
         errors='coerce'
     ).fillna(0.0)
 
+def encontrar_coluna(df, opcoes):
+    """Procura no DataFrame a primeira coluna que coincida com uma das opções."""
+    for op in opcoes:
+        for col in df.columns:
+            if col.strip().lower() == op.strip().lower():
+                return col
+    return None
+
 def render():
     st.markdown("<div class='section-header'>📊 DASHBOARD COMPLETO DA COZINHA</div>", unsafe_allow_html=True)
     
@@ -61,36 +67,32 @@ def render():
     if dados:
         df = pd.DataFrame(dados)
         
-        # Normaliza o nome das colunas do DataFrame para evitar erros de digitação
-        mapa_colunas = {col: col.strip() for col in df.columns}
-        df.rename(columns=mapa_colunas, inplace=True)
+        # Mapeamento flexível de colunas (com e sem underline)
+        col_prod_ini = encontrar_coluna(df, ['Producao_Inicial_KG', 'Produção Inicial', 'Producao Inicial'])
+        col_reposicao = encontrar_coluna(df, ['Reposicao_Total_KG', 'Reposição Total', 'Reposicao Total'])
+        col_sobra_limpa = encontrar_coluna(df, ['Sobra_Limpa_KG', 'Sobra Limpa'])
+        col_sobra_buffet = encontrar_coluna(df, ['Sobra_Buffet_KG', 'Sobra Buffet'])
+        col_descarte = encontrar_coluna(df, ['Descarte_Total_KG', 'Descarte Total'])
+        col_clientes = encontrar_coluna(df, ['Clientes_Atendidos', 'Clientes', 'Clientes Atendidos'])
+        col_prato = encontrar_coluna(df, ['Prato', 'Prato_Selecionado', 'Preparacao'])
+        col_resp = encontrar_coluna(df, ['Responsavel', 'Responsável', 'Responsavel_Turno'])
+        col_data = encontrar_coluna(df, ['Data', 'Data_Servico'])
 
-        # Mapeamento e conversão forçada de todas as colunas numéricas
-        colunas_numericas = [
-            'Produção Inicial', 'Reposicao Total', 'Reposição Total', 
-            'Sobra Limpa', 'Sobra Buffet', 'Descarte Total', 'Clientes'
-        ]
-        
-        for col in colunas_numericas:
-            if col in df.columns:
-                df[col] = converter_para_numero(df[col])
-            else:
-                df[col] = 0.0
+        # Conversão numérica de todas as colunas de peso
+        df_num = pd.DataFrame()
+        df_num['prod_ini'] = converter_para_numero(df[col_prod_ini]) if col_prod_ini else 0.0
+        df_num['reposicao'] = converter_para_numero(df[col_reposicao]) if col_reposicao else 0.0
+        df_num['sobra_limpa'] = converter_para_numero(df[col_sobra_limpa]) if col_sobra_limpa else 0.0
+        df_num['sobra_buffet'] = converter_para_numero(df[col_sobra_buffet]) if col_sobra_buffet else 0.0
+        df_num['descarte'] = converter_para_numero(df[col_descarte]) if col_descarte else 0.0
+        df_num['clientes'] = converter_para_numero(df[col_clientes]) if col_clientes else 0.0
 
-        # Trata coluna de Reposição caso esteja sem acento no banco
-        col_reposicao = 'Reposição Total' if 'Reposição Total' in df.columns else 'Reposicao Total'
-
-        # Cálculo de Produção Total
-        df['Produção Total'] = df['Produção Inicial'] + df[col_reposicao]
-
-        # Totais Reais
-        tot_prod = float(df['Produção Total'].sum())
-        tot_descarte = float(df['Descarte Total'].sum())
-        tot_sobra_limpa = float(df['Sobra Limpa'].sum())
-        tot_sobra_buffet = float(df['Sobra Buffet'].sum())
-        
-        # Pega a soma ou o máximo de clientes dependendo dos registros
-        tot_clientes = float(df['Clientes'].max()) if df['Clientes'].max() > 0 else float(df['Clientes'].sum())
+        # Totais
+        tot_prod = float((df_num['prod_ini'] + df_num['reposicao']).sum())
+        tot_descarte = float(df_num['descarte'].sum())
+        tot_sobra_limpa = float(df_num['sobra_limpa'].sum())
+        tot_sobra_buffet = float(df_num['sobra_buffet'].sum())
+        tot_clientes = float(df_num['clientes'].sum())
         
         descarte_por_cliente_g = (tot_descarte / tot_clientes * 1000) if tot_clientes > 0 else 0.0
 
@@ -122,8 +124,8 @@ def render():
         df_balanco = pd.DataFrame({
             'Categoria': ['Prod. Inicial', 'Reposição', 'Sobra Limpa', 'Sobra Buffet', 'Descarte Total'],
             'Peso (kg)': [
-                float(df['Produção Inicial'].sum()),
-                float(df[col_reposicao].sum()),
+                float(df_num['prod_ini'].sum()),
+                float(df_num['reposicao'].sum()),
                 tot_sobra_limpa,
                 tot_sobra_buffet,
                 tot_descarte
@@ -144,14 +146,14 @@ def render():
         # =========================================================
         # GRÁFICO 2: DESCARTE POR PRATO
         # =========================================================
-        col_prato = 'Prato' if 'Prato' in df.columns else None
         if col_prato:
             st.markdown("##### 🍲 **Ranking de Descarte por Prato (kg)**")
-            df_prato = df.groupby(col_prato)['Descarte Total'].sum().reset_index().sort_values(by='Descarte Total', ascending=True)
+            df_temp_prato = pd.DataFrame({'Prato': df[col_prato], 'Descarte': df_num['descarte']})
+            df_prato = df_temp_prato.groupby('Prato')['Descarte'].sum().reset_index().sort_values(by='Descarte', ascending=True)
             
             fig_bar = px.bar(
-                df_prato, x='Descarte Total', y=col_prato, orientation='h',
-                color='Descarte Total', color_continuous_scale='Reds', text_auto='.3f'
+                df_prato, x='Descarte', y='Prato', orientation='h',
+                color='Descarte', color_continuous_scale='Reds', text_auto='.3f'
             )
             fig_bar.update_layout(
                 paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
@@ -168,8 +170,6 @@ def render():
             'Tipo': ['Descarte', 'Sobra Limpa', 'Sobra Buffet'],
             'Peso': [tot_descarte, tot_sobra_limpa, tot_sobra_buffet]
         })
-        
-        # Só exibe se houver algum valor maior que zero
         if df_rosca['Peso'].sum() > 0:
             fig_pie = px.pie(
                 df_rosca, names='Tipo', values='Peso', hole=0.45,
@@ -180,19 +180,17 @@ def render():
                 margin=dict(l=10, r=10, t=20, b=10)
             )
             st.plotly_chart(fig_pie, use_container_width=True, config={'displayModeBar': False})
-        else:
-            st.caption("Sem dados de sobras para exibir gráfico de rosca.")
 
         # =========================================================
         # GRÁFICO 4: EVOLUÇÃO TEMPORAL
         # =========================================================
-        col_data = 'Data' if 'Data' in df.columns else None
         if col_data:
             st.markdown("##### 📈 **Evolução do Descarte Diário (kg)**")
-            df_data = df.groupby(col_data)['Descarte Total'].sum().reset_index()
+            df_temp_data = pd.DataFrame({'Data': df[col_data], 'Descarte': df_num['descarte']})
+            df_data = df_temp_data.groupby('Data')['Descarte'].sum().reset_index()
             
             fig_line = px.line(
-                df_data, x=col_data, y='Descarte Total', markers=True
+                df_data, x='Data', y='Descarte', markers=True
             )
             fig_line.update_traces(line_color='#FF5252', marker=dict(size=8))
             fig_line.update_layout(
@@ -202,22 +200,19 @@ def render():
             st.plotly_chart(fig_line, use_container_width=True, config={'displayModeBar': False})
 
         # =========================================================
-        # GRÁFICO 5: REGISTROS POR RESPONSÁVEL
+        # TABELA DE REGISTROS FORMATADA COM 3 CASAS DECIMAIS
         # =========================================================
-        col_resp = 'Responsavel' if 'Responsavel' in df.columns else ('Responsável' if 'Responsável' in df.columns else None)
-        if col_resp:
-            st.markdown("##### 👤 **Pesagens Registradas por Responsável**")
-            df_resp = df.groupby(col_resp).size().reset_index(name='Registros')
-            fig_resp = px.pie(df_resp, names=col_resp, values='Registros', hole=0.3)
-            fig_resp.update_layout(
-                paper_bgcolor='rgba(0,0,0,0)', font=dict(color="#FFFFFF"),
-                margin=dict(l=10, r=10, t=20, b=10)
-            )
-            st.plotly_chart(fig_resp, use_container_width=True, config={'displayModeBar': False})
-
         st.markdown("---")
-        st.write("📋 **Tabela dos Registros Encontrados:**")
-        st.dataframe(df.tail(10).iloc[::-1], use_container_width=True, hide_index=True)
+        st.write("📋 **Últimas Pesagens Registradas:**")
+        
+        df_exibicao = df.copy()
+        
+        # Formata todas as colunas de kg identificadas para 3 casas decimais
+        cols_peso_originais = [c for c in [col_prod_ini, col_reposicao, col_sobra_limpa, col_sobra_buffet, col_descarte] if c is not None]
+        for col_p in cols_peso_originais:
+            df_exibicao[col_p] = converter_para_numero(df_exibicao[col_p]).apply(lambda x: f"{x:.3f} kg")
+
+        st.dataframe(df_exibicao.tail(10).iloc[::-1], use_container_width=True, hide_index=True)
 
     else:
         st.info("Nenhum registro encontrado na planilha ainda.")
