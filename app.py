@@ -225,7 +225,7 @@ st.markdown("""
 # =========================================================
 # 5. O ÚNICO MENU DA APLICAÇÃO (RADIO REFORMATADO NATIVO)
 # =========================================================
-opcoes_menu = ["Início", "Planilha", "Painel"]
+opcoes_menu = ["Início", "Sheet", "Dash"]
 aba = st.session_state["aba_ativa"]
 idx_atual = 0 if aba == "pesagem" else (1 if aba == "historico" else 2)
 
