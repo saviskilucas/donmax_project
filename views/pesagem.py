@@ -35,7 +35,7 @@ def render():
             data_sel = st.date_input("Data do Serviço", value=agora_br.date(), format="DD/MM/YYYY")
         with col_hr:
             hora_atual_str = agora_br.strftime("%H:%M")
-            st.text_input("Hora do Registro"), value=hora_atual_str, disabled=True)
+            st.text_input("Hora do Registro", value=hora_atual_str, disabled=True)
 
         responsavel = st.text_input("Responsável pelo Turno", value=st.session_state["usuario_logado"])
         clientes = st.number_input("Clientes Atendidos no Dia", min_value=0, step=1, value=0)
