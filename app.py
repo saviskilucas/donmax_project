@@ -22,7 +22,7 @@ if "aba_ativa" not in st.session_state:
     st.session_state["aba_ativa"] = "inicio"
 
 # =========================================================
-# 2. INJEÇÃO DE CSS (MODO ESCURO + REMOÇÃO ABSOLUTA DA BOLINHA)
+# 2. INJEÇÃO DE CSS (MODO ESCURO + OCULTAÇÃO DE BOLINHAS)
 # =========================================================
 st.markdown("""
     <style>
@@ -119,9 +119,7 @@ st.markdown("""
         padding: 0 6px !important;
     }
 
-    /* =========================================================
-       EXTIRPAÇÃO DA BOLINHA (ANULANDO LARGURA, ALTURA E OPACIDADE)
-       ========================================================= */
+    /* ESTILO DOS BOTÕES DE TEXTO */
     div[data-testid="stRadio"] label {
         flex: 1 !important;
         height: 44px !important;
@@ -133,27 +131,9 @@ st.markdown("""
         justify-content: center !important;
         cursor: pointer !important;
         transition: all 0.2s ease-in-out !important;
-        position: relative !important;
     }
 
-    /* Esconde o circulinho nativo zerando as dimensões físicas */
-    div[data-testid="stRadio"] label input,
-    div[data-testid="stRadio"] label svg,
-    div[data-testid="stRadio"] label > div:first-child {
-        position: absolute !important;
-        width: 0px !important;
-        height: 0px !important;
-        min-width: 0px !important;
-        min-height: 0px !important;
-        opacity: 0 !important;
-        pointer-events: none !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        overflow: hidden !important;
-        border: none !important;
-    }
-
-    /* TEXTO TOTALMENTE VISÍVEL E CENTRALIZADO */
+    /* TEXTO VISÍVEL E CENTRALIZADO */
     div[data-testid="stRadio"] label p {
         font-size: 0.85rem !important;
         font-weight: 700 !important;
@@ -164,8 +144,6 @@ st.markdown("""
         text-align: center !important;
         width: 100% !important;
         display: block !important;
-        position: relative !important;
-        z-index: 2 !important;
     }
 
     /* DESTAQUE DA ABA ATIVA */
@@ -362,3 +340,32 @@ elif aba == "config":
         st.success("Conexão atualizada com sucesso!")
 
 st.markdown("</div>", unsafe_allow_html=True)
+
+# =========================================================
+# 7. INJEÇÃO JAVASCRIPT: FORCE REMOVE DAS BOLINHAS NO DOM
+# =========================================================
+st.components.v1.html("""
+<script>
+    function removeRadioDots() {
+        const doc = window.parent.document;
+        const labels = doc.querySelectorAll('div[data-testid="stRadio"] label');
+        labels.forEach(label => {
+            // Seleciona a primeira div dentro do label (que contém o círculo) ou o input nativo e esconde
+            const firstChild = label.querySelector('div:first-child');
+            const inputRadio = label.querySelector('input[type="radio"]');
+            const svgRadio = label.querySelector('svg');
+            
+            if (firstChild && label.children.length > 1) {
+                firstChild.style.display = 'none';
+            }
+            if (inputRadio) inputRadio.style.display = 'none';
+            if (svgRadio) svgRadio.style.display = 'none';
+        });
+    }
+
+    // Executa imediatamente e agenda verificações para garantir após render do Streamlit
+    removeRadioDots();
+    setTimeout(removeRadioDots, 50);
+    setTimeout(removeRadioDots, 200);
+</script>
+""", height=0)
