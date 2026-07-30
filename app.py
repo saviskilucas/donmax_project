@@ -17,12 +17,8 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Gerenciamento de Estado da Aba Ativa
-if "aba_ativa" not in st.session_state:
-    st.session_state["aba_ativa"] = "pesagem"
-
 # =========================================================
-# 2. INJEÇÃO DE CSS (CÁPSULA TRAVADA A 80PX DIRETO NAS COLUNAS)
+# 2. CSS DA NOVA ABORDAGEM (TRANSFORMA ST.RADIO EM CÁPSULA FIXA A 80PX)
 # =========================================================
 st.markdown("""
     <style>
@@ -31,10 +27,10 @@ st.markdown("""
         background-color: #F8F9FA !important;
     }
 
-    /* Margem para o formulário rolar sem ficar atrás do menu */
+    /* Margem inferior para o conteúdo rolar limpo atrás do menu */
     .block-container {
         padding-top: 3.8rem !important;
-        padding-bottom: 8.5rem !important; 
+        padding-bottom: 9.0rem !important; 
         padding-left: 0.8rem !important;
         padding-right: 0.8rem !important;
         max-width: 100% !important;
@@ -46,7 +42,7 @@ st.markdown("""
         visibility: hidden !important;
     }
 
-    /* TRANSIÇÃO SUAVE AO TROCAR DE TELA */
+    /* TRANSIÇÃO SUAVE DE CONTEÚDO */
     .main-content-animated {
         animation: fadeIn 0.2s ease-out forwards;
     }
@@ -84,58 +80,72 @@ st.markdown("""
     }
 
     /* =========================================================
-       TRAVAMENTO DA CÁPSULA DO MENU A 80PX DO RODAPÉ
+       TRAVAMENTO DO ST.RADIO COMO CÁPSULA REDONDA A 80PX
        ========================================================= */
-    div[data-testid="stHorizontalBlock"]:has(button[key^="nav_fixed_"]) {
+    div[data-testid="stElementContainer"]:has(div[data-testid="stRadio"]) {
         position: fixed !important;
         bottom: 80px !important;
         left: 50% !important;
         transform: translateX(-50%) !important;
         width: 280px !important;
         height: 60px !important;
+        z-index: 9999999 !important;
+    }
+
+    /* Esconde o label do radio ("Navegação") */
+    div[data-testid="stRadio"] > label {
+        display: none !important;
+    }
+
+    /* Transforma o grupo do Radio na Cápsula Vermelha */
+    div[data-testid="stRadio"] > div {
         background-color: #D32F2F !important;
         border-radius: 30px !important;
         box-shadow: 0px 8px 25px rgba(0, 0, 0, 0.35) !important;
-        z-index: 9999999 !important;
+        border: 2px solid #FFFFFF !important;
+        height: 60px !important;
+        width: 280px !important;
         display: flex !important;
         flex-direction: row !important;
         align-items: center !important;
         justify-content: space-around !important;
         padding: 0 6px !important;
-        border: 2px solid #FFFFFF !important;
     }
 
-    div[data-testid="stHorizontalBlock"]:has(button[key^="nav_fixed_"]) > div {
-        flex: 1 1 0% !important;
-        width: 33.33% !important;
-        padding: 0 !important;
-        margin: 0 !important;
-        display: flex !important;
-        justify-content: center !important;
+    /* Esconde o circulinho nativo do radio button */
+    div[data-testid="stRadio"] label > div:first-child {
+        display: none !important;
     }
 
-    /* Estilização dos Botões da Cápsula */
-    div[data-testid="stHorizontalBlock"]:has(button[key^="nav_fixed_"]) button {
-        width: 70px !important;
+    /* Estilização dos itens da opção */
+    div[data-testid="stRadio"] label {
+        flex: 1 !important;
         height: 44px !important;
-        background-color: transparent !important;
-        border: none !important;
-        border-radius: 18px !important;
-        color: rgba(255, 255, 255, 0.8) !important;
-        font-size: 1.3rem !important;
-        box-shadow: none !important;
-        padding: 0 !important;
         margin: 0 !important;
+        padding: 0 !important;
+        border-radius: 18px !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
+        cursor: pointer !important;
+        transition: all 0.2s ease-in-out !important;
     }
 
-    /* Destaque do Botão Ativo (Caixinha Branca) */
-    div[data-testid="stHorizontalBlock"]:has(button[key^="nav_fixed_"]) button.nav-active-btn {
+    /* Texto do ícone */
+    div[data-testid="stRadio"] label p {
+        font-size: 1.35rem !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    /* DESTAQUE DA ABA ATIVA (CAIXINHA BRANCA FLUTUANTE) */
+    div[data-testid="stRadio"] label:has(input:checked) {
         background-color: #FFFFFF !important;
-        color: #D32F2F !important;
         box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2) !important;
+    }
+    
+    div[data-testid="stRadio"] label:has(input:checked) p {
+        color: #D32F2F !important;
     }
 
     /* CAMPOS DO FORMULÁRIO */
@@ -204,11 +214,30 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # =========================================================
-# 5. CONTEÚDO DAS ABAS
+# 5. MENU DE NAVEGAÇÃO REORGANIZADO VIA ST.RADIO
+# =========================================================
+opcoes_menu = ["🏠", "📋", "👤"]
+
+aba_selecionada = st.radio(
+    "Navegação",
+    opcoes_menu,
+    index=0,
+    horizontal=True,
+    label_visibility="collapsed"
+)
+
+# Mapeamento do ícone para a tela correspondente
+if aba_selecionada == "🏠":
+    aba = "pesagem"
+elif aba_selecionada == "📋":
+    aba = "historico"
+else:
+    aba = "config"
+
+# =========================================================
+# 6. CONTEÚDO DAS ABAS (COM TRANSIÇÃO SUAVE)
 # =========================================================
 st.markdown("<div class='main-content-animated'>", unsafe_allow_html=True)
-
-aba = st.session_state["aba_ativa"]
 
 if aba == "pesagem":
     with st.form("form_pesagem", clear_on_submit=True):
@@ -271,43 +300,3 @@ elif aba == "config":
         st.success("Conexão atualizada com sucesso!")
 
 st.markdown("</div>", unsafe_allow_html=True)
-
-# =========================================================
-# 6. MENU NATIVO FIXO NA PARTE INFERIOR A 80PX
-# =========================================================
-nav_col1, nav_col2, nav_col3 = st.columns(3)
-
-with nav_col1:
-    if st.button("🏠", key="nav_fixed_pesagem"):
-        st.session_state["aba_ativa"] = "pesagem"
-        st.rerun()
-
-with nav_col2:
-    if st.button("📋", key="nav_fixed_historico"):
-        st.session_state["aba_ativa"] = "historico"
-        st.rerun()
-
-with nav_col3:
-    if st.button("👤", key="nav_fixed_config"):
-        st.session_state["aba_ativa"] = "config"
-        st.rerun()
-
-# Destaque dinâmico sem interferir no DOM do Streamlit
-js_highlight = f"""
-    <script>
-    setTimeout(function() {{
-        const parentDoc = window.parent.document;
-        const btns = parentDoc.querySelectorAll('button[key^="nav_fixed_"]');
-        btns.forEach(b => b.classList.remove('nav-active-btn'));
-
-        if ("{aba}" === "pesagem" && btns[0]) {{
-            btns[0].classList.add('nav-active-btn');
-        }} else if ("{aba}" === "historico" && btns[1]) {{
-            btns[1].classList.add('nav-active-btn');
-        }} else if ("{aba}" === "config" && btns[2]) {{
-            btns[2].classList.add('nav-active-btn');
-        }}
-    }}, 20);
-    </script>
-"""
-st.components.v1.html(js_highlight, height=0)
