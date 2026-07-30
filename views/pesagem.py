@@ -12,7 +12,13 @@ def conectar_gsheets():
 def render():
     with st.form("form_pesagem", clear_on_submit=True):
         st.markdown("<div class='section-header'>1. INFORMAÇÕES DO DIA</div>", unsafe_allow_html=True)
-        data_sel = st.date_input("Data do Serviço", value=date.today())
+        
+        # Data no formato brasileiro (DD/MM/YYYY)
+        data_sel = st.date_input(
+            "Data do Serviço", 
+            value=date.today(),
+            format="DD/MM/YYYY"
+        )
         responsavel = st.text_input("Responsável pelo Turno", value=st.session_state["usuario_logado"])
         clientes = st.number_input("Clientes Atendidos no Dia", min_value=0, step=1, value=0)
 
@@ -23,12 +29,12 @@ def render():
         st.markdown("<div class='section-header'>3. MEDIÇÕES DA BALANÇA (KG)</div>", unsafe_allow_html=True)
         col1, col2 = st.columns(2)
         with col1:
-            prod_inicial = st.number_input("Produção Inicial", min_value=0.0, step=0.1, format="%.2f")
-            reposicao = st.number_input("Reposição Total", min_value=0.0, step=0.1, format="%.2f")
-            sobra_limpa = st.number_input("Sobra Limpa", min_value=0.0, step=0.1, format="%.2f")
+            prod_inicial = st.number_input("Produção Inicial (kg)", min_value=0.0, step=0.001, format="%.3f")
+            reposicao = st.number_input("Reposição Total (kg)", min_value=0.0, step=0.001, format="%.3f")
+            sobra_limpa = st.number_input("Sobra Limpa (kg)", min_value=0.0, step=0.001, format="%.3f")
         with col2:
-            sobra_buffet = st.number_input("Sobra Buffet", min_value=0.0, step=0.1, format="%.2f")
-            descarte = st.number_input("Descarte Total", min_value=0.0, step=0.1, format="%.2f")
+            sobra_buffet = st.number_input("Sobra Buffet (kg)", min_value=0.0, step=0.001, format="%.3f")
+            descarte = st.number_input("Descarte Total (kg)", min_value=0.0, step=0.001, format="%.3f")
 
         observacoes = st.text_area("Observações (Opcional)", placeholder="Ex: Sobra de carne devido ao tempo chuvoso...")
         btn_salvar = st.form_submit_button("💾 SALVAR PESAGEM")
@@ -39,7 +45,22 @@ def render():
             else:
                 try:
                     sheet = conectar_gsheets().worksheet("Lancamentos_Diarios")
-                    nova_linha = [str(data_sel), responsavel.strip(), int(clientes), prato_sel, float(prod_inicial), float(reposicao), float(sobra_limpa), float(sobra_buffet), float(descarte), observacoes.strip()]
+                    
+                    # Formatação da data para salvar em padrão BR no Google Sheets (DD/MM/YYYY)
+                    data_br = data_sel.strftime("%d/%m/%Y")
+                    
+                    nova_linha = [
+                        data_br, 
+                        responsavel.strip(), 
+                        int(clientes), 
+                        prato_sel, 
+                        round(float(prod_inicial), 3), 
+                        round(float(reposicao), 3), 
+                        round(float(sobra_limpa), 3), 
+                        round(float(sobra_buffet), 3), 
+                        round(float(descarte), 3), 
+                        observacoes.strip()
+                    ]
                     sheet.append_row(nova_linha)
                     st.cache_data.clear()
                     st.success(f"✅ **{prato_sel}** registrado com sucesso!")
