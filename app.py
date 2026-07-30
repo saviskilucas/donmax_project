@@ -266,16 +266,29 @@ def carregar_dados_painel():
     except Exception:
         return []
 
-def buscar_usuarios():
+def buscar_usuarios_sem_cache():
+    """Lê diretamente do Google Sheets sem cache para validar login/cadastro em tempo real."""
     try:
         sheet = conectar_gsheets().worksheet("Usuarios")
-        return sheet.get_all_records()
-    except Exception:
+        registros = sheet.get_all_records()
+        
+        # Normalização resiliente das chaves do dicionário
+        usuarios_normalizados = []
+        for reg in registros:
+            item_limpo = {}
+            for k, v in reg.items():
+                chave_formatada = str(k).strip().lower().replace("-", "").replace(" ", "")
+                item_limpo[chave_formatada] = str(v).strip()
+            usuarios_normalizados.append(item_limpo)
+            
+        return usuarios_normalizados
+    except Exception as e:
+        st.error(f"Erro ao acessar a aba 'Usuarios' na planilha: {e}")
         return []
 
 def cadastrar_usuario(nome, email, senha):
     sheet = conectar_gsheets().worksheet("Usuarios")
-    sheet.append_row([nome, email, senha])
+    sheet.append_row([nome.strip(), email.strip().lower(), str(senha).strip()])
 
 # =========================================================
 # 4. BARRA SUPERIOR FIXA
@@ -317,23 +330,30 @@ if aba == "inicio":
                 btn_login = st.form_submit_button("ENTRAR NO SISTEMA")
                 
                 if btn_login:
-                    if not email_login or not senha_login:
-                        st.warning("⚠️ Preencha todos os campos para continuar.")
+                    email_digitado = email_login.strip().lower()
+                    senha_digitada = senha_login.strip()
+                    
+                    if not email_digitado or not senha_digitada:
+                        st.warning("⚠️ Preencha e-mail e senha para continuar.")
                     else:
-                        usuarios = buscar_usuarios()
+                        usuarios = buscar_usuarios_sem_cache()
                         usuario_encontrado = None
+                        
                         for u in usuarios:
-                            if str(u.get("Email", "")).strip().lower() == email_login.strip().lower() and str(u.get("Senha", "")) == senha_login:
-                                usuario_encontrado = u
+                            e_mail_banco = u.get("email", "")
+                            senha_banco = u.get("senha", "")
+                            
+                            if e_mail_banco == email_digitado and senha_banco == senha_digitada:
+                                usuario_encontrado = u.get("nome", "Usuário")
                                 break
                         
                         if usuario_encontrado:
-                            st.session_state["usuario_logado"] = usuario_encontrado.get("Nome", "Usuário")
+                            st.session_state["usuario_logado"] = usuario_encontrado
                             st.session_state["aba_ativa"] = "pesagem"
-                            st.success(f"Bem-vindo(a), {st.session_state['usuario_logado']}!")
+                            st.success(f"Bem-vindo(a), {usuario_encontrado}!")
                             st.rerun()
                         else:
-                            st.error("❌ E-mail ou senha incorretos.")
+                            st.error("❌ E-mail ou senha incorretos. Verifique e tente novamente.")
 
         # ABA 2: CADASTRO
         with tab_cadastro:
@@ -344,20 +364,24 @@ if aba == "inicio":
                 btn_cadastrar = st.form_submit_button("CRIAR MINHA CONTA")
                 
                 if btn_cadastrar:
-                    if not nome_cad or not email_cad or not senha_cad:
+                    nome_digitado = nome_cad.strip()
+                    email_digitado = email_cad.strip().lower()
+                    senha_digitada = senha_cad.strip()
+                    
+                    if not nome_digitado or not email_digitado or not senha_digitada:
                         st.warning("⚠️ Por favor, preencha todos os campos do cadastro.")
                     else:
-                        usuarios = buscar_usuarios()
-                        ja_existe = any(str(u.get("Email", "")).strip().lower() == email_cad.strip().lower() for u in usuarios)
+                        usuarios = buscar_usuarios_sem_cache()
+                        ja_existe = any(u.get("email", "") == email_digitado for u in usuarios)
                         
                         if ja_existe:
                             st.error("⚠️ Este e-mail já está cadastrado. Faça login ou recupere sua senha.")
                         else:
                             try:
-                                cadastrar_usuario(nome_cad.strip(), email_cad.strip().lower(), senha_cad.strip())
-                                st.success("✅ Conta criada com sucesso! Você já pode fazer login na aba 'Entrar'.")
+                                cadastrar_usuario(nome_digitado, email_digitado, senha_digitada)
+                                st.success("✅ Conta criada com sucesso! Você já pode ir na aba 'Entrar' para fazer seu login.")
                             except Exception as e:
-                                st.error(f"❌ Erro ao salvar cadastro: {e}")
+                                st.error(f"❌ Erro ao salvar cadastro na planilha: {e}")
 
         # ABA 3: ESQUECI A SENHA
         with tab_esqueci:
@@ -366,14 +390,16 @@ if aba == "inicio":
                 btn_recuperar = st.form_submit_button("RECUPERAR MINHA SENHA")
                 
                 if btn_recuperar:
-                    if not email_recup:
+                    email_target = email_recup.strip().lower()
+                    if not email_target:
                         st.warning("⚠️ Digite o e-mail para buscar a senha.")
                     else:
-                        usuarios = buscar_usuarios()
+                        usuarios = buscar_usuarios_sem_cache()
                         senha_achada = None
+                        
                         for u in usuarios:
-                            if str(u.get("Email", "")).strip().lower() == email_recup.strip().lower():
-                                senha_achada = u.get("Senha")
+                            if u.get("email", "") == email_target:
+                                senha_achada = u.get("senha", "")
                                 break
                         
                         if senha_achada:
