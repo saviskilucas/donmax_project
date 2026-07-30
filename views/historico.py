@@ -3,6 +3,7 @@ import pandas as pd
 import plotly.express as px
 import gspread
 from google.oauth2.service_account import Credentials
+from datetime import datetime, date
 
 @st.cache_resource
 def conectar_gsheets():
@@ -45,36 +46,60 @@ def converter_para_numero(serie):
     ).fillna(0.0)
 
 def render():
+    # Estilização CSS para forçar 2 colunas lado a lado no celular + visual dos cards
     st.markdown("""
         <style>
+        /* Força colunas a manterem 50% de largura no mobile sem empilhar */
+        div[data-testid="stHorizontalBlock"] {
+            display: flex !important;
+            flex-direction: row !important;
+            flex-wrap: nowrap !important;
+            gap: 8px !important;
+        }
+        div[data-testid="stHorizontalBlock"] > div {
+            width: 50% !important;
+            min-width: 0 !important;
+            flex: 1 1 0% !important;
+        }
+
+        /* Estilo do Card */
         .metric-card {
             background-color: #1E1E1E;
             border: 1px solid #2D2D2D;
             border-left: 4px solid #B71C1C;
-            border-radius: 14px;
-            padding: 14px 10px;
+            border-radius: 12px;
+            padding: 10px 6px;
             text-align: center;
-            box-shadow: 0px 4px 12px rgba(0,0,0,0.4);
-            margin-bottom: 12px;
+            box-shadow: 0px 4px 10px rgba(0,0,0,0.4);
+            margin-bottom: 8px;
+            width: 100%;
+            box-sizing: border-box;
         }
         .metric-card-title {
-            font-size: 0.75rem;
+            font-size: 0.70rem;
             font-weight: 700;
             color: #A0A0A0;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 4px;
+            letter-spacing: 0.3px;
+            margin-bottom: 3px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         .metric-card-value {
-            font-size: 1.25rem;
+            font-size: 1.10rem;
             font-weight: 800;
             color: #FFFFFF;
+            line-height: 1.1;
         }
         .metric-card-sub {
-            font-size: 0.70rem;
+            font-size: 0.65rem;
             color: #FF5252;
             font-weight: 600;
-            margin-top: 2px;
+            margin-top: 3px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -92,6 +117,39 @@ def render():
     if dados:
         df = pd.DataFrame(dados)
         
+        # Converte a coluna Data para o tipo datetime do pandas para permitir filtragem
+        if 'Data' in df.columns:
+            df['Data_DT'] = pd.to_datetime(df['Data'], format='%d/%m/%Y', errors='coerce').dt.date
+        else:
+            df['Data_DT'] = date.today()
+
+        # =========================================================
+        # FILTRO DE DATA POR PERÍODO
+        # =========================================================
+        data_min = df['Data_DT'].min() if not df['Data_DT'].dropna().empty else date.today()
+        data_max = df['Data_DT'].max() if not df['Data_DT'].dropna().empty else date.today()
+
+        st.markdown("##### 📅 Filtrar por Período")
+        filtro_datas = st.date_input(
+            "Selecione o intervalo:",
+            value=(data_min, data_max),
+            min_value=data_min,
+            max_value=data_max,
+            format="DD/MM/YYYY"
+        )
+
+        # Aplica a filtragem se ambas as datas (início e fim) estiverem selecionadas
+        if isinstance(filtro_datas, tuple) and len(filtro_datas) == 2:
+            dt_inicio, dt_fim = filtro_datas
+            df = df[(df['Data_DT'] >= dt_inicio) & (df['Data_DT'] <= dt_fim)]
+
+        if df.empty:
+            st.warning("⚠️ Nenhum registro encontrado para o período selecionado.")
+            return
+
+        # =========================================================
+        # LEITURA E CONVERSÃO DOS DADOS FILTRADOS
+        # =========================================================
         prod_ini = converter_para_numero(df['Prod_Inicial_KG']) if 'Prod_Inicial_KG' in df.columns else pd.Series([0]*len(df))
         reposicao = converter_para_numero(df['Reposicao_KG']) if 'Reposicao_KG' in df.columns else pd.Series([0]*len(df))
         sobra_limpa = converter_para_numero(df['Sobra_Limpa_KG']) if 'Sobra_Limpa_KG' in df.columns else pd.Series([0]*len(df))
@@ -107,7 +165,6 @@ def render():
         
         descarte_por_cliente_g = (tot_descarte / tot_clientes * 1000) if tot_clientes > 0 else 0.0
 
-        # Configuração para desabilitar zoom e rolagem no celular
         config_plotly_mobile = {
             'displayModeBar': False,
             'scrollZoom': False,
@@ -115,16 +172,17 @@ def render():
         }
 
         # =========================================================
-        # METRIC CARDS - GRADE 2x2 QUADRADA
+        # METRIC CARDS - GRADE 2x2 QUADRADA LADO A LADO
         # =========================================================
-        st.markdown("##### 📌 Indicadores Gerais")
+        st.markdown("##### 📌 Indicadores do Período")
         
+        # LINHA 1 (2 Cartões Lado a Lado)
         c1, c2 = st.columns(2)
         with c1:
             st.markdown(f"""
                 <div class="metric-card">
                     <div class="metric-card-title">Produção Total</div>
-                    <div class="metric-card-value">{tot_prod:.3f} <span style="font-size:0.8rem">kg</span></div>
+                    <div class="metric-card-value">{tot_prod:.3f} <span style="font-size:0.75rem">kg</span></div>
                     <div class="metric-card-sub" style="color:#64B5F6">Inicial + Reposição</div>
                 </div>
             """, unsafe_allow_html=True)
@@ -133,17 +191,18 @@ def render():
             st.markdown(f"""
                 <div class="metric-card" style="border-left-color: #FF5252;">
                     <div class="metric-card-title">Descarte Total</div>
-                    <div class="metric-card-value" style="color:#FF5252">{tot_descarte:.3f} <span style="font-size:0.8rem">kg</span></div>
+                    <div class="metric-card-value" style="color:#FF5252">{tot_descarte:.3f} <span style="font-size:0.75rem">kg</span></div>
                     <div class="metric-card-sub">Lixo / Perda</div>
                 </div>
             """, unsafe_allow_html=True)
 
+        # LINHA 2 (2 Cartões Lado a Lado)
         c3, c4 = st.columns(2)
         with c3:
             st.markdown(f"""
                 <div class="metric-card" style="border-left-color: #4CAF50;">
                     <div class="metric-card-title">Sobra Limpa</div>
-                    <div class="metric-card-value" style="color:#81C784">{tot_sobra_limpa:.3f} <span style="font-size:0.8rem">kg</span></div>
+                    <div class="metric-card-value" style="color:#81C784">{tot_sobra_limpa:.3f} <span style="font-size:0.75rem">kg</span></div>
                     <div class="metric-card-sub" style="color:#81C784">Aproveitável</div>
                 </div>
             """, unsafe_allow_html=True)
@@ -152,15 +211,16 @@ def render():
             st.markdown(f"""
                 <div class="metric-card" style="border-left-color: #FFB74D;">
                     <div class="metric-card-title">Sobra Buffet</div>
-                    <div class="metric-card-value" style="color:#FFB74D">{tot_sobra_buffet:.3f} <span style="font-size:0.8rem">kg</span></div>
+                    <div class="metric-card-value" style="color:#FFB74D">{tot_sobra_buffet:.3f} <span style="font-size:0.75rem">kg</span></div>
                     <div class="metric-card-sub" style="color:#FFB74D">Pós-Serviço</div>
                 </div>
             """, unsafe_allow_html=True)
 
+        # CARD INFORMATIVO COMPLEMENTAR
         st.markdown(f"""
-            <div class="metric-card" style="border-left-color: #AB47BC; margin-top: -4px;">
+            <div class="metric-card" style="border-left-color: #AB47BC;">
                 <div class="metric-card-title">Atendimento & Média de Descarte</div>
-                <div class="metric-card-value" style="color:#E1BEE7">{int(tot_clientes)} <span style="font-size:0.8rem">clientes</span> | <span style="color:#FF8A80">{descarte_por_cliente_g:.1f}g</span>/pess.</div>
+                <div class="metric-card-value" style="color:#E1BEE7">{int(tot_clientes)} <span style="font-size:0.75rem">clientes</span> | <span style="color:#FF8A80">{descarte_por_cliente_g:.1f}g</span>/pess.</div>
             </div>
         """, unsafe_allow_html=True)
 
@@ -264,12 +324,15 @@ def render():
             st.plotly_chart(fig_line, use_container_width=True, config=config_plotly_mobile)
 
         # =========================================================
-        # TABELA DE REGISTROS
+        # TABELA DE REGISTROS FILTRADOS
         # =========================================================
         st.markdown("---")
-        st.markdown("##### 📋 Lançamentos Recentes")
+        st.markdown("##### 📋 Lançamentos do Período")
         
         df_exibicao = df.copy()
+        if 'Data_DT' in df_exibicao.columns:
+            df_exibicao.drop(columns=['Data_DT'], inplace=True)
+
         cols_peso = ['Prod_Inicial_KG', 'Reposicao_KG', 'Sobra_Limpa_KG', 'Sobra_Buffet_KG', 'Descarte_KG']
         
         for c in cols_peso:
