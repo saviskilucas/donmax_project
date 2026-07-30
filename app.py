@@ -19,10 +19,10 @@ st.set_page_config(
 
 # Gerenciamento de Estado da Aba Ativa
 if "aba_ativa" not in st.session_state:
-    st.session_state["aba_ativa"] = "inicio"
+    st.session_state["aba_ativa"] = "Início"
 
 # =========================================================
-# 2. ESTILIZAÇÃO CSS (DARK MODE + BARRA SUPERIOR + CÁPSULA)
+# 2. INJEÇÃO DE CSS (MODO ESCURO + CÁPSULA PERFEITA SEM PISCADA)
 # =========================================================
 st.markdown("""
     <style>
@@ -53,7 +53,7 @@ st.markdown("""
     }
 
     @keyframes fadeIn {
-        from { opacity: 0.4; transform: translateY(3px); }
+        from { opacity: 0.5; transform: translateY(2px); }
         to { opacity: 1; transform: translateY(0); }
     }
 
@@ -85,51 +85,57 @@ st.markdown("""
     }
 
     /* =========================================================
-       RODAPÉ FIXO PERSONALIZADO (CÁPSULA 360PX)
+       TRAVA DO SEGMENTED CONTROL NO RODAPÉ (CÁPSULA REDONDA)
        ========================================================= */
-    .bottom-nav-container {
-        position: fixed;
-        bottom: 80px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 360px;
-        max-width: 95vw;
-        height: 60px;
-        background-color: #B71C1C;
-        border-radius: 30px;
-        box-shadow: 0px 8px 25px rgba(0, 0, 0, 0.7);
-        border: 2px solid #2D2D2D;
-        z-index: 9999999;
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-        justify-content: space-around;
-        padding: 0 6px;
-        box-sizing: border-box;
+    div[data-testid="stElementContainer"]:has(div[data-testid="stSegmentedControl"]) {
+        position: fixed !important;
+        bottom: 80px !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        width: 360px !important;
+        max-width: 95vw !important;
+        height: 60px !important;
+        z-index: 9999999 !important;
     }
 
-    .nav-tab-item {
-        flex: 1;
-        height: 44px;
-        margin: 0 2px;
-        border-radius: 20px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        text-decoration: none !important;
+    /* Esconde rótulo se houver */
+    div[data-testid="stSegmentedControl"] label {
+        display: none !important;
+    }
+
+    /* Container da Cápsula Vermelha */
+    div[data-testid="stSegmentedControl"] > div {
+        background-color: #B71C1C !important;
+        border-radius: 30px !important;
+        box-shadow: 0px 8px 25px rgba(0, 0, 0, 0.7) !important;
+        border: 2px solid #2D2D2D !important;
+        height: 60px !important;
+        width: 100% !important;
+        padding: 0 4px !important;
+        gap: 4px !important;
+        display: flex !important;
+        align-items: center !important;
+    }
+
+    /* Botões individuais do Segmented Control */
+    div[data-testid="stSegmentedControl"] button {
+        flex: 1 !important;
+        height: 44px !important;
+        border-radius: 20px !important;
+        border: none !important;
+        background-color: transparent !important;
         color: #E0E0E0 !important;
-        font-size: 0.85rem;
-        font-weight: 700;
-        cursor: pointer;
-        transition: all 0.15s ease-in-out;
+        font-size: 0.85rem !important;
+        font-weight: 700 !important;
+        transition: all 0.15s ease-in-out !important;
     }
 
-    /* ABA ATIVA (CAIXINHA BRANCA EM DESTAQUE) */
-    .nav-tab-item.active {
+    /* BOTÃO SELECIONADO (CAIXINHA BRANCA EM DESTAQUE) */
+    div[data-testid="stSegmentedControl"] button[aria-selected="true"] {
         background-color: #FFFFFF !important;
         color: #B71C1C !important;
-        font-weight: 800;
-        box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.4);
+        font-weight: 800 !important;
+        box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.4) !important;
     }
 
     /* CAMPOS DO FORMULÁRIO (MODO ESCURO) */
@@ -207,19 +213,30 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# Captura troca de aba via query params sem recarregar tudo
-params = st.query_params
-if "aba" in params:
-    st.session_state["aba_ativa"] = params["aba"]
+# =========================================================
+# 5. MENU DE CÁPSULA SEM RECARREGAMENTO E SEM BOLINHAS
+# =========================================================
+opcoes = ["Início", "Formulário", "Painel", "⚙️ Config"]
+
+# Usa o segmented_control do Streamlit (Sem bolinhas, rápido e limpo)
+aba_selecionada = st.segmented_control(
+    label="",
+    options=opcoes,
+    default=st.session_state["aba_ativa"],
+    label_visibility="collapsed"
+)
+
+if aba_selecionada:
+    st.session_state["aba_ativa"] = aba_selecionada
 
 aba = st.session_state["aba_ativa"]
 
 # =========================================================
-# 5. CONTEÚDO DAS ABAS
+# 6. CONTEÚDO DAS ABAS
 # =========================================================
 st.markdown("<div class='main-content-animated'>", unsafe_allow_html=True)
 
-if aba == "inicio":
+if aba == "Início":
     st.markdown("<div class='section-header'>🔐 ACESSO AO SISTEMA</div>", unsafe_allow_html=True)
     st.write("Insira suas credenciais para acessar o painel de pesagens:")
     
@@ -231,7 +248,7 @@ if aba == "inicio":
         if btn_login:
             st.info("ℹ️ Login demonstrativo em desenvolvimento. Use os menus abaixo para navegar.")
 
-elif aba == "pesagem":
+elif aba == "Formulário":
     with st.form("form_pesagem", clear_on_submit=True):
         st.markdown("<div class='section-header'>1. INFORMAÇÕES DO DIA</div>", unsafe_allow_html=True)
         data_sel = st.date_input("Data do Serviço", value=date.today())
@@ -268,7 +285,7 @@ elif aba == "pesagem":
                 except Exception as e:
                     st.error(f"❌ Erro ao salvar na planilha: {e}")
 
-elif aba == "historico":
+elif aba == "Painel":
     st.markdown("<div class='section-header'>📊 PAINEL DE CONTROLE DE DESCARTE</div>", unsafe_allow_html=True)
     try:
         sheet = conectar_gsheets()
@@ -284,7 +301,7 @@ elif aba == "historico":
     except Exception as e:
         st.error(f"Erro ao carregar dados do Google Sheets: {e}")
 
-elif aba == "config":
+elif aba == "⚙️ Config":
     st.markdown("<div class='section-header'>⚙️ CONFIGURAÇÕES DO SISTEMA</div>", unsafe_allow_html=True)
     st.markdown("**Don Max Buffet v1.0**\n*Sistema Integrado de Controle de Pesagens*\n\n---\n\n**Instruções para a Cozinha:**\n1. Realize as pesagens sempre ao final do turno.\n2. Certifique-se de zerar a tara da balança.\n3. Dúvidas ou problemas falar com a gerência.")
     if st.button("🔄 Atualizar Conexão com a Planilha"):
@@ -292,20 +309,3 @@ elif aba == "config":
         st.success("Conexão atualizada com sucesso!")
 
 st.markdown("</div>", unsafe_allow_html=True)
-
-# =========================================================
-# 6. RODAPÉ FIXO DE 4 MENUS (CÁPSULA PERSONALIZADA)
-# =========================================================
-c_inicio = "active" if aba == "inicio" else ""
-c_pesagem = "active" if aba == "pesagem" else ""
-c_historico = "active" if aba == "historico" else ""
-c_config = "active" if aba == "config" else ""
-
-st.markdown(f"""
-    <div class="bottom-nav-container">
-        <a href="?aba=inicio" target="_self" class="nav-tab-item {c_inicio}">Início</a>
-        <a href="?aba=pesagem" target="_self" class="nav-tab-item {c_pesagem}">Formulário</a>
-        <a href="?aba=historico" target="_self" class="nav-tab-item {c_historico}">Painel</a>
-        <a href="?aba=config" target="_self" class="nav-tab-item {c_config}">⚙️ Config</a>
-    </div>
-""", unsafe_allow_html=True)
