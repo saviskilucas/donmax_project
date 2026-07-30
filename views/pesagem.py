@@ -22,8 +22,6 @@ def buscar_pratos_cadastrados():
 
 def render():
     pratos_lista = buscar_pratos_cadastrados()
-
-    # Fuso Horário Oficial de Brasília
     fuso_brasilia = ZoneInfo("America/Sao_Paulo")
     agora_br = datetime.now(fuso_brasilia)
 
@@ -64,28 +62,27 @@ def render():
             else:
                 try:
                     sheet = conectar_gsheets().worksheet("Lancamentos_Diarios")
-                    
-                    # Gera a hora exata do momento de salvar no fuso de Brasília
                     agora_salvamento = datetime.now(fuso_brasilia)
                     data_br = data_sel.strftime("%d/%m/%Y")
                     hora_registro = agora_salvamento.strftime("%H:%M")
                     
+                    # LINHA EXATAMENTE NA ORDEM DAS SUAS COLUNAS NO GOOGLE SHEETS
                     nova_linha = [
-                        data_br, 
-                        hora_registro,
-                        responsavel.strip(), 
-                        int(clientes), 
-                        prato_sel, 
-                        round(float(prod_inicial), 3), 
-                        round(float(reposicao), 3), 
-                        round(float(sobra_limpa), 3), 
-                        round(float(sobra_buffet), 3), 
-                        round(float(descarte), 3), 
-                        observacoes.strip()
+                        data_br,                         # Data
+                        hora_registro,                   # Hora
+                        responsavel.strip(),             # Responsavel
+                        int(clientes),                   # Clientes_Atendidos
+                        prato_sel,                       # ID_Prato
+                        round(float(prod_inicial), 3),   # Prod_Inicial_KG
+                        round(float(reposicao), 3),      # Reposicao_KG
+                        round(float(sobra_limpa), 3),    # Sobra_Limpa_KG
+                        round(float(sobra_buffet), 3),   # Sobra_Buffet_KG
+                        round(float(descarte), 3),       # Descarte_KG
+                        observacoes.strip()              # Observacoes
                     ]
                     sheet.append_row(nova_linha)
                     st.cache_data.clear()
-                    st.success(f"✅ **{prato_sel}** registrado às {hora_registro}")
+                    st.success(f"✅ **{prato_sel}** registrado às {hora_registro}!")
                     st.balloons()
                 except Exception as e:
                     st.error(f"❌ Erro ao salvar na planilha: {e}")
