@@ -17,12 +17,15 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Gerenciamento de Estado da Aba Ativa
-if "aba_ativa" not in st.session_state:
+# Lista oficial de opções do menu (Usadas para validação)
+OPCOES_MENU = ["Início", "Formulário", "Painel", "⚙️ Config"]
+
+# Gerenciamento seguro do estado inicial da aba
+if "aba_ativa" not in st.session_state or st.session_state["aba_ativa"] not in OPCOES_MENU:
     st.session_state["aba_ativa"] = "Início"
 
 # =========================================================
-# 2. INJEÇÃO DE CSS (MODO ESCURO + CÁPSULA PERFEITA SEM PISCADA)
+# 2. INJEÇÃO DE CSS (MODO ESCURO + CÁPSULA PERFEITA NO RODAPÉ)
 # =========================================================
 st.markdown("""
     <style>
@@ -47,7 +50,7 @@ st.markdown("""
         visibility: hidden !important;
     }
 
-    /* TRANSIÇÃO SUAVE */
+    /* TRANSIÇÃO SUAVE DE CONTEÚDO */
     .main-content-animated {
         animation: fadeIn 0.15s ease-out forwards;
     }
@@ -98,7 +101,7 @@ st.markdown("""
         z-index: 9999999 !important;
     }
 
-    /* Esconde rótulo se houver */
+    /* Esconde rótulo do widget */
     div[data-testid="stSegmentedControl"] label {
         display: none !important;
     }
@@ -214,14 +217,11 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # =========================================================
-# 5. MENU DE CÁPSULA SEM RECARREGAMENTO E SEM BOLINHAS
+# 5. MENU DE CÁPSULA (SEM PISCADA E SEM BOLINHAS)
 # =========================================================
-opcoes = ["Início", "Formulário", "Painel", "⚙️ Config"]
-
-# Usa o segmented_control do Streamlit (Sem bolinhas, rápido e limpo)
 aba_selecionada = st.segmented_control(
     label="",
-    options=opcoes,
+    options=OPCOES_MENU,
     default=st.session_state["aba_ativa"],
     label_visibility="collapsed"
 )
