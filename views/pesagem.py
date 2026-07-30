@@ -1,7 +1,7 @@
 import streamlit as st
 import gspread
 from google.oauth2.service_account import Credentials
-from datetime import date
+from datetime import date, datetime
 
 @st.cache_resource
 def conectar_gsheets():
@@ -17,7 +17,6 @@ def buscar_pratos_cadastrados():
         lista = [str(r.get("Prato", "")).strip() for r in registros if r.get("Prato")]
         return [p for p in lista if p]
     except Exception:
-        # Pratos padrão caso a aba Alimentos esteja vazia inicialmente
         return ["Arroz", "Feijão", "Barreado", "Carne 1", "Carne 2", "Salada", "Sobremesa"]
 
 def render():
@@ -25,7 +24,14 @@ def render():
 
     with st.form("form_pesagem", clear_on_submit=True):
         st.markdown("<div class='section-header'>1. INFORMAÇÕES DO DIA</div>", unsafe_allow_html=True)
-        data_sel = st.date_input("Data do Serviço", value=date.today(), format="DD/MM/YYYY")
+        
+        col_dt, col_hr = st.columns(2)
+        with col_dt:
+            data_sel = st.date_input("Data do Serviço", value=date.today(), format="DD/MM/YYYY")
+        with col_hr:
+            hora_atual_str = datetime.now().strftime("%H:%M")
+            st.text_input("Hora do Registro", value=hora_atual_str, disabled=True)
+
         responsavel = st.text_input("Responsável pelo Turno", value=st.session_state["usuario_logado"])
         clientes = st.number_input("Clientes Atendidos no Dia", min_value=0, step=1, value=0)
 
@@ -54,9 +60,11 @@ def render():
                 try:
                     sheet = conectar_gsheets().worksheet("Lancamentos_Diarios")
                     data_br = data_sel.strftime("%d/%m/%Y")
+                    hora_registro = datetime.now().strftime("%H:%M")
                     
                     nova_linha = [
                         data_br, 
+                        hora_registro,
                         responsavel.strip(), 
                         int(clientes), 
                         prato_sel, 
@@ -69,7 +77,7 @@ def render():
                     ]
                     sheet.append_row(nova_linha)
                     st.cache_data.clear()
-                    st.success(f"✅ **{prato_sel}** registrado com sucesso!")
+                    st.success(f"✅ **{prato_sel}** registrado às {hora_registro}!")
                     st.balloons()
                 except Exception as e:
                     st.error(f"❌ Erro ao salvar na planilha: {e}")
