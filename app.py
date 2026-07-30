@@ -17,12 +17,8 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Gerenciamento de Estado da Aba Ativa
-if "aba_ativa" not in st.session_state:
-    st.session_state["aba_ativa"] = "pesagem"
-
 # =========================================================
-# 2. INJEÇÃO DE CSS (RODAPÉ 100% FIXO A 80PX SEM ELEMENTOS NO MEIO)
+# 2. CSS DA NOVA ABORDAGEM (TRANSFORMA ST.RADIO EM CÁPSULA FIXA A 80PX)
 # =========================================================
 st.markdown("""
     <style>
@@ -31,7 +27,7 @@ st.markdown("""
         background-color: #F8F9FA !important;
     }
 
-    /* Margem para o formulário rolar sem ser coberto pelo menu */
+    /* Margem inferior para o conteúdo rolar limpo atrás do menu */
     .block-container {
         padding-top: 3.8rem !important;
         padding-bottom: 9.0rem !important; 
@@ -84,9 +80,9 @@ st.markdown("""
     }
 
     /* =========================================================
-       CONTAINER DO MENU: FORÇADO A FICAR EXCLUSIVAMENTE NO RODAPÉ A 80PX
+       TRAVAMENTO DO ST.RADIO COMO CÁPSULA REDONDA A 80PX
        ========================================================= */
-    .fixed-footer-container {
+    div[data-testid="stElementContainer"]:has(div[data-testid="stRadio"]) {
         position: fixed !important;
         bottom: 80px !important;
         left: 50% !important;
@@ -96,13 +92,13 @@ st.markdown("""
         z-index: 9999999 !important;
     }
 
-    /* Esconde rótulos ou labels do radio */
-    .fixed-footer-container label[data-testid="stWidgetLabel"] {
+    /* Esconde o label do radio ("Navegação") */
+    div[data-testid="stRadio"] > label {
         display: none !important;
     }
 
-    /* Estrutura da Cápsula Vermelha */
-    .fixed-footer-container div[data-testid="stRadio"] > div {
+    /* Transforma o grupo do Radio na Cápsula Vermelha */
+    div[data-testid="stRadio"] > div {
         background-color: #D32F2F !important;
         border-radius: 30px !important;
         box-shadow: 0px 8px 25px rgba(0, 0, 0, 0.35) !important;
@@ -116,13 +112,13 @@ st.markdown("""
         padding: 0 6px !important;
     }
 
-    /* Esconde o círculo do radio button nativo */
-    .fixed-footer-container div[data-testid="stRadio"] label > div:first-child {
+    /* Esconde o circulinho nativo do radio button */
+    div[data-testid="stRadio"] label > div:first-child {
         display: none !important;
     }
 
-    /* Estilo das opções/ícones */
-    .fixed-footer-container div[data-testid="stRadio"] label {
+    /* Estilização dos itens da opção */
+    div[data-testid="stRadio"] label {
         flex: 1 !important;
         height: 44px !important;
         margin: 0 !important;
@@ -135,20 +131,20 @@ st.markdown("""
         transition: all 0.2s ease-in-out !important;
     }
 
-    /* Texto do Ícone */
-    .fixed-footer-container div[data-testid="stRadio"] label p {
+    /* Texto do ícone */
+    div[data-testid="stRadio"] label p {
         font-size: 1.35rem !important;
         margin: 0 !important;
         padding: 0 !important;
     }
 
     /* DESTAQUE DA ABA ATIVA (CAIXINHA BRANCA FLUTUANTE) */
-    .fixed-footer-container div[data-testid="stRadio"] label:has(input:checked) {
+    div[data-testid="stRadio"] label:has(input:checked) {
         background-color: #FFFFFF !important;
         box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2) !important;
     }
     
-    .fixed-footer-container div[data-testid="stRadio"] label:has(input:checked) p {
+    div[data-testid="stRadio"] label:has(input:checked) p {
         color: #D32F2F !important;
     }
 
@@ -218,11 +214,30 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # =========================================================
-# 5. CONTEÚDO DAS ABAS (NAVEGAÇÃO INTERNA)
+# 5. MENU DE NAVEGAÇÃO REORGANIZADO VIA ST.RADIO
+# =========================================================
+opcoes_menu = ["🏠", "📋", "👤"]
+
+aba_selecionada = st.radio(
+    "Navegação",
+    opcoes_menu,
+    index=0,
+    horizontal=True,
+    label_visibility="collapsed"
+)
+
+# Mapeamento do ícone para a tela correspondente
+if aba_selecionada == "🏠":
+    aba = "pesagem"
+elif aba_selecionada == "📋":
+    aba = "historico"
+else:
+    aba = "config"
+
+# =========================================================
+# 6. CONTEÚDO DAS ABAS (COM TRANSIÇÃO SUAVE)
 # =========================================================
 st.markdown("<div class='main-content-animated'>", unsafe_allow_html=True)
-
-aba = st.session_state["aba_ativa"]
 
 if aba == "pesagem":
     with st.form("form_pesagem", clear_on_submit=True):
@@ -285,33 +300,3 @@ elif aba == "config":
         st.success("Conexão atualizada com sucesso!")
 
 st.markdown("</div>", unsafe_allow_html=True)
-
-# =========================================================
-# 6. MENU NATIVO ISOLADO NO CONTAINER DO RODAPÉ (80PX)
-# =========================================================
-st.markdown('<div class="fixed-footer-container">', unsafe_allow_html=True)
-
-opcoes_menu = ["🏠", "📋", "👤"]
-idx_atual = 0 if aba == "pesagem" else (1 if aba == "historico" else 2)
-
-aba_selecionada = st.radio(
-    "Navegação",
-    opcoes_menu,
-    index=idx_atual,
-    horizontal=True,
-    label_visibility="collapsed",
-    key="radio_nav_footer"
-)
-
-# Atualização de estado limpa sem F5 / sem tela preta
-if aba_selecionada == "🏠" and st.session_state["aba_ativa"] != "pesagem":
-    st.session_state["aba_ativa"] = "pesagem"
-    st.rerun()
-elif aba_selecionada == "📋" and st.session_state["aba_ativa"] != "historico":
-    st.session_state["aba_ativa"] = "historico"
-    st.rerun()
-elif aba_selecionada == "👤" and st.session_state["aba_ativa"] != "config":
-    st.session_state["aba_ativa"] = "config"
-    st.rerun()
-
-st.markdown('</div>', unsafe_allow_html=True)
