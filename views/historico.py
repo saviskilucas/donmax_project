@@ -46,10 +46,10 @@ def converter_para_numero(serie):
     ).fillna(0.0)
 
 def render():
-    # Estilização CSS para forçar 2 colunas lado a lado no celular + visual dos cards
+    # Estilização CSS para 2 colunas no celular + liberação do touch scroll nos gráficos
     st.markdown("""
         <style>
-        /* Força colunas a manterem 50% de largura no mobile sem empilhar */
+        /* Força colunas a manterem 50% no mobile sem empilhar */
         div[data-testid="stHorizontalBlock"] {
             display: flex !important;
             flex-direction: row !important;
@@ -60,6 +60,11 @@ def render():
             width: 50% !important;
             min-width: 0 !important;
             flex: 1 1 0% !important;
+        }
+
+        /* Libera a rolagem do touch mesmo com o dedo em cima do gráfico */
+        .js-plotly-plot .plotly .draglayer {
+            pointer-events: none !important;
         }
 
         /* Estilo do Card */
@@ -117,7 +122,6 @@ def render():
     if dados:
         df = pd.DataFrame(dados)
         
-        # Converte a coluna Data para o tipo datetime do pandas para permitir filtragem
         if 'Data' in df.columns:
             df['Data_DT'] = pd.to_datetime(df['Data'], format='%d/%m/%Y', errors='coerce').dt.date
         else:
@@ -138,7 +142,6 @@ def render():
             format="DD/MM/YYYY"
         )
 
-        # Aplica a filtragem se ambas as datas (início e fim) estiverem selecionadas
         if isinstance(filtro_datas, tuple) and len(filtro_datas) == 2:
             dt_inicio, dt_fim = filtro_datas
             df = df[(df['Data_DT'] >= dt_inicio) & (df['Data_DT'] <= dt_fim)]
@@ -148,7 +151,7 @@ def render():
             return
 
         # =========================================================
-        # LEITURA E CONVERSÃO DOS DADOS FILTRADOS
+        # CONVERSÃO DOS DADOS
         # =========================================================
         prod_ini = converter_para_numero(df['Prod_Inicial_KG']) if 'Prod_Inicial_KG' in df.columns else pd.Series([0]*len(df))
         reposicao = converter_para_numero(df['Reposicao_KG']) if 'Reposicao_KG' in df.columns else pd.Series([0]*len(df))
@@ -165,10 +168,10 @@ def render():
         
         descarte_por_cliente_g = (tot_descarte / tot_clientes * 1000) if tot_clientes > 0 else 0.0
 
+        # CONFIGURAÇÃO DE LIBERAÇÃO DE SCROLL MOBILE
         config_plotly_mobile = {
-            'displayModeBar': False,
-            'scrollZoom': False,
-            'doubleClick': False
+            'staticPlot': True,         # Desativa interceptação de gestos no celular
+            'displayModeBar': False
         }
 
         # =========================================================
@@ -176,7 +179,6 @@ def render():
         # =========================================================
         st.markdown("##### 📌 Indicadores do Período")
         
-        # LINHA 1 (2 Cartões Lado a Lado)
         c1, c2 = st.columns(2)
         with c1:
             st.markdown(f"""
@@ -196,7 +198,6 @@ def render():
                 </div>
             """, unsafe_allow_html=True)
 
-        # LINHA 2 (2 Cartões Lado a Lado)
         c3, c4 = st.columns(2)
         with c3:
             st.markdown(f"""
@@ -216,7 +217,6 @@ def render():
                 </div>
             """, unsafe_allow_html=True)
 
-        # CARD INFORMATIVO COMPLEMENTAR
         st.markdown(f"""
             <div class="metric-card" style="border-left-color: #AB47BC;">
                 <div class="metric-card-title">Atendimento & Média de Descarte</div>
