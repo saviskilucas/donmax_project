@@ -24,7 +24,7 @@ if "aba_ativa" not in st.session_state:
 aba = st.session_state["aba_ativa"]
 
 # =========================================================
-# 2. INJEÇÃO DE CSS (MODO ESCURO + SIMETRIA + DESTAQUE BRANCO)
+# 2. INJEÇÃO DE CSS (DARK MODE + SIMETRIA + BOTÃO BRANCO FORÇADO)
 # =========================================================
 st.markdown("""
     <style>
@@ -77,7 +77,7 @@ st.markdown("""
     }
 
     /* =========================================================
-       CÁPSULA TRAVADA NO RODAPÉ COM SIMETRIA E DIVISÓRIAS
+       CÁPSULA TRAVADA NO RODAPÉ COM CENTRALIZAÇÃO PERFEITA
        ========================================================= */
     div[data-testid="stElementContainer"]:has(div.st-key-nav_bar_container),
     div:has(> div.st-key-nav_bar_container) {
@@ -104,7 +104,7 @@ st.markdown("""
         gap: 0 !important;
     }
 
-    /* Colunas individuais com largura exatamente igual e divisória sutil */
+    /* Colunas individuais centralizadas */
     div.st-key-nav_bar_container div[data-testid="stHorizontalBlock"] > div {
         flex: 1 1 0% !important;
         min-width: 0 !important;
@@ -115,7 +115,7 @@ st.markdown("""
         position: relative !important;
     }
 
-    /* Divisória vertical entre os botões (exceto no último) */
+    /* Divisória vertical sutil entre os botões */
     div.st-key-nav_bar_container div[data-testid="stHorizontalBlock"] > div:not(:last-child)::after {
         content: "" !important;
         position: absolute !important;
@@ -133,29 +133,41 @@ st.markdown("""
         height: 44px !important;
         background-color: transparent !important;
         color: #E0E0E0 !important;
-        font-size: 0.82rem !important;
+        font-size: 0.85rem !important;
         font-weight: 700 !important;
         border-radius: 20px !important;
         border: none !important;
         box-shadow: none !important;
         margin: 0 !important;
-        padding: 0 4px !important;
+        padding: 0 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
         white-space: nowrap !important;
         transition: all 0.2s ease-in-out !important;
     }
 
-    /* ESTILO DO BOTÃO SELECIONADO (SELEÇÃO BRANCA DESTACADA) */
-    div.st-key-nav_bar_container button.active-btn {
+    div.st-key-nav_bar_container button p {
+        margin: 0 !important;
+        padding: 0 !important;
+        text-align: center !important;
+        width: 100% !important;
+        font-size: 0.85rem !important;
+        font-weight: 700 !important;
+    }
+
+    /* ESTILO DO BOTÃO SELECIONADO (CAIXINHA BRANCA DESTACADA) */
+    div.st-key-nav_bar_container button.active-btn,
+    div.st-key-nav_bar_container button.active-btn:hover,
+    div.st-key-nav_bar_container button.active-btn:focus {
         background-color: #FFFFFF !important;
         color: #B71C1C !important;
-        font-weight: 800 !important;
         box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.4) !important;
     }
 
-    /* Remove a divisória vizinha para o botão selecionado sobressair limpo */
-    div.st-key-nav_bar_container div[data-testid="stHorizontalBlock"] > div:has(button.active-btn)::after,
-    div.st-key-nav_bar_container div[data-testid="stHorizontalBlock"] > div:has(+ div button.active-btn)::after {
-        opacity: 0 !important;
+    div.st-key-nav_bar_container button.active-btn p {
+        color: #B71C1C !important;
+        font-weight: 800 !important;
     }
 
     /* FORMULÁRIO DARK MODE */
@@ -221,7 +233,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # =========================================================
-# 5. CONTEÚDO DAS ABAS (FUNCIONALIDADE INTACTA)
+# 5. CONTEÚDO DAS ABAS
 # =========================================================
 if aba == "inicio":
     st.markdown("<div class='section-header'>🔐 ACESSO AO SISTEMA</div>", unsafe_allow_html=True)
@@ -296,7 +308,7 @@ elif aba == "config":
         st.success("Conexão atualizada com sucesso!")
 
 # =========================================================
-# 6. RODAPÉ FIXO DE BOTÕES NATIVOS (ESTRUTURA MANTIDA)
+# 6. RODAPÉ FIXO DE BOTÕES NATIVOS (SÓ A ENGRENAGEM NO CONFIG)
 # =========================================================
 nav_bar = st.container(key="nav_bar_container")
 with nav_bar:
@@ -314,11 +326,11 @@ with nav_bar:
             st.session_state["aba_ativa"] = "historico"
             st.rerun()
     with c4:
-        if st.button("⚙️ Config", key="btn_config"):
+        if st.button("⚙️", key="btn_config"):
             st.session_state["aba_ativa"] = "config"
             st.rerun()
 
-# SCRIPT QUE APLICA A CLASSE 'active-btn' AO BOTÃO SELECIONADO
+# SCRIPT QUE FORÇA A DESTAQUE DA CAIXINHA BRANCA NO BOTÃO ATIVO
 st.components.v1.html(f"""
     <script>
     function updateActiveButton() {{
@@ -342,6 +354,7 @@ st.components.v1.html(f"""
         }}
     }}
     updateActiveButton();
-    setTimeout(updateActiveButton, 60);
+    setTimeout(updateActiveButton, 50);
+    setTimeout(updateActiveButton, 150);
     </script>
 """, height=0)
