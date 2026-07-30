@@ -24,7 +24,7 @@ if "aba_ativa" not in st.session_state:
 aba = st.session_state["aba_ativa"]
 
 # =========================================================
-# 2. INJEÇÃO DE CSS (DARK MODE + SIMETRIA + BOTÃO BRANCO FORÇADO)
+# 2. INJEÇÃO DE CSS (MODO ESCURO + HOVER + CENTRALIZAÇÃO TOTAL)
 # =========================================================
 st.markdown("""
     <style>
@@ -77,7 +77,7 @@ st.markdown("""
     }
 
     /* =========================================================
-       CÁPSULA TRAVADA NO RODAPÉ COM CENTRALIZAÇÃO PERFEITA
+       CÁPSULA TRAVADA NO RODAPÉ COM CENTRALIZAÇÃO ABSOLUTA
        ========================================================= */
     div[data-testid="stElementContainer"]:has(div.st-key-nav_bar_container),
     div:has(> div.st-key-nav_bar_container) {
@@ -143,17 +143,28 @@ st.markdown("""
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
-        white-space: nowrap !important;
-        transition: all 0.2s ease-in-out !important;
+        transition: background-color 0.2s ease, transform 0.1s ease !important;
     }
 
+    /* CENTRALIZAÇÃO DO TEXTO/ÍCONE DENTRO DO BOTÃO DO STREAMLIT */
+    div.st-key-nav_bar_container button div,
     div.st-key-nav_bar_container button p {
-        margin: 0 !important;
+        margin: 0 auto !important;
         padding: 0 !important;
         text-align: center !important;
         width: 100% !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
         font-size: 0.85rem !important;
         font-weight: 700 !important;
+    }
+
+    /* EFEITO HOVER (PASSAR O MOUSE / TOQUE) NOS BOTÕES INATIVOS */
+    div.st-key-nav_bar_container button:hover:not(.active-btn) {
+        background-color: #D32F2F !important;
+        color: #FFFFFF !important;
+        cursor: pointer !important;
     }
 
     /* ESTILO DO BOTÃO SELECIONADO (CAIXINHA BRANCA DESTACADA) */
@@ -308,7 +319,7 @@ elif aba == "config":
         st.success("Conexão atualizada com sucesso!")
 
 # =========================================================
-# 6. RODAPÉ FIXO DE BOTÕES NATIVOS (SÓ A ENGRENAGEM NO CONFIG)
+# 6. RODAPÉ FIXO DE BOTÕES NATIVOS (ENGRENAGEM NO CONFIG)
 # =========================================================
 nav_bar = st.container(key="nav_bar_container")
 with nav_bar:
@@ -330,7 +341,7 @@ with nav_bar:
             st.session_state["aba_ativa"] = "config"
             st.rerun()
 
-# SCRIPT QUE FORÇA A DESTAQUE DA CAIXINHA BRANCA NO BOTÃO ATIVO
+# SCRIPT QUE APLICA O DESTAQUE BRANCO AO BOTÃO ATIVO
 st.components.v1.html(f"""
     <script>
     function updateActiveButton() {{
