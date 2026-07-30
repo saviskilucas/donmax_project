@@ -2,6 +2,7 @@ import streamlit as st
 import gspread
 from google.oauth2.service_account import Credentials
 from datetime import date, datetime
+from zoneinfo import ZoneInfo
 
 @st.cache_resource
 def conectar_gsheets():
@@ -22,15 +23,19 @@ def buscar_pratos_cadastrados():
 def render():
     pratos_lista = buscar_pratos_cadastrados()
 
+    # Fuso Horário Oficial de Brasília
+    fuso_brasilia = ZoneInfo("America/Sao_Paulo")
+    agora_br = datetime.now(fuso_brasilia)
+
     with st.form("form_pesagem", clear_on_submit=True):
         st.markdown("<div class='section-header'>1. INFORMAÇÕES DO DIA</div>", unsafe_allow_html=True)
         
         col_dt, col_hr = st.columns(2)
         with col_dt:
-            data_sel = st.date_input("Data do Serviço", value=date.today(), format="DD/MM/YYYY")
+            data_sel = st.date_input("Data do Serviço", value=agora_br.date(), format="DD/MM/YYYY")
         with col_hr:
-            hora_atual_str = datetime.now().strftime("%H:%M")
-            st.text_input("Hora do Registro", value=hora_atual_str, disabled=True)
+            hora_atual_str = agora_br.strftime("%H:%M")
+            st.text_input("Hora do Registro (Horário de Brasília)", value=hora_atual_str, disabled=True)
 
         responsavel = st.text_input("Responsável pelo Turno", value=st.session_state["usuario_logado"])
         clientes = st.number_input("Clientes Atendidos no Dia", min_value=0, step=1, value=0)
@@ -59,8 +64,11 @@ def render():
             else:
                 try:
                     sheet = conectar_gsheets().worksheet("Lancamentos_Diarios")
+                    
+                    # Gera a hora exata do momento de salvar no fuso de Brasília
+                    agora_salvamento = datetime.now(fuso_brasilia)
                     data_br = data_sel.strftime("%d/%m/%Y")
-                    hora_registro = datetime.now().strftime("%H:%M")
+                    hora_registro = agora_salvamento.strftime("%H:%M")
                     
                     nova_linha = [
                         data_br, 
@@ -77,7 +85,7 @@ def render():
                     ]
                     sheet.append_row(nova_linha)
                     st.cache_data.clear()
-                    st.success(f"✅ **{prato_sel}** registrado às {hora_registro}!")
+                    st.success(f"✅ **{prato_sel}** registrado às {hora_registro} (Horário de Brasília)!")
                     st.balloons()
                 except Exception as e:
                     st.error(f"❌ Erro ao salvar na planilha: {e}")
