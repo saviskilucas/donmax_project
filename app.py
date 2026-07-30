@@ -245,7 +245,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # =========================================================
-# 3. CONEXÃO GOOGLE SHEETS
+# 3. CONEXÃO E LEITURA CACHEADA DO GOOGLE SHEETS
 # =========================================================
 @st.cache_resource
 def conectar_gsheets():
@@ -253,6 +253,14 @@ def conectar_gsheets():
     credentials = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scope)
     client = gspread.authorize(credentials)
     return client.open("Planilha Don Max").worksheet("Lancamentos_Diarios")
+
+@st.cache_data(ttl=300) # Mantém os dados salvos em memória por 5 minutos (evita requisições travadas)
+def carregar_dados_painel():
+    try:
+        sheet = conectar_gsheets()
+        return sheet.get_all_records()
+    except Exception:
+        return []
 
 # =========================================================
 # 4. BARRA SUPERIOR FIXA
@@ -315,6 +323,8 @@ elif aba == "pesagem":
                     sheet = conectar_gsheets()
                     nova_linha = [str(data_sel), responsavel.strip(), int(clientes), prato_sel, float(prod_inicial), float(reposicao), float(sobra_limpa), float(sobra_buffet), float(descarte), observacoes.strip()]
                     sheet.append_row(nova_linha)
+                    # Limpa o cache para que o painel traga o novo registro na próxima leitura
+                    st.cache_data.clear()
                     st.success(f"✅ **{prato_sel}** registrado com sucesso!")
                     st.balloons()
                 except Exception as e:
@@ -322,26 +332,30 @@ elif aba == "pesagem":
 
 elif aba == "historico":
     st.markdown("<div class='section-header'>📊 PAINEL DE CONTROLE DE DESCARTE</div>", unsafe_allow_html=True)
-    try:
-        sheet = conectar_gsheets()
-        dados = sheet.get_all_records()
-        if dados:
-            df = pd.DataFrame(dados)
-            st.dataframe(df.tail(10).iloc[::-1], use_container_width=True, hide_index=True)
-            st.markdown("---")
-            total_descarte = df['Descarte Total'].sum() if 'Descarte Total' in df.columns else 0
-            st.metric("Descarte Acumulado (kg)", f"{total_descarte:.2f} kg")
-        else:
-            st.info("Nenhum registro encontrado na planilha ainda.")
-    except Exception as e:
-        st.error(f"Erro ao carregar dados do Google Sheets: {e}")
+    
+    col_a, col_b = st.columns([0.7, 0.3])
+    with col_b:
+        if st.button("🔄 Recarregar Dados"):
+            st.cache_data.clear()
+            st.rerun()
+
+    dados = carregar_dados_painel()
+    if dados:
+        df = pd.DataFrame(dados)
+        st.dataframe(df.tail(10).iloc[::-1], use_container_width=True, hide_index=True)
+        st.markdown("---")
+        total_descarte = df['Descarte Total'].sum() if 'Descarte Total' in df.columns else 0
+        st.metric("Descarte Acumulado (kg)", f"{total_descarte:.2f} kg")
+    else:
+        st.info("Nenhum registro encontrado na planilha ainda.")
 
 elif aba == "config":
     st.markdown("<div class='section-header'>⚙️ CONFIGURAÇÕES DO SISTEMA</div>", unsafe_allow_html=True)
     st.markdown("**Don Max Buffet v1.0**\n*Sistema Integrado de Controle de Pesagens*\n\n---\n\n**Instruções para a Cozinha:**\n1. Realize as pesagens sempre ao final do turno.\n2. Certifique-se de zerar a tara da balança.\n3. Dúvidas ou problemas falar com a gerência.")
-    if st.button("🔄 Atualizar Conexão com a Planilha"):
+    if st.button("🔄 Limpar Cache Geral"):
+        st.cache_data.clear()
         st.cache_resource.clear()
-        st.success("Conexão atualizada com sucesso!")
+        st.success("Cache limpo com sucesso!")
 
 # =========================================================
 # 6. RODAPÉ FIXO DE BOTÕES NATIVOS
@@ -366,7 +380,7 @@ with nav_bar:
             st.session_state["aba_ativa"] = "config"
             st.rerun()
 
-# SCRIPT QUE CONTINUA VERIFICANDO ATÉ ABRIR E PINTAR DE BRANCO O BOTÃO DA ABA ATIVA
+# SCRIPT QUE GARANTE O DESTAQUE BRANCO IMEDIATO AO BOTÃO ATIVO
 st.components.v1.html(f"""
     <script>
     function updateActiveButton() {{
@@ -389,14 +403,7 @@ st.components.v1.html(f"""
             btnsAtivos.forEach(btn => btn.classList.add('active-btn'));
         }}
     }}
-    
-    // Execução imediata e persistente para resistir a carregamentos assíncronos (como Google Sheets)
     updateActiveButton();
-    let counter = 0;
-    const intervalId = setInterval(() => {{
-        updateActiveButton();
-        counter++;
-        if (counter > 15) clearInterval(intervalId);
-    }}, 100);
+    setTimeout(updateActiveButton, 20);
     </script>
 """, height=0)
