@@ -10,20 +10,49 @@ def conectar_gsheets():
     credentials = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scope)
     return gspread.authorize(credentials).open("Planilha Don Max")
 
-@st.cache_data(ttl=300)
+@st.cache_data(ttl=60)
 def carregar_dados_painel():
     try:
         sheet = conectar_gsheets().worksheet("Lancamentos_Diarios")
-        return sheet.get_all_records()
-    except Exception:
+        registros = sheet.get_all_records()
+        
+        # Se get_all_records falhar ou vier vazio, tenta ler via get_all_values
+        if not registros:
+            valores = sheet.get_all_values()
+            if len(valores) > 1:
+                cabecalho = [str(c).strip() for c in valores[0]]
+                linhas = valores[1:]
+                registros = [dict(zip(cabecalho, linha)) for linha in linhas]
+        else:
+            # Limpa espaços nos nomes das chaves do dicionário
+            registros_limpos = []
+            for r in registros:
+                r_limpo = {str(k).strip(): v for k, v in r.items()}
+                registros_limpos.append(r_limpo)
+            registros = registros_limpos
+
+        return registros
+    except Exception as e:
+        st.error(f"Erro ao carregar planilha: {e}")
         return []
+
+def converter_para_numero(serie):
+    """Converte valores com vírgula, texto ou espaços para float limpo."""
+    return pd.to_numeric(
+        serie.astype(str)
+        .str.replace('kg', '', case=False)
+        .str.replace('R$', '', case=False)
+        .str.replace(' ', '')
+        .str.replace(',', '.'), 
+        errors='coerce'
+    ).fillna(0.0)
 
 def render():
     st.markdown("<div class='section-header'>📊 DASHBOARD COMPLETO DA COZINHA</div>", unsafe_allow_html=True)
     
     col_a, col_b = st.columns([0.6, 0.4])
     with col_b:
-        if st.button("🔄 Atualizar", use_container_width=True):
+        if st.button("🔄 Atualizar Dados", use_container_width=True):
             st.cache_data.clear()
             st.rerun()
 
@@ -32,27 +61,38 @@ def render():
     if dados:
         df = pd.DataFrame(dados)
         
-        # Tratamento e conversão de colunas numéricas
-        colunas_num = ['Produção Inicial', 'Reposição Total', 'Sobra Limpa', 'Sobra Buffet', 'Descarte Total', 'Clientes']
-        for col in colunas_num:
-            if col in df.columns:
-                df[col] = pd.to_numeric(df[col].astype(str).str.replace(',', '.'), errors='coerce').fillna(0)
+        # Normaliza o nome das colunas do DataFrame para evitar erros de digitação
+        mapa_colunas = {col: col.strip() for col in df.columns}
+        df.rename(columns=mapa_colunas, inplace=True)
 
-        # Cálculos Derivados
-        if 'Produção Inicial' in df.columns and 'Reposição Total' in df.columns:
-            df['Produção Total'] = df['Produção Inicial'] + df['Reposição Total']
-        else:
-            df['Produção Total'] = 0
-
-        # Totais para os Cards
-        tot_prod = df['Produção Total'].sum()
-        tot_descarte = df['Descarte Total'].sum() if 'Descarte Total' in df.columns else 0
-        tot_sobra_limpa = df['Sobra Limpa'].sum() if 'Sobra Limpa' in df.columns else 0
-        tot_sobra_buffet = df['Sobra Buffet'].sum() if 'Sobra Buffet' in df.columns else 0
-        tot_clientes = df['Clientes'].max() if 'Clientes' in df.columns else 0
+        # Mapeamento e conversão forçada de todas as colunas numéricas
+        colunas_numericas = [
+            'Produção Inicial', 'Reposicao Total', 'Reposição Total', 
+            'Sobra Limpa', 'Sobra Buffet', 'Descarte Total', 'Clientes'
+        ]
         
-        # Cálculo de Descarte Médio por Cliente (g/cliente)
-        descarte_por_cliente_g = (tot_descarte / tot_clientes * 1000) if tot_clientes > 0 else 0
+        for col in colunas_numericas:
+            if col in df.columns:
+                df[col] = converter_para_numero(df[col])
+            else:
+                df[col] = 0.0
+
+        # Trata coluna de Reposição caso esteja sem acento no banco
+        col_reposicao = 'Reposição Total' if 'Reposição Total' in df.columns else 'Reposicao Total'
+
+        # Cálculo de Produção Total
+        df['Produção Total'] = df['Produção Inicial'] + df[col_reposicao]
+
+        # Totais Reais
+        tot_prod = float(df['Produção Total'].sum())
+        tot_descarte = float(df['Descarte Total'].sum())
+        tot_sobra_limpa = float(df['Sobra Limpa'].sum())
+        tot_sobra_buffet = float(df['Sobra Buffet'].sum())
+        
+        # Pega a soma ou o máximo de clientes dependendo dos registros
+        tot_clientes = float(df['Clientes'].max()) if df['Clientes'].max() > 0 else float(df['Clientes'].sum())
+        
+        descarte_por_cliente_g = (tot_descarte / tot_clientes * 1000) if tot_clientes > 0 else 0.0
 
         # =========================================================
         # CARDS E MÉTRICAS
@@ -61,7 +101,7 @@ def render():
         kpi1, kpi2 = st.columns(2)
         with kpi1:
             st.metric("Produção Total", f"{tot_prod:.3f} kg")
-            st.metric("Sobra Limpa (Reaproveitável)", f"{tot_sobra_limpa:.3f} kg")
+            st.metric("Sobra Limpa (Aproveitável)", f"{tot_sobra_limpa:.3f} kg")
         with kpi2:
             st.metric("Descarte Total", f"{tot_descarte:.3f} kg")
             st.metric("Sobra Buffet", f"{tot_sobra_buffet:.3f} kg")
@@ -76,14 +116,14 @@ def render():
         st.markdown("---")
 
         # =========================================================
-        # GRÁFICO 1: BALANÇO GERAL DE PRODUÇÃO (Produção vs Sobras vs Descarte)
+        # GRÁFICO 1: BALANÇO GERAL DE PRODUÇÃO
         # =========================================================
         st.markdown("##### ⚖️ **Balanço Geral de Produção (kg)**")
         df_balanco = pd.DataFrame({
             'Categoria': ['Prod. Inicial', 'Reposição', 'Sobra Limpa', 'Sobra Buffet', 'Descarte Total'],
             'Peso (kg)': [
-                df['Produção Inicial'].sum() if 'Produção Inicial' in df.columns else 0,
-                df['Reposição Total'].sum() if 'Reposição Total' in df.columns else 0,
+                float(df['Produção Inicial'].sum()),
+                float(df[col_reposicao].sum()),
                 tot_sobra_limpa,
                 tot_sobra_buffet,
                 tot_descarte
@@ -102,14 +142,15 @@ def render():
         st.plotly_chart(fig_balanco, use_container_width=True, config={'displayModeBar': False})
 
         # =========================================================
-        # GRÁFICO 2: DESCARTE POR PRATO (BARRAS HORIZONTAIS MOBILE)
+        # GRÁFICO 2: DESCARTE POR PRATO
         # =========================================================
-        if 'Prato' in df.columns and 'Descarte Total' in df.columns:
+        col_prato = 'Prato' if 'Prato' in df.columns else None
+        if col_prato:
             st.markdown("##### 🍲 **Ranking de Descarte por Prato (kg)**")
-            df_prato = df.groupby('Prato')['Descarte Total'].sum().reset_index().sort_values(by='Descarte Total', ascending=True)
+            df_prato = df.groupby(col_prato)['Descarte Total'].sum().reset_index().sort_values(by='Descarte Total', ascending=True)
             
             fig_bar = px.bar(
-                df_prato, x='Descarte Total', y='Prato', orientation='h',
+                df_prato, x='Descarte Total', y=col_prato, orientation='h',
                 color='Descarte Total', color_continuous_scale='Reds', text_auto='.3f'
             )
             fig_bar.update_layout(
@@ -120,32 +161,38 @@ def render():
             st.plotly_chart(fig_bar, use_container_width=True, config={'displayModeBar': False})
 
         # =========================================================
-        # GRÁFICO 3: PROPORÇÃO DE SOBRAS E DESCARTE (ROSCA)
+        # GRÁFICO 3: PROPORÇÃO DE SOBRAS E DESCARTE
         # =========================================================
         st.markdown("##### 🍕 **Proporção do Destino dos Alimentos**")
         df_rosca = pd.DataFrame({
             'Tipo': ['Descarte', 'Sobra Limpa', 'Sobra Buffet'],
             'Peso': [tot_descarte, tot_sobra_limpa, tot_sobra_buffet]
         })
-        fig_pie = px.pie(
-            df_rosca, names='Tipo', values='Peso', hole=0.45,
-            color_discrete_sequence=['#F44336', '#4CAF50', '#FF9800']
-        )
-        fig_pie.update_layout(
-            paper_bgcolor='rgba(0,0,0,0)', font=dict(color="#FFFFFF"),
-            margin=dict(l=10, r=10, t=20, b=10)
-        )
-        st.plotly_chart(fig_pie, use_container_width=True, config={'displayModeBar': False})
+        
+        # Só exibe se houver algum valor maior que zero
+        if df_rosca['Peso'].sum() > 0:
+            fig_pie = px.pie(
+                df_rosca, names='Tipo', values='Peso', hole=0.45,
+                color_discrete_sequence=['#F44336', '#4CAF50', '#FF9800']
+            )
+            fig_pie.update_layout(
+                paper_bgcolor='rgba(0,0,0,0)', font=dict(color="#FFFFFF"),
+                margin=dict(l=10, r=10, t=20, b=10)
+            )
+            st.plotly_chart(fig_pie, use_container_width=True, config={'displayModeBar': False})
+        else:
+            st.caption("Sem dados de sobras para exibir gráfico de rosca.")
 
         # =========================================================
-        # GRÁFICO 4: EVOLUÇÃO TEMPORAL (POR DATA E HORA)
+        # GRÁFICO 4: EVOLUÇÃO TEMPORAL
         # =========================================================
-        if 'Data' in df.columns and 'Descarte Total' in df.columns:
+        col_data = 'Data' if 'Data' in df.columns else None
+        if col_data:
             st.markdown("##### 📈 **Evolução do Descarte Diário (kg)**")
-            df_data = df.groupby('Data')['Descarte Total'].sum().reset_index()
+            df_data = df.groupby(col_data)['Descarte Total'].sum().reset_index()
             
             fig_line = px.line(
-                df_data, x='Data', y='Descarte Total', markers=True
+                df_data, x=col_data, y='Descarte Total', markers=True
             )
             fig_line.update_traces(line_color='#FF5252', marker=dict(size=8))
             fig_line.update_layout(
@@ -155,12 +202,13 @@ def render():
             st.plotly_chart(fig_line, use_container_width=True, config={'displayModeBar': False})
 
         # =========================================================
-        # GRÁFICO 5: REGISTROS POR RESPONSÁVEL DO TURNO
+        # GRÁFICO 5: REGISTROS POR RESPONSÁVEL
         # =========================================================
-        if 'Responsavel' in df.columns:
+        col_resp = 'Responsavel' if 'Responsavel' in df.columns else ('Responsável' if 'Responsável' in df.columns else None)
+        if col_resp:
             st.markdown("##### 👤 **Pesagens Registradas por Responsável**")
-            df_resp = df.groupby('Responsavel').size().reset_index(name='Registros')
-            fig_resp = px.pie(df_resp, names='Responsavel', values='Registros', hole=0.3)
+            df_resp = df.groupby(col_resp).size().reset_index(name='Registros')
+            fig_resp = px.pie(df_resp, names=col_resp, values='Registros', hole=0.3)
             fig_resp.update_layout(
                 paper_bgcolor='rgba(0,0,0,0)', font=dict(color="#FFFFFF"),
                 margin=dict(l=10, r=10, t=20, b=10)
@@ -168,7 +216,7 @@ def render():
             st.plotly_chart(fig_resp, use_container_width=True, config={'displayModeBar': False})
 
         st.markdown("---")
-        st.write("📋 **Últimas Pesagens Registradas:**")
+        st.write("📋 **Tabela dos Registros Encontrados:**")
         st.dataframe(df.tail(10).iloc[::-1], use_container_width=True, hide_index=True)
 
     else:
