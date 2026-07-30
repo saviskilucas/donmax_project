@@ -35,7 +35,6 @@ def carregar_dados_painel():
         return []
 
 def converter_para_numero(serie):
-    """Converte valores com vírgula, texto ou espaços para float limpo."""
     return pd.to_numeric(
         serie.astype(str)
         .str.replace('kg', '', case=False)
@@ -45,20 +44,47 @@ def converter_para_numero(serie):
         errors='coerce'
     ).fillna(0.0)
 
-def encontrar_coluna(df, opcoes):
-    """Procura no DataFrame a primeira coluna que coincida com uma das opções."""
-    for op in opcoes:
-        for col in df.columns:
-            if col.strip().lower() == op.strip().lower():
-                return col
-    return None
-
 def render():
-    st.markdown("<div class='section-header'>📊 DASHBOARD COMPLETO DA COZINHA</div>", unsafe_allow_html=True)
+    # Estilização CSS para Cards Quadrados em Grade Dark/Red
+    st.markdown("""
+        <style>
+        .metric-card {
+            background-color: #1E1E1E;
+            border: 1px solid #2D2D2D;
+            border-left: 4px solid #B71C1C;
+            border-radius: 14px;
+            padding: 14px 10px;
+            text-align: center;
+            box-shadow: 0px 4px 12px rgba(0,0,0,0.4);
+            margin-bottom: 12px;
+        }
+        .metric-card-title {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #A0A0A0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+        .metric-card-value {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: #FFFFFF;
+        }
+        .metric-card-sub {
+            font-size: 0.70rem;
+            color: #FF5252;
+            font-weight: 600;
+            margin-top: 2px;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+    st.markdown("<div class='section-header'>📊 PAINEL DE PERFORMANCE</div>", unsafe_allow_html=True)
     
-    col_a, col_b = st.columns([0.6, 0.4])
-    with col_b:
-        if st.button("🔄 Atualizar Dados", use_container_width=True):
+    col_hdr_left, col_hdr_right = st.columns([0.65, 0.35])
+    with col_hdr_right:
+        if st.button("🔄 Atualizar", use_container_width=True):
             st.cache_data.clear()
             st.rerun()
 
@@ -67,65 +93,87 @@ def render():
     if dados:
         df = pd.DataFrame(dados)
         
-        # Mapeamento flexível de colunas (com e sem underline)
-        col_prod_ini = encontrar_coluna(df, ['Producao_Inicial_KG', 'Produção Inicial', 'Producao Inicial'])
-        col_reposicao = encontrar_coluna(df, ['Reposicao_Total_KG', 'Reposição Total', 'Reposicao Total'])
-        col_sobra_limpa = encontrar_coluna(df, ['Sobra_Limpa_KG', 'Sobra Limpa'])
-        col_sobra_buffet = encontrar_coluna(df, ['Sobra_Buffet_KG', 'Sobra Buffet'])
-        col_descarte = encontrar_coluna(df, ['Descarte_Total_KG', 'Descarte Total'])
-        col_clientes = encontrar_coluna(df, ['Clientes_Atendidos', 'Clientes', 'Clientes Atendidos'])
-        col_prato = encontrar_coluna(df, ['Prato', 'Prato_Selecionado', 'Preparacao'])
-        col_resp = encontrar_coluna(df, ['Responsavel', 'Responsável', 'Responsavel_Turno'])
-        col_data = encontrar_coluna(df, ['Data', 'Data_Servico'])
-
-        # Conversão numérica de todas as colunas de peso
-        df_num = pd.DataFrame()
-        df_num['prod_ini'] = converter_para_numero(df[col_prod_ini]) if col_prod_ini else 0.0
-        df_num['reposicao'] = converter_para_numero(df[col_reposicao]) if col_reposicao else 0.0
-        df_num['sobra_limpa'] = converter_para_numero(df[col_sobra_limpa]) if col_sobra_limpa else 0.0
-        df_num['sobra_buffet'] = converter_para_numero(df[col_sobra_buffet]) if col_sobra_buffet else 0.0
-        df_num['descarte'] = converter_para_numero(df[col_descarte]) if col_descarte else 0.0
-        df_num['clientes'] = converter_para_numero(df[col_clientes]) if col_clientes else 0.0
+        # Leitura e Tratamento Numérico
+        prod_ini = converter_para_numero(df['Prod_Inicial_KG']) if 'Prod_Inicial_KG' in df.columns else pd.Series([0]*len(df))
+        reposicao = converter_para_numero(df['Reposicao_KG']) if 'Reposicao_KG' in df.columns else pd.Series([0]*len(df))
+        sobra_limpa = converter_para_numero(df['Sobra_Limpa_KG']) if 'Sobra_Limpa_KG' in df.columns else pd.Series([0]*len(df))
+        sobra_buffet = converter_para_numero(df['Sobra_Buffet_KG']) if 'Sobra_Buffet_KG' in df.columns else pd.Series([0]*len(df))
+        descarte = converter_para_numero(df['Descarte_KG']) if 'Descarte_KG' in df.columns else pd.Series([0]*len(df))
+        clientes = converter_para_numero(df['Clientes_Atendidos']) if 'Clientes_Atendidos' in df.columns else pd.Series([0]*len(df))
 
         # Totais
-        tot_prod = float((df_num['prod_ini'] + df_num['reposicao']).sum())
-        tot_descarte = float(df_num['descarte'].sum())
-        tot_sobra_limpa = float(df_num['sobra_limpa'].sum())
-        tot_sobra_buffet = float(df_num['sobra_buffet'].sum())
-        tot_clientes = float(df_num['clientes'].sum())
+        tot_prod = float((prod_ini + reposicao).sum())
+        tot_descarte = float(descarte.sum())
+        tot_sobra_limpa = float(sobra_limpa.sum())
+        tot_sobra_buffet = float(sobra_buffet.sum())
+        tot_clientes = float(clientes.sum())
         
         descarte_por_cliente_g = (tot_descarte / tot_clientes * 1000) if tot_clientes > 0 else 0.0
 
         # =========================================================
-        # CARDS E MÉTRICAS
+        # METRIC CARDS - GRADE 2x2 QUADRADA
         # =========================================================
-        st.markdown("##### 📌 **Resumo de Produção e Sobras**")
-        kpi1, kpi2 = st.columns(2)
-        with kpi1:
-            st.metric("Produção Total", f"{tot_prod:.3f} kg")
-            st.metric("Sobra Limpa (Aproveitável)", f"{tot_sobra_limpa:.3f} kg")
-        with kpi2:
-            st.metric("Descarte Total", f"{tot_descarte:.3f} kg")
-            st.metric("Sobra Buffet", f"{tot_sobra_buffet:.3f} kg")
+        st.markdown("##### 📌 Indicadores Gerais")
+        
+        # LINHA 1 (2 Cards)
+        c1, c2 = st.columns(2)
+        with c1:
+            st.markdown(f"""
+                <div class="metric-card">
+                    <div class="metric-card-title">Produção Total</div>
+                    <div class="metric-card-value">{tot_prod:.3f} <span style="font-size:0.8rem">kg</span></div>
+                    <div class="metric-card-sub" style="color:#64B5F6">Inicial + Reposição</div>
+                </div>
+            """, unsafe_allow_html=True)
+            
+        with c2:
+            st.markdown(f"""
+                <div class="metric-card" style="border-left-color: #FF5252;">
+                    <div class="metric-card-title">Descarte Total</div>
+                    <div class="metric-card-value" style="color:#FF5252">{tot_descarte:.3f} <span style="font-size:0.8rem">kg</span></div>
+                    <div class="metric-card-sub">Lixo / Perda</div>
+                </div>
+            """, unsafe_allow_html=True)
 
-        st.markdown("##### 👥 **Eficiência e Atendimento**")
-        kpi3, kpi4 = st.columns(2)
-        with kpi3:
-            st.metric("Clientes Atendidos", f"{int(tot_clientes)}")
-        with kpi4:
-            st.metric("Descarte p/ Cliente", f"{descarte_por_cliente_g:.1f} g/pess.")
+        # LINHA 2 (2 Cards)
+        c3, c4 = st.columns(2)
+        with c3:
+            st.markdown(f"""
+                <div class="metric-card" style="border-left-color: #4CAF50;">
+                    <div class="metric-card-title">Sobra Limpa</div>
+                    <div class="metric-card-value" style="color:#81C784">{tot_sobra_limpa:.3f} <span style="font-size:0.8rem">kg</span></div>
+                    <div class="metric-card-sub" style="color:#81C784">Aproveitável</div>
+                </div>
+            """, unsafe_allow_html=True)
+            
+        with c4:
+            st.markdown(f"""
+                <div class="metric-card" style="border-left-color: #FFB74D;">
+                    <div class="metric-card-title">Sobra Buffet</div>
+                    <div class="metric-card-value" style="color:#FFB74D">{tot_sobra_buffet:.3f} <span style="font-size:0.8rem">kg</span></div>
+                    <div class="metric-card-sub" style="color:#FFB74D">Pós-Serviço</div>
+                </div>
+            """, unsafe_allow_html=True)
 
-        st.markdown("---")
+        # CARD INFORMATIVO DE CLIENTES
+        st.markdown(f"""
+            <div class="metric-card" style="border-left-color: #AB47BC; margin-top: -4px;">
+                <div class="metric-card-title">Atendimento & Média de Descarte</div>
+                <div class="metric-card-value" style="color:#E1BEE7">{int(tot_clientes)} <span style="font-size:0.8rem">clientes</span> | <span style="color:#FF8A80">{descarte_por_cliente_g:.1f}g</span>/pess.</div>
+            </div>
+        """, unsafe_allow_html=True)
+
+        st.markdown("<br>", unsafe_allow_html=True)
 
         # =========================================================
-        # GRÁFICO 1: BALANÇO GERAL DE PRODUÇÃO
+        # GRÁFICO 1: BALANÇO DE PRODUÇÃO (BARRAS ESTILIZADAS)
         # =========================================================
-        st.markdown("##### ⚖️ **Balanço Geral de Produção (kg)**")
+        st.markdown("##### ⚖️ Balanço da Cozinha")
         df_balanco = pd.DataFrame({
-            'Categoria': ['Prod. Inicial', 'Reposição', 'Sobra Limpa', 'Sobra Buffet', 'Descarte Total'],
+            'Categoria': ['Prod. Inicial', 'Reposição', 'Sobra Limpa', 'Sobra Buffet', 'Descarte'],
             'Peso (kg)': [
-                float(df_num['prod_ini'].sum()),
-                float(df_num['reposicao'].sum()),
+                float(prod_ini.sum()),
+                float(reposicao.sum()),
                 tot_sobra_limpa,
                 tot_sobra_buffet,
                 tot_descarte
@@ -135,20 +183,25 @@ def render():
             df_balanco, x='Categoria', y='Peso (kg)',
             text_auto='.3f',
             color='Categoria',
-            color_discrete_sequence=['#2196F3', '#03A9F4', '#4CAF50', '#FF9800', '#F44336']
+            color_discrete_sequence=['#1E88E5', '#00ACC1', '#43A047', '#FB8C00', '#E53935']
         )
         fig_balanco.update_layout(
-            showlegend=False, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-            font=dict(color="#FFFFFF"), margin=dict(l=10, r=10, t=30, b=10)
+            showlegend=False,
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)',
+            font=dict(color="#E0E0E0", family="Sans-serif"),
+            margin=dict(l=5, r=5, t=25, b=5),
+            xaxis=dict(showgrid=False),
+            yaxis=dict(showgrid=True, gridcolor='#2D2D2D')
         )
         st.plotly_chart(fig_balanco, use_container_width=True, config={'displayModeBar': False})
 
         # =========================================================
-        # GRÁFICO 2: DESCARTE POR PRATO
+        # GRÁFICO 2: DESCARTE POR PRATO (HORIZONTAL RESPONSIVO)
         # =========================================================
-        if col_prato:
-            st.markdown("##### 🍲 **Ranking de Descarte por Prato (kg)**")
-            df_temp_prato = pd.DataFrame({'Prato': df[col_prato], 'Descarte': df_num['descarte']})
+        if 'ID_Prato' in df.columns:
+            st.markdown("##### 🍲 Descarte Acumulado por Prato")
+            df_temp_prato = pd.DataFrame({'Prato': df['ID_Prato'], 'Descarte': descarte})
             df_prato = df_temp_prato.groupby('Prato')['Descarte'].sum().reset_index().sort_values(by='Descarte', ascending=True)
             
             fig_bar = px.bar(
@@ -156,61 +209,71 @@ def render():
                 color='Descarte', color_continuous_scale='Reds', text_auto='.3f'
             )
             fig_bar.update_layout(
-                paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-                font=dict(color="#FFFFFF"), margin=dict(l=10, r=10, t=10, b=10),
-                coloraxis_showscale=False
+                paper_bgcolor='rgba(0,0,0,0)',
+                plot_bgcolor='rgba(0,0,0,0)',
+                font=dict(color="#E0E0E0"),
+                margin=dict(l=5, r=5, t=10, b=5),
+                coloraxis_showscale=False,
+                xaxis=dict(showgrid=True, gridcolor='#2D2D2D'),
+                yaxis=dict(showgrid=False)
             )
             st.plotly_chart(fig_bar, use_container_width=True, config={'displayModeBar': False})
 
         # =========================================================
-        # GRÁFICO 3: PROPORÇÃO DE SOBRAS E DESCARTE
+        # GRÁFICO 3: PROPORÇÃO DE SOBRAS (DONUT)
         # =========================================================
-        st.markdown("##### 🍕 **Proporção do Destino dos Alimentos**")
+        st.markdown("##### 🍕 Destino dos Alimentos")
         df_rosca = pd.DataFrame({
-            'Tipo': ['Descarte', 'Sobra Limpa', 'Sobra Buffet'],
+            'Tipo': ['Descarte Total', 'Sobra Limpa', 'Sobra Buffet'],
             'Peso': [tot_descarte, tot_sobra_limpa, tot_sobra_buffet]
         })
         if df_rosca['Peso'].sum() > 0:
             fig_pie = px.pie(
-                df_rosca, names='Tipo', values='Peso', hole=0.45,
-                color_discrete_sequence=['#F44336', '#4CAF50', '#FF9800']
+                df_rosca, names='Tipo', values='Peso', hole=0.5,
+                color_discrete_sequence=['#E53935', '#43A047', '#FB8C00']
             )
             fig_pie.update_layout(
-                paper_bgcolor='rgba(0,0,0,0)', font=dict(color="#FFFFFF"),
-                margin=dict(l=10, r=10, t=20, b=10)
+                paper_bgcolor='rgba(0,0,0,0)',
+                font=dict(color="#E0E0E0"),
+                margin=dict(l=5, r=5, t=10, b=5),
+                legend=dict(orientation="h", yanchor="bottom", y=-0.2, xanchor="center", x=0.5)
             )
             st.plotly_chart(fig_pie, use_container_width=True, config={'displayModeBar': False})
 
         # =========================================================
         # GRÁFICO 4: EVOLUÇÃO TEMPORAL
         # =========================================================
-        if col_data:
-            st.markdown("##### 📈 **Evolução do Descarte Diário (kg)**")
-            df_temp_data = pd.DataFrame({'Data': df[col_data], 'Descarte': df_num['descarte']})
+        if 'Data' in df.columns:
+            st.markdown("##### 📈 Linha do Tempo de Descarte")
+            df_temp_data = pd.DataFrame({'Data': df['Data'], 'Descarte': descarte})
             df_data = df_temp_data.groupby('Data')['Descarte'].sum().reset_index()
             
             fig_line = px.line(
                 df_data, x='Data', y='Descarte', markers=True
             )
-            fig_line.update_traces(line_color='#FF5252', marker=dict(size=8))
+            fig_line.update_traces(line_color='#FF5252', marker=dict(size=7, color='#FFFFFF'))
             fig_line.update_layout(
-                paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-                font=dict(color="#FFFFFF"), margin=dict(l=10, r=10, t=20, b=10)
+                paper_bgcolor='rgba(0,0,0,0)',
+                plot_bgcolor='rgba(0,0,0,0)',
+                font=dict(color="#E0E0E0"),
+                margin=dict(l=5, r=5, t=10, b=5),
+                xaxis=dict(showgrid=False),
+                yaxis=dict(showgrid=True, gridcolor='#2D2D2D')
             )
             st.plotly_chart(fig_line, use_container_width=True, config={'displayModeBar': False})
 
         # =========================================================
-        # TABELA DE REGISTROS FORMATADA COM 3 CASAS DECIMAIS
+        # TABELA DE REGISTROS
         # =========================================================
         st.markdown("---")
-        st.write("📋 **Últimas Pesagens Registradas:**")
+        st.markdown("##### 📋 Lançamentos Recentes")
         
         df_exibicao = df.copy()
+        cols_peso = ['Prod_Inicial_KG', 'Reposicao_KG', 'Sobra_Limpa_KG', 'Sobra_Buffet_KG', 'Descarte_KG']
         
-        # Formata todas as colunas de kg identificadas para 3 casas decimais
-        cols_peso_originais = [c for c in [col_prod_ini, col_reposicao, col_sobra_limpa, col_sobra_buffet, col_descarte] if c is not None]
-        for col_p in cols_peso_originais:
-            df_exibicao[col_p] = converter_para_numero(df_exibicao[col_p]).apply(lambda x: f"{x:.3f} kg")
+        for c in cols_peso:
+            if c in df_exibicao.columns:
+                df_exibicao[c] = converter_para_numero(df_exibicao[c]).apply(lambda x: f"{x:.3f} kg")
 
         st.dataframe(df_exibicao.tail(10).iloc[::-1], use_container_width=True, hide_index=True)
 
