@@ -22,7 +22,7 @@ if "aba_ativa" not in st.session_state:
     st.session_state["aba_ativa"] = "inicio"
 
 # =========================================================
-# 2. INJEÇÃO DE CSS (MODO ESCURO + REMOÇÃO TOTAL DA BOLINHA)
+# 2. INJEÇÃO DE CSS (MODO ESCURO + TEXTO VISÍVEL E SEM BOLINHA)
 # =========================================================
 st.markdown("""
     <style>
@@ -98,7 +98,7 @@ st.markdown("""
         z-index: 9999999 !important;
     }
 
-    /* Oculta totalmente a label do widget */
+    /* Oculta totalmente a label principal do widget */
     div[data-testid="stRadio"] label[data-testid="stWidgetLabel"],
     div[data-testid="stRadio"] > label {
         display: none !important;
@@ -123,12 +123,8 @@ st.markdown("""
         padding: 0 6px !important;
     }
 
-    /* =========================================================
-       REMOÇÃO DEFINITIVA DA BOLINHA E DO ESPAÇAMENTO DA BOLINHA
-       ========================================================= */
-    div[data-testid="stRadio"] label > div,
-    div[data-testid="stRadio"] label input,
-    div[data-testid="stRadio"] label svg {
+    /* ESCONDE APENAS A BOLINHA (PRIMEIRA DIV FILHA DE LABEL) */
+    div[data-testid="stRadio"] label > div:first-child {
         display: none !important;
         width: 0 !important;
         height: 0 !important;
@@ -136,7 +132,17 @@ st.markdown("""
         padding: 0 !important;
     }
 
-    /* O Texto vira o próprio botão flutuante centrado */
+    /* GARANTE QUE O CONTAINER DO TEXTO FIQUE VISÍVEL E CENTRALIZADO */
+    div[data-testid="stRadio"] label > div:nth-child(2),
+    div[data-testid="stRadio"] label [data-testid="stMarkdownContainer"] {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        width: 100% !important;
+        height: 100% !important;
+    }
+
+    /* Estilização dos Botões */
     div[data-testid="stRadio"] label {
         flex: 1 !important;
         height: 44px !important;
@@ -150,6 +156,7 @@ st.markdown("""
         transition: all 0.2s ease-in-out !important;
     }
 
+    /* Texto Visível e Destacado */
     div[data-testid="stRadio"] label p {
         font-size: 0.88rem !important;
         font-weight: 700 !important;
@@ -158,7 +165,8 @@ st.markdown("""
         padding: 0 !important;
         white-space: nowrap !important;
         text-align: center !important;
-        width: 100% !important;
+        display: block !important;
+        visibility: visible !important;
     }
 
     /* DESTAQUE DA ABA ATIVA (CAIXINHA BRANCA NO MODO ESCURO) */
