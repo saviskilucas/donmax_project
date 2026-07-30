@@ -85,7 +85,7 @@ def render():
                     ]
                     sheet.append_row(nova_linha)
                     st.cache_data.clear()
-                    st.success(f"✅ **{prato_sel}** registrado às {hora_registro} (Horário de Brasília)!")
+                    st.success(f"✅ **{prato_sel}** registrado às {hora_registro}")
                     st.balloons()
                 except Exception as e:
                     st.error(f"❌ Erro ao salvar na planilha: {e}")
