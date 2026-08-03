@@ -273,7 +273,7 @@ st.markdown("""
 # 3. BARRA SUPERIOR FIXA COM BOTÃO DENTRO DO HTML
 # =========================================================
 if st.session_state["usuario_logado"]:
-    btn_html = '<a href="?logout=true" target="_self" class="btn-header-action">🚪 Sair</a>'
+    btn_html = '<a href="?logout=true" target="_self" class="btn-header-action">Sair</a>'
 else:
     btn_html = '<span onclick="window.location.reload();" style="cursor:pointer; font-size:1.2rem; color:#fff;" title="Recarregar">🔄</span>'
 
