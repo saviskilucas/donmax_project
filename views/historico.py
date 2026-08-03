@@ -182,7 +182,6 @@ def render():
                 <div class="metric-card">
                     <div class="metric-card-title">Produção Total</div>
                     <div class="metric-card-value">{tot_prod:.3f} <span style="font-size:0.75rem">kg</span></div>
-                    <div class="metric-card-sub" style="color:#64B5F6">Inicial + Reposição</div>
                 </div>
             """, unsafe_allow_html=True)
             
@@ -191,7 +190,6 @@ def render():
                 <div class="metric-card" style="border-left-color: #FF5252;">
                     <div class="metric-card-title">Descarte Total</div>
                     <div class="metric-card-value" style="color:#FF5252">{tot_descarte:.3f} <span style="font-size:0.75rem">kg</span></div>
-                    <div class="metric-card-sub">Lixo / Perda</div>
                 </div>
             """, unsafe_allow_html=True)
 
@@ -201,7 +199,6 @@ def render():
                 <div class="metric-card" style="border-left-color: #FFB74D;">
                     <div class="metric-card-title">Sobra Buffet</div>
                     <div class="metric-card-value" style="color:#FFB74D">{tot_sobra_buffet:.3f} <span style="font-size:0.75rem">kg</span></div>
-                    <div class="metric-card-sub" style="color:#FFB74D">Pós-Serviço</div>
                 </div>
             """, unsafe_allow_html=True)
             
