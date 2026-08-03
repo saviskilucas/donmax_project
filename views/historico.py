@@ -205,8 +205,8 @@ def render():
         with c4:
             st.markdown(f"""
                 <div class="metric-card" style="border-left-color: #AB47BC;">
-                    <div class="metric-card-title">Atendimento & Média</div>
-                    <div class="metric-card-value" style="color:#E1BEE7">{int(tot_clientes)} <span style="font-size:0.75rem">pess.</span></div>
+                    <div class="metric-card-title">Atendimento</div>
+                    <div class="metric-card-value" style="color:#E1BEE7">{int(tot_clientes)} <span style="font-size:0.75rem">clientes</span></div>
                 </div>
             """, unsafe_allow_html=True)
 
