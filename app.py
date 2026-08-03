@@ -80,6 +80,36 @@ st.markdown("""
         gap: 10px;
     }
 
+    /* Container do botão de ação superior direito */
+    .top-right-action {
+        position: fixed !important;
+        top: 8px !important;
+        right: 18px !important;
+        z-index: 100000 !important;
+    }
+
+    div.top-right-action button {
+        background-color: rgba(255, 255, 255, 0.2) !important;
+        color: #FFFFFF !important;
+        border: 1px solid rgba(255, 255, 255, 0.4) !important;
+        border-radius: 12px !important;
+        height: 36px !important;
+        padding: 0 12px !important;
+        font-weight: 700 !important;
+        font-size: 0.85rem !important;
+        transition: all 0.2s ease !important;
+    }
+
+    div.top-right-action button:hover {
+        background-color: #FFFFFF !important;
+        color: #B71C1C !important;
+        cursor: pointer !important;
+    }
+
+    div.top-right-action button * {
+        color: inherit !important;
+    }
+
     /* CÁPSULA TRAVADA NO RODAPÉ */
     div[data-testid="stElementContainer"]:has(div.st-key-nav_bar_container),
     div:has(> div.st-key-nav_bar_container) {
@@ -246,19 +276,22 @@ st.markdown("""
         <div class="modern-header-title">
             <span>Don Max Buffet</span>
         </div>
-        <div>
-            <span onclick="window.location.reload();" style="cursor:pointer;" title="Recarregar">🔄</span>
-        </div>
     </div>
 """, unsafe_allow_html=True)
 
-if st.session_state["usuario_logado"]:
-    col_head1, col_head2 = st.columns([0.7, 0.3])
-    with col_head2:
-        if st.button("🚪 Sair", key="btn_logout"):
+# Botão no canto superior direito (Sair se logado, 🔄 se deslogado)
+with st.container():
+    st.markdown('<div class="top-right-action">', unsafe_allow_html=True)
+    if st.session_state["usuario_logado"]:
+        if st.button("🚪 Sair", key="btn_logout_top"):
             st.session_state["usuario_logado"] = None
             st.session_state["aba_ativa"] = "inicio"
             st.rerun()
+    else:
+        st.markdown("""
+            <span onclick="window.location.reload();" style="cursor:pointer; font-size:1.2rem; color:#fff;" title="Recarregar">🔄</span>
+        """, unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # =========================================================
 # 4. ROTEAMENTO DE ABAS
