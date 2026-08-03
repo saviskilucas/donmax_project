@@ -53,23 +53,23 @@ st.markdown("""
         visibility: hidden !important;
     }
 
-    /* BARRA SUPERIOR FIXA */
+    /* BARRA SUPERIOR FIXA NO TOPO */
     .modern-header {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        width: 100vw;
-        height: 52px;
-        background-color: #B71C1C;
-        color: #FFFFFF;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0 18px;
-        z-index: 99999 !important;
-        box-shadow: 0px 4px 14px rgba(0, 0, 0, 0.6);
-        border-radius: 0 0 16px 16px;
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100vw !important;
+        height: 52px !important;
+        background-color: #B71C1C !important;
+        color: #FFFFFF !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        padding: 0 16px !important;
+        z-index: 999999 !important;
+        box-shadow: 0px 4px 14px rgba(0, 0, 0, 0.6) !important;
+        border-radius: 0 0 16px 16px !important;
     }
 
     .modern-header-title {
@@ -80,15 +80,18 @@ st.markdown("""
         gap: 10px;
     }
 
-    /* Container do botão de ação superior direito */
-    .top-right-action {
+    /* BOTÃO NO TOPO DIREITO PERFEITAMENTE FIXADO */
+    div[data-testid="stElementContainer"]:has(div.st-key-top_right_container) {
         position: fixed !important;
         top: 8px !important;
-        right: 18px !important;
-        z-index: 100000 !important;
+        right: 14px !important;
+        width: auto !important;
+        z-index: 9999999 !important;
+        margin: 0 !important;
+        padding: 0 !important;
     }
 
-    div.top-right-action button {
+    div.st-key-top_right_container button {
         background-color: rgba(255, 255, 255, 0.2) !important;
         color: #FFFFFF !important;
         border: 1px solid rgba(255, 255, 255, 0.4) !important;
@@ -98,15 +101,18 @@ st.markdown("""
         font-weight: 700 !important;
         font-size: 0.85rem !important;
         transition: all 0.2s ease !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
     }
 
-    div.top-right-action button:hover {
+    div.st-key-top_right_container button:hover {
         background-color: #FFFFFF !important;
         color: #B71C1C !important;
         cursor: pointer !important;
     }
 
-    div.top-right-action button * {
+    div.st-key-top_right_container button * {
         color: inherit !important;
     }
 
@@ -279,19 +285,17 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# Botão no canto superior direito (Sair se logado, 🔄 se deslogado)
-with st.container():
-    st.markdown('<div class="top-right-action">', unsafe_allow_html=True)
+# Container fixado exatamente dentro do topo direito da barra vermelha
+top_bar_right = st.container(key="top_right_container")
+with top_bar_right:
     if st.session_state["usuario_logado"]:
         if st.button("🚪 Sair", key="btn_logout_top"):
             st.session_state["usuario_logado"] = None
             st.session_state["aba_ativa"] = "inicio"
             st.rerun()
     else:
-        st.markdown("""
-            <span onclick="window.location.reload();" style="cursor:pointer; font-size:1.2rem; color:#fff;" title="Recarregar">🔄</span>
-        """, unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+        if st.button("🔄", key="btn_reload_top"):
+            st.rerun()
 
 # =========================================================
 # 4. ROTEAMENTO DE ABAS
