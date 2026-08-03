@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 import gspread
 from google.oauth2.service_account import Credentials
 from datetime import datetime, date
@@ -156,7 +157,11 @@ def render():
         descarte = converter_para_numero(df['Descarte_KG']) if 'Descarte_KG' in df.columns else pd.Series([0]*len(df))
         clientes = converter_para_numero(df['Clientes_Atendidos']) if 'Clientes_Atendidos' in df.columns else pd.Series([0]*len(df))
 
-        tot_prod = float((prod_ini + reposicao).sum())
+        df['Prod_Total_Calc'] = prod_ini + reposicao
+        df['Descarte_Calc'] = descarte
+        df['Sobra_Buffet_Calc'] = sobra_buffet
+
+        tot_prod = float(df['Prod_Total_Calc'].sum())
         tot_descarte = float(descarte.sum())
         tot_sobra_buffet = float(sobra_buffet.sum())
         tot_clientes = float(clientes.sum())
@@ -168,7 +173,7 @@ def render():
             'displayModeBar': False
         }
 
-        # INDICADORES DO PERÍODO (3 CARDS PRINCIPAIS)
+        # INDICADORES DO PERÍODO
         st.markdown("##### 📌 Indicadores do Período")
         
         c1, c2 = st.columns(2)
@@ -211,6 +216,78 @@ def render():
 
         st.markdown("<br>", unsafe_allow_html=True)
 
+        # =========================================================
+        # NOVO: MATRIZ DE CALOR (HEATMAP) POR PRODUTO
+        # =========================================================
+        if 'ID_Prato' in df.columns:
+            st.markdown("##### 🔥 Matriz de Desempenho por Produto")
+            st.caption("Métricas consolidadas por prato. Quanto mais **vermelho**, maior o descarte/perda.")
+
+            df_matriz = df.groupby('ID_Prato').agg({
+                'Prod_Total_Calc': 'sum',
+                'Sobra_Buffet_Calc': 'sum',
+                'Descarte_Calc': 'sum'
+            }).reset_index()
+
+            # Calcula % Perda
+            df_matriz['Perda_%'] = (df_matriz['Descarte_Calc'] / df_matriz['Prod_Total_Calc'] * 100).fillna(0)
+
+            # Ordena pelos pratos com maior descarte
+            df_matriz = df_matriz.sort_values(by='Descarte_Calc', ascending=True)
+
+            pratos = df_matriz['ID_Prato'].tolist()
+            colunas_heatmap = ['Produção Total', 'Sobra Buffet', 'Descarte Total', '% Perda/Prod.']
+
+            # Matriz de valores para visualização
+            z_values = []
+            text_values = []
+
+            for _, row in df_matriz.iterrows():
+                p_tot = row['Prod_Total_Calc']
+                s_buf = row['Sobra_Buffet_Calc']
+                desc = row['Descarte_Calc']
+                pct = row['Perda_%']
+
+                # Normalização de intensidade de cor para cada coluna
+                z_values.append([p_tot, s_buf, desc, pct])
+                text_values.append([
+                    f"{p_tot:.2f} kg",
+                    f"{s_buf:.2f} kg",
+                    f"{desc:.2f} kg",
+                    f"{pct:.1f}%"
+                ])
+
+            fig_heatmap = go.Figure(data=go.Heatmap(
+                z=z_values,
+                x=colunas_heatmap,
+                y=pratos,
+                text=text_values,
+                texttemplate="%{text}",
+                textfont={"size": 11, "color": "#FFFFFF"},
+                colorscale=[
+                    [0.0, '#1E1E1E'],
+                    [0.3, '#37474F'],
+                    [0.6, '#D84315'],
+                    [1.0, '#B71C1C']
+                ],
+                showscale=False
+            ))
+
+            # Ajusta altura baseada na quantidade de produtos cadastrados
+            altura_matriz = max(280, len(pratos) * 45)
+
+            fig_heatmap.update_layout(
+                paper_bgcolor='rgba(0,0,0,0)',
+                plot_bgcolor='rgba(0,0,0,0)',
+                font=dict(color="#E0E0E0"),
+                margin=dict(l=10, r=10, t=20, b=20),
+                height=altura_matriz,
+                xaxis=dict(fixedrange=True, side='top'),
+                yaxis=dict(fixedrange=True)
+            )
+
+            st.plotly_chart(fig_heatmap, use_container_width=True, config=config_plotly_mobile)
+
         # GRÁFICO 1: BALANÇO DE PRODUÇÃO
         st.markdown("##### ⚖️ Balanço da Cozinha")
         df_balanco = pd.DataFrame({
@@ -239,28 +316,7 @@ def render():
         )
         st.plotly_chart(fig_balanco, use_container_width=True, config=config_plotly_mobile)
 
-        # GRÁFICO 2: DESCARTE POR PRATO
-        if 'ID_Prato' in df.columns:
-            st.markdown("##### 🍲 Descarte Acumulado por Prato")
-            df_temp_prato = pd.DataFrame({'Prato': df['ID_Prato'], 'Descarte': descarte})
-            df_prato = df_temp_prato.groupby('Prato')['Descarte'].sum().reset_index().sort_values(by='Descarte', ascending=True)
-            
-            fig_bar = px.bar(
-                df_prato, x='Descarte', y='Prato', orientation='h',
-                color='Descarte', color_continuous_scale='Reds', text_auto='.3f'
-            )
-            fig_bar.update_layout(
-                paper_bgcolor='rgba(0,0,0,0)',
-                plot_bgcolor='rgba(0,0,0,0)',
-                font=dict(color="#E0E0E0"),
-                margin=dict(l=5, r=5, t=10, b=5),
-                coloraxis_showscale=False,
-                xaxis=dict(showgrid=True, gridcolor='#2D2D2D', fixedrange=True),
-                yaxis=dict(showgrid=False, fixedrange=True)
-            )
-            st.plotly_chart(fig_bar, use_container_width=True, config=config_plotly_mobile)
-
-        # GRÁFICO 3: PROPORÇÃO SOBRA BUFFET VS DESCARTE
+        # GRÁFICO 2: PROPORÇÃO SOBRA BUFFET VS DESCARTE
         st.markdown("##### 🍕 Proporção Sobra Buffet vs Descarte")
         df_rosca = pd.DataFrame({
             'Tipo': ['Descarte Total', 'Sobra Buffet'],
@@ -279,7 +335,7 @@ def render():
             )
             st.plotly_chart(fig_pie, use_container_width=True, config=config_plotly_mobile)
 
-        # GRÁFICO 4: EVOLUÇÃO TEMPORAL
+        # GRÁFICO 3: EVOLUÇÃO TEMPORAL
         if 'Data' in df.columns:
             st.markdown("##### 📈 Linha do Tempo de Descarte")
             df_temp_data = pd.DataFrame({'Data': df['Data'], 'Descarte': descarte})
@@ -306,6 +362,8 @@ def render():
         df_exibicao = df.copy()
         if 'Data_DT' in df_exibicao.columns:
             df_exibicao.drop(columns=['Data_DT'], inplace=True)
+        if 'Prod_Total_Calc' in df_exibicao.columns:
+            df_exibicao.drop(columns=['Prod_Total_Calc', 'Descarte_Calc', 'Sobra_Buffet_Calc'], inplace=True)
 
         cols_peso = ['Prod_Inicial_KG', 'Reposicao_KG', 'Sobra_Buffet_KG', 'Descarte_KG']
         
