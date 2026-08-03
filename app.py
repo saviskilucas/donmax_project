@@ -35,32 +35,32 @@ if not st.session_state["usuario_logado"]:
 aba = st.session_state["aba_ativa"]
 
 # =========================================================
-# 2. INJEÇÃO DE CSS
+# 2. INJEÇÃO DE CSS REFINADO (VISUAL MODERNO)
 # =========================================================
 st.markdown("""
     <style>
-    /* MODO ESCURO FORÇADO EM TUDO */
+    /* 1. MODO ESCURO E FUNDO COM DEGRADÊ SUAVE */
     html, body, [data-testid="stApp"], .stApp {
-        background-color: #121212 !important;
+        background: radial-gradient(circle at top, #1A1A1A 0%, #101010 100%) !important;
         color: #F8F9FA !important;
     }
 
-    /* Espaçamento para o conteúdo rolar limpo atrás das barras */
+    /* Espaçamento para o conteúdo rolar limpo atrás das barras fixas */
     .block-container {
-        padding-top: 3.8rem !important;
+        padding-top: 4.2rem !important;
         padding-bottom: 9.5rem !important; 
-        padding-left: 0.8rem !important;
-        padding-right: 0.8rem !important;
+        padding-left: 0.9rem !important;
+        padding-right: 0.9rem !important;
         max-width: 100% !important;
     }
 
-    /* Ocultar topo e rodapé padrão do Streamlit */
+    /* Ocultar elementos nativos do Streamlit */
     #MainMenu, header, .stDeployButton, footer, [data-testid="stFooter"] {
         display: none !important;
         visibility: hidden !important;
     }
 
-    /* BARRA SUPERIOR FIXA NO TOPO */
+    /* 2. BARRA SUPERIOR FIXA (ESTRUTURA INTACTA) */
     .modern-header {
         position: fixed !important;
         top: 0 !important;
@@ -75,7 +75,7 @@ st.markdown("""
         justify-content: space-between !important;
         padding: 0 16px !important;
         z-index: 999999 !important;
-        box-shadow: 0px 4px 14px rgba(0, 0, 0, 0.6) !important;
+        box-shadow: 0px 4px 18px rgba(0, 0, 0, 0.7) !important;
         border-radius: 0 0 16px 16px !important;
         box-sizing: border-box !important;
     }
@@ -86,32 +86,122 @@ st.markdown("""
         display: flex;
         align-items: center;
         gap: 10px;
+        letter-spacing: 0.5px;
     }
 
-    /* ESTILO DO BOTÃO DE SAIR DENTRO DO CABEÇALHO */
+    /* BOTÃO APENAS "SAIR" NO CABEÇALHO (SEM A PORTA) */
     .btn-header-action {
-        background-color: rgba(255, 255, 255, 0.2);
+        background: rgba(255, 255, 255, 0.18);
         color: #FFFFFF !important;
-        border: 1px solid rgba(255, 255, 255, 0.4);
-        border-radius: 12px;
-        height: 34px;
-        padding: 0 12px;
+        border: 1px solid rgba(255, 255, 255, 0.35);
+        border-radius: 20px;
+        height: 32px;
+        padding: 0 14px;
         font-weight: 700;
-        font-size: 0.85rem;
+        font-size: 0.82rem;
         cursor: pointer;
         text-decoration: none;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        transition: all 0.2s ease;
+        transition: all 0.25s ease;
+        backdrop-filter: blur(4px);
     }
 
-    .btn-header-action:hover {
-        background-color: #FFFFFF;
+    .btn-header-action:hover, .btn-header-action:active {
+        background-color: #FFFFFF !important;
         color: #B71C1C !important;
+        box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.3);
     }
 
-    /* CÁPSULA TRAVADA NO RODAPÉ */
+    /* 3. DESIGN DOS INPUTS E CAMPOS DE FORMULÁRIO */
+    label {
+        font-size: 0.9rem !important;
+        font-weight: 700 !important;
+        color: #E0E0E0 !important;
+        margin-bottom: 0.3rem !important;
+        letter-spacing: 0.3px;
+    }
+
+    div[data-baseweb="input"] input, div[data-baseweb="select"], textarea {
+        font-size: 1rem !important;
+        background-color: #1A1A1A !important;
+        color: #FFFFFF !important;
+        border: 1px solid #333333 !important;
+        border-radius: 12px !important;
+        padding: 10px 14px !important;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+    }
+
+    div[data-baseweb="input"] input:focus, textarea:focus {
+        border-color: #FF5252 !important;
+        box-shadow: 0 0 8px rgba(255, 82, 82, 0.25) !important;
+    }
+
+    div[data-baseweb="select"] * {
+        color: #FFFFFF !important;
+        background-color: #1A1A1A !important;
+    }
+
+    /* 4. DESIGN DAS ABAS (TABS) MODERNAS */
+    div[data-testid="stTabs"] button {
+        background-color: transparent !important;
+        color: #888888 !important;
+        font-size: 0.9rem !important;
+        font-weight: 700 !important;
+        border-radius: 8px 8px 0 0 !important;
+        padding: 8px 16px !important;
+        border: none !important;
+        transition: color 0.2s ease !important;
+    }
+
+    div[data-testid="stTabs"] button[aria-selected="true"] {
+        color: #FF5252 !important;
+        border-bottom: 3px solid #FF5252 !important;
+    }
+
+    /* 5. BOTÕES PRIMÁRIOS DOS FORMULÁRIOS (SUBMIT) */
+    div[data-testid="stForm"] button[type="submit"], 
+    div.stButton > button:not([kind="secondary"]) {
+        background: linear-gradient(135deg, #C62828 0%, #B71C1C 100%) !important;
+        color: #FFFFFF !important;
+        font-weight: 800 !important;
+        font-size: 0.95rem !important;
+        border-radius: 14px !important;
+        border: 1px solid #E53935 !important;
+        box-shadow: 0px 4px 15px rgba(183, 28, 28, 0.35) !important;
+        transition: transform 0.15s ease, box-shadow 0.2s ease !important;
+        padding: 12px 0 !important;
+    }
+
+    div[data-testid="stForm"] button[type="submit"]:active,
+    div.stButton > button:not([kind="secondary"]):active {
+        transform: scale(0.98) !important;
+        box-shadow: 0px 2px 8px rgba(183, 28, 28, 0.2) !important;
+    }
+
+    /* 6. ESTILIZAÇÃO DOS CARTOES E SEÇÕES */
+    .section-header {
+        font-size: 0.9rem;
+        font-weight: 800;
+        color: #FF5252;
+        border-bottom: 2px solid rgba(183, 28, 28, 0.5);
+        padding-bottom: 6px;
+        margin-top: 15px;
+        margin-bottom: 16px;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+    }
+
+    [data-testid="stForm"] {
+        background-color: #181818 !important;
+        border: 1px solid #282828 !important;
+        border-radius: 18px !important;
+        padding: 18px !important;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4) !important;
+    }
+
+    /* 7. CÁPSULA TRAVADA NO RODAPÉ (REGRAS INTACTAS) */
     div[data-testid="stElementContainer"]:has(div.st-key-nav_bar_container),
     div:has(> div.st-key-nav_bar_container) {
         position: fixed !important;
@@ -232,37 +322,6 @@ st.markdown("""
         font-weight: 800 !important;
     }
 
-    label {
-        font-size: 0.95rem !important;
-        font-weight: 700 !important;
-        color: #E0E0E0 !important;
-        margin-bottom: 0.2rem !important;
-    }
-
-    div[data-baseweb="input"] input, div[data-baseweb="select"], textarea {
-        font-size: 1.05rem !important;
-        background-color: #1E1E1E !important;
-        color: #FFFFFF !important;
-        border: 1px solid #333333 !important;
-        border-radius: 10px !important;
-    }
-
-    div[data-baseweb="select"] * {
-        color: #FFFFFF !important;
-        background-color: #1E1E1E !important;
-    }
-
-    .section-header {
-        font-size: 0.95rem;
-        font-weight: 800;
-        color: #FF5252;
-        border-bottom: 2px solid #B71C1C;
-        padding-bottom: 4px;
-        margin-top: 15px;
-        margin-bottom: 12px;
-        text-transform: uppercase;
-    }
-
     [data-testid="stMetricValue"] {
         color: #FF5252 !important;
     }
@@ -270,7 +329,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # =========================================================
-# 3. BARRA SUPERIOR FIXA COM BOTÃO DENTRO DO HTML
+# 3. BARRA SUPERIOR FIXA (COM BOTÃO "SAIR" SEM EMOJI)
 # =========================================================
 if st.session_state["usuario_logado"]:
     btn_html = '<a href="?logout=true" target="_self" class="btn-header-action">Sair</a>'
@@ -301,7 +360,7 @@ elif aba == "config" and st.session_state["usuario_logado"]:
     config.render()
 
 # =========================================================
-# 5. RODAPÉ FIXO (SÓ EXIBE SE ESTIVER LOGADO)
+# 5. RODAPÉ FIXO (REGRAS DE MENU INTACTAS)
 # =========================================================
 if st.session_state["usuario_logado"]:
     nav_bar = st.container(key="nav_bar_container")
