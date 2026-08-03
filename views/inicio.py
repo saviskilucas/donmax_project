@@ -15,13 +15,25 @@ def buscar_usuarios_sem_cache():
         sheet = conectar_gsheets().worksheet("Usuarios")
         registros = sheet.get_all_records()
         usuarios_normalizados = []
+        
         for reg in registros:
             item_limpo = {}
             for k, v in reg.items():
-                chave_formatada = str(k).strip().lower().replace("-", "").replace(" ", "")
-                item_limpo[chave_formatada] = str(v).strip()
-            item_limpo["nome_original"] = str(reg.get("Nome", reg.get("nome", "Usuário"))).strip()
+                # Remove acentos básicos, espaços e coloca em minúsculo para a chave
+                chave = str(k).strip().lower().replace("á", "a").replace("ã", "a").replace("â", "a").replace("é", "e").replace("í", "i").replace("ó", "o").replace("ú", "u")
+                chave = chave.replace("-", "").replace(" ", "")
+                item_limpo[chave] = str(v).strip()
+            
+            # Mapeia nome original
+            nome_orig = str(reg.get("Nome", reg.get("nome", "Usuário"))).strip()
+            item_limpo["nome_original"] = nome_orig
+            
+            # Identifica a coluna do login (seja 'usuario', 'usuario', 'email', etc.)
+            usr_valor = item_limpo.get("usuario", item_limpo.get("email", ""))
+            item_limpo["login_identificador"] = str(usr_valor).strip().lower()
+            
             usuarios_normalizados.append(item_limpo)
+            
         return usuarios_normalizados
     except Exception as e:
         st.error(f"Erro ao acessar a aba 'Usuarios' na planilha: {e}")
@@ -29,7 +41,7 @@ def buscar_usuarios_sem_cache():
 
 def cadastrar_usuario(nome, usuario, senha):
     sheet = conectar_gsheets().worksheet("Usuarios")
-    # Colunas salvas na planilha: Nome Completo, Usuario (nome.sobrenome), Senha
+    # Escreve respeitando as colunas da planilha: Nome, Usuário, Senha
     sheet.append_row([nome.strip(), usuario.strip().lower(), str(senha).strip()])
 
 def enviar_email_recuperacao_admin(usuario_solicitante, usuario_encontrado):
@@ -55,7 +67,6 @@ def enviar_email_recuperacao_admin(usuario_solicitante, usuario_encontrado):
 
         msg = MIMEText(corpo, "plain", "utf-8")
         msg["Subject"] = assunto
-        # Em vez de passar só o e-mail, enviamos o Nome + E-mail:
         msg["From"] = f"Don Max Buffet <{sender_email}>"
         msg["To"] = admin_email
 
@@ -76,7 +87,7 @@ def render():
         tab_login, tab_cadastro, tab_esqueci = st.tabs(["🔐 Entrar", "📝 Criar Conta", "🔑 Esqueci a Senha"])
         
         # ---------------------------------------------------------
-        # TAB 1: LOGIN POR USUÁRIO (nome.sobrenome)
+        # TAB 1: LOGIN (Aceita nome.sobrenome ou e-mail cadastrado)
         # ---------------------------------------------------------
         with tab_login:
             with st.form("form_login"):
@@ -95,9 +106,7 @@ def render():
                         usuario_encontrado = None
                         
                         for u in usuarios:
-                            # Compara com a coluna 'usuario' ou 'email' se for o formato antigo
-                            usr_banco = u.get("usuario", u.get("email", "")).lower()
-                            if usr_banco == usr_digitado and u.get("senha", "") == senha_digitada:
+                            if u.get("login_identificador", "") == usr_digitado and u.get("senha", "") == senha_digitada:
                                 usuario_encontrado = u.get("nome_original", "Usuário")
                                 break
                         
@@ -128,7 +137,7 @@ def render():
                         st.warning("⚠️ Por favor, preencha todos os campos do cadastro.")
                     else:
                         usuarios = buscar_usuarios_sem_cache()
-                        ja_existe = any(u.get("usuario", u.get("email", "")).lower() == usr_digitado for u in usuarios)
+                        ja_existe = any(u.get("login_identificador", "") == usr_digitado for u in usuarios)
                         
                         if ja_existe:
                             st.error("⚠️ Este nome de usuário já está cadastrado.")
@@ -155,7 +164,7 @@ def render():
                         usuarios = buscar_usuarios_sem_cache()
                         usuario_achado = None
                         for u in usuarios:
-                            if u.get("usuario", u.get("email", "")).lower() == usr_target:
+                            if u.get("login_identificador", "") == usr_target:
                                 usuario_achado = u
                                 break
                         
