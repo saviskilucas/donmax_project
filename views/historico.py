@@ -334,7 +334,15 @@ def render():
         if 'Data' in df.columns:
             st.markdown("##### Linha do Tempo de Descarte")
             df_temp_data = pd.DataFrame({'Data': df['Data'], 'Descarte': descarte})
-            df_data = df_temp_data.groupby('Data')['Descarte'].sum().reset_index()
+            
+            # Converte a coluna Data para datetime temporário para permitir a ordenação cronológica exata
+            df_temp_data['Data_DT'] = pd.to_datetime(df_temp_data['Data'], format='%d/%m/%Y', errors='coerce')
+            
+            # Agrupa os valores mantendo a data original e a data convertida
+            df_data = df_temp_data.groupby(['Data_DT', 'Data'])['Descarte'].sum().reset_index()
+            
+            # ORDENAÇÃO CRESCENTE POR DATA (Do mais antigo para o mais recente)
+            df_data = df_data.sort_values('Data_DT', ascending=True)
             
             fig_line = px.line(
                 df_data, x='Data', y='Descarte', markers=True
@@ -345,7 +353,7 @@ def render():
                 plot_bgcolor='rgba(0,0,0,0)',
                 font=dict(color="#E0E0E0"),
                 margin=dict(l=5, r=5, t=10, b=5),
-                xaxis=dict(showgrid=False, fixedrange=True),
+                xaxis=dict(showgrid=False, fixedrange=True, type='category'),
                 yaxis=dict(showgrid=True, gridcolor='#2D2D2D', fixedrange=True)
             )
             st.plotly_chart(fig_line, use_container_width=True, config=config_plotly_mobile)
