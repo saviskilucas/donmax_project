@@ -14,6 +14,13 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
+# Captura clique de saída via Query Param do HTML
+if "logout" in st.query_params:
+    st.session_state["usuario_logado"] = None
+    st.session_state["aba_ativa"] = "inicio"
+    st.query_params.clear()
+    st.rerun()
+
 # Estados de sessão
 if "usuario_logado" not in st.session_state:
     st.session_state["usuario_logado"] = None
@@ -70,6 +77,7 @@ st.markdown("""
         z-index: 999999 !important;
         box-shadow: 0px 4px 14px rgba(0, 0, 0, 0.6) !important;
         border-radius: 0 0 16px 16px !important;
+        box-sizing: border-box !important;
     }
 
     .modern-header-title {
@@ -80,40 +88,27 @@ st.markdown("""
         gap: 10px;
     }
 
-    /* BOTÃO NO TOPO DIREITO PERFEITAMENTE FIXADO */
-    div[data-testid="stElementContainer"]:has(div.st-key-top_right_container) {
-        position: fixed !important;
-        top: 8px !important;
-        right: 14px !important;
-        width: auto !important;
-        z-index: 9999999 !important;
-        margin: 0 !important;
-        padding: 0 !important;
-    }
-
-    div.st-key-top_right_container button {
-        background-color: rgba(255, 255, 255, 0.2) !important;
+    /* ESTILO DO BOTÃO DE SAIR DENTRO DO CABEÇALHO */
+    .btn-header-action {
+        background-color: rgba(255, 255, 255, 0.2);
         color: #FFFFFF !important;
-        border: 1px solid rgba(255, 255, 255, 0.4) !important;
-        border-radius: 12px !important;
-        height: 36px !important;
-        padding: 0 12px !important;
-        font-weight: 700 !important;
-        font-size: 0.85rem !important;
-        transition: all 0.2s ease !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
+        border: 1px solid rgba(255, 255, 255, 0.4);
+        border-radius: 12px;
+        height: 34px;
+        padding: 0 12px;
+        font-weight: 700;
+        font-size: 0.85rem;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
     }
 
-    div.st-key-top_right_container button:hover {
-        background-color: #FFFFFF !important;
+    .btn-header-action:hover {
+        background-color: #FFFFFF;
         color: #B71C1C !important;
-        cursor: pointer !important;
-    }
-
-    div.st-key-top_right_container button * {
-        color: inherit !important;
     }
 
     /* CÁPSULA TRAVADA NO RODAPÉ */
@@ -275,27 +270,23 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # =========================================================
-# 3. BARRA SUPERIOR FIXA
+# 3. BARRA SUPERIOR FIXA COM BOTÃO DENTRO DO HTML
 # =========================================================
-st.markdown("""
+if st.session_state["usuario_logado"]:
+    btn_html = '<a href="?logout=true" target="_self" class="btn-header-action">🚪 Sair</a>'
+else:
+    btn_html = '<span onclick="window.location.reload();" style="cursor:pointer; font-size:1.2rem; color:#fff;" title="Recarregar">🔄</span>'
+
+st.markdown(f"""
     <div class="modern-header">
         <div class="modern-header-title">
             <span>Don Max Buffet</span>
         </div>
+        <div>
+            {btn_html}
+        </div>
     </div>
 """, unsafe_allow_html=True)
-
-# Container fixado exatamente dentro do topo direito da barra vermelha
-top_bar_right = st.container(key="top_right_container")
-with top_bar_right:
-    if st.session_state["usuario_logado"]:
-        if st.button("🚪 Sair", key="btn_logout_top"):
-            st.session_state["usuario_logado"] = None
-            st.session_state["aba_ativa"] = "inicio"
-            st.rerun()
-    else:
-        if st.button("🔄", key="btn_reload_top"):
-            st.rerun()
 
 # =========================================================
 # 4. ROTEAMENTO DE ABAS
