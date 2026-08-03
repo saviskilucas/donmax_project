@@ -207,7 +207,6 @@ def render():
                 <div class="metric-card" style="border-left-color: #AB47BC;">
                     <div class="metric-card-title">Atendimento & Média</div>
                     <div class="metric-card-value" style="color:#E1BEE7">{int(tot_clientes)} <span style="font-size:0.75rem">pess.</span></div>
-                    <div class="metric-card-sub" style="color:#FF8A80">{descarte_por_cliente_g:.1f}g descarte/pess.</div>
                 </div>
             """, unsafe_allow_html=True)
 
