@@ -125,7 +125,7 @@ def render():
                 st.session_state["aba_ativa"] = "pesagem"
                 st.rerun()
         with col_b:
-            if st.button("CONSULTAR PAINEL"", use_container_width=True):
+            if st.button("CONSULTAR DASHBOARD", use_container_width=True):
                 st.session_state["aba_ativa"] = "historico"
                 st.rerun()
 
