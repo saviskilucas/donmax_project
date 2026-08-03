@@ -53,7 +53,7 @@ def render():
             descarte = st.number_input("Descarte Total (kg)", min_value=0.0, step=0.100, format="%.3f")
 
         observacoes = st.text_area("Observações (Opcional)", placeholder="Ex: Sobra de carne devido ao tempo chuvoso...")
-        btn_salvar = st.form_submit_button("💾 SALVAR PESAGEM")
+        btn_salvar = st.form_submit_button("SALVAR PESAGEM")
 
         if btn_salvar:
             if not responsavel.strip():

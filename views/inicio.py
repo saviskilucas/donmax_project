@@ -114,23 +114,23 @@ def render():
     else:
         # CONTEÚDO EXIBIDO QUANDO O USUÁRIO JÁ ESTÁ LOGADO
         st.markdown(f"<div class='section-header'>🏠 PAINEL INICIAL</div>", unsafe_allow_html=True)
-        st.subheader(f"Olá, {st.session_state['usuario_logado']}! 👋")
+        st.subheader(f"Olá, {st.session_state['usuario_logado']}!")
         st.write("Sua sessão está ativa no **Sistema Don Max Buffet**.")
         
         st.markdown("---")
         
         col_a, col_b = st.columns(2)
         with col_a:
-            if st.button("📝 Novo Lançamento", use_container_width=True):
+            if st.button("NOVO LANÇAMENTO", use_container_width=True):
                 st.session_state["aba_ativa"] = "pesagem"
                 st.rerun()
         with col_b:
-            if st.button("📊 Consultar Painel", use_container_width=True):
+            if st.button("CONSULTAR PAINEL"", use_container_width=True):
                 st.session_state["aba_ativa"] = "historico"
                 st.rerun()
 
         st.markdown("---")
-        if st.button("🚪 Encerrar Sessão", use_container_width=True):
+        if st.button("ENCERRAR SESSAO", use_container_width=True):
             st.session_state["usuario_logado"] = None
             st.session_state["aba_ativa"] = "inicio"
             st.rerun()

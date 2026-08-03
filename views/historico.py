@@ -111,11 +111,11 @@ def render():
         </style>
     """, unsafe_allow_html=True)
 
-    st.markdown("<div class='section-header'>📊 PAINEL DE PERFORMANCE</div>", unsafe_allow_html=True)
+    st.markdown("<div class='section-header'>DASHBOARD</div>", unsafe_allow_html=True)
     
     col_hdr_left, col_hdr_right = st.columns([0.65, 0.35])
     with col_hdr_right:
-        if st.button("🔄 Atualizar", use_container_width=True):
+        if st.button("Atualizar", use_container_width=True):
             st.cache_data.clear()
             st.rerun()
 
@@ -133,7 +133,7 @@ def render():
         data_min = df['Data_DT'].min() if not df['Data_DT'].dropna().empty else date.today()
         data_max = df['Data_DT'].max() if not df['Data_DT'].dropna().empty else date.today()
 
-        st.markdown("##### 📅 Filtrar por Período")
+        st.markdown("##### Filtrar por Período")
         filtro_datas = st.date_input(
             "Selecione o intervalo no calendário:",
             value=(data_min, data_max),
@@ -174,7 +174,7 @@ def render():
         }
 
         # INDICADORES DO PERÍODO
-        st.markdown("##### 📌 Indicadores do Período")
+        st.markdown("##### Indicadores")
         
         c1, c2 = st.columns(2)
         with c1:
@@ -220,8 +220,7 @@ def render():
         # NOVO: MATRIZ DE CALOR (HEATMAP) POR PRODUTO
         # =========================================================
         if 'ID_Prato' in df.columns:
-            st.markdown("##### 🔥 Matriz de Desempenho por Produto")
-            st.caption("Métricas consolidadas por prato. Quanto mais **vermelho**, maior o descarte/perda.")
+            st.markdown("##### Matriz de Desempenho por Produto")
 
             df_matriz = df.groupby('ID_Prato').agg({
                 'Prod_Total_Calc': 'sum',
@@ -289,7 +288,7 @@ def render():
             st.plotly_chart(fig_heatmap, use_container_width=True, config=config_plotly_mobile)
 
         # GRÁFICO 1: BALANÇO DE PRODUÇÃO
-        st.markdown("##### ⚖️ Balanço da Cozinha")
+        st.markdown("##### Balanço da Cozinha")
         df_balanco = pd.DataFrame({
             'Categoria': ['Prod. Inicial', 'Reposição', 'Sobra Buffet', 'Descarte'],
             'Peso (kg)': [
@@ -317,7 +316,7 @@ def render():
         st.plotly_chart(fig_balanco, use_container_width=True, config=config_plotly_mobile)
 
         # GRÁFICO 2: PROPORÇÃO SOBRA BUFFET VS DESCARTE
-        st.markdown("##### 🍕 Proporção Sobra Buffet vs Descarte")
+        st.markdown("##### Proporção Sobra Buffet vs Descarte")
         df_rosca = pd.DataFrame({
             'Tipo': ['Descarte Total', 'Sobra Buffet'],
             'Peso': [tot_descarte, tot_sobra_buffet]
@@ -337,7 +336,7 @@ def render():
 
         # GRÁFICO 3: EVOLUÇÃO TEMPORAL
         if 'Data' in df.columns:
-            st.markdown("##### 📈 Linha do Tempo de Descarte")
+            st.markdown("##### Linha do Tempo de Descarte")
             df_temp_data = pd.DataFrame({'Data': df['Data'], 'Descarte': descarte})
             df_data = df_temp_data.groupby('Data')['Descarte'].sum().reset_index()
             
@@ -357,7 +356,7 @@ def render():
 
         # TABELA DE REGISTROS
         st.markdown("---")
-        st.markdown("##### 📋 Lançamentos do Período")
+        st.markdown("##### Lançamentos")
         
         df_exibicao = df.copy()
         if 'Data_DT' in df_exibicao.columns:
