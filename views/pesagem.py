@@ -48,7 +48,6 @@ def render():
         with col1:
             prod_inicial = st.number_input("Produção Inicial (kg)", min_value=0.0, step=0.100, format="%.3f")
             reposicao = st.number_input("Reposição Total (kg)", min_value=0.0, step=0.100, format="%.3f")
-            sobra_limpa = st.number_input("Sobra Limpa (kg)", min_value=0.0, step=0.100, format="%.3f")
         with col2:
             sobra_buffet = st.number_input("Sobra Buffet (kg)", min_value=0.0, step=0.100, format="%.3f")
             descarte = st.number_input("Descarte Total (kg)", min_value=0.0, step=0.100, format="%.3f")
@@ -66,7 +65,7 @@ def render():
                     data_br = data_sel.strftime("%d/%m/%Y")
                     hora_registro = agora_salvamento.strftime("%H:%M")
                     
-                    # LINHA EXATAMENTE NA ORDEM DAS SUAS COLUNAS NO GOOGLE SHEETS
+                    # LINHA ATUALIZADA SEM A SOBRA LIMPA
                     nova_linha = [
                         data_br,                         # Data
                         hora_registro,                   # Hora
@@ -75,7 +74,6 @@ def render():
                         prato_sel,                       # ID_Prato
                         round(float(prod_inicial), 3),   # Prod_Inicial_KG
                         round(float(reposicao), 3),      # Reposicao_KG
-                        round(float(sobra_limpa), 3),    # Sobra_Limpa_KG
                         round(float(sobra_buffet), 3),   # Sobra_Buffet_KG
                         round(float(descarte), 3),       # Descarte_KG
                         observacoes.strip()              # Observacoes

@@ -46,16 +46,13 @@ def converter_para_numero(serie):
     ).fillna(0.0)
 
 def render():
-    # Estilização CSS: 2 colunas no celular + liberação do touch scroll + DESABILITA ESCRITA NO CALENDÁRIO
     st.markdown("""
         <style>
-        /* Desabilita a digitação manual no campo de Data (Força clique/calendário) */
         div[data-baseweb="input"] input {
             caret-color: transparent !important;
             user-select: none !important;
         }
 
-        /* Força colunas a manterem 50% no mobile sem empilhar */
         div[data-testid="stHorizontalBlock"] {
             display: flex !important;
             flex-direction: row !important;
@@ -68,12 +65,10 @@ def render():
             flex: 1 1 0% !important;
         }
 
-        /* Libera a rolagem do touch mesmo com o dedo em cima do gráfico */
         .js-plotly-plot .plotly .draglayer {
             pointer-events: none !important;
         }
 
-        /* Estilo do Card */
         .metric-card {
             background-color: #1E1E1E;
             border: 1px solid #2D2D2D;
@@ -133,9 +128,7 @@ def render():
         else:
             df['Data_DT'] = date.today()
 
-        # =========================================================
-        # FILTRO DE DATA POR PERÍODO (SOMENTE SELEÇÃO)
-        # =========================================================
+        # FILTRO DE DATA
         data_min = df['Data_DT'].min() if not df['Data_DT'].dropna().empty else date.today()
         data_max = df['Data_DT'].max() if not df['Data_DT'].dropna().empty else date.today()
 
@@ -156,19 +149,15 @@ def render():
             st.warning("⚠️ Nenhum registro encontrado para o período selecionado.")
             return
 
-        # =========================================================
         # CONVERSÃO DOS DADOS
-        # =========================================================
         prod_ini = converter_para_numero(df['Prod_Inicial_KG']) if 'Prod_Inicial_KG' in df.columns else pd.Series([0]*len(df))
         reposicao = converter_para_numero(df['Reposicao_KG']) if 'Reposicao_KG' in df.columns else pd.Series([0]*len(df))
-        sobra_limpa = converter_para_numero(df['Sobra_Limpa_KG']) if 'Sobra_Limpa_KG' in df.columns else pd.Series([0]*len(df))
         sobra_buffet = converter_para_numero(df['Sobra_Buffet_KG']) if 'Sobra_Buffet_KG' in df.columns else pd.Series([0]*len(df))
         descarte = converter_para_numero(df['Descarte_KG']) if 'Descarte_KG' in df.columns else pd.Series([0]*len(df))
         clientes = converter_para_numero(df['Clientes_Atendidos']) if 'Clientes_Atendidos' in df.columns else pd.Series([0]*len(df))
 
         tot_prod = float((prod_ini + reposicao).sum())
         tot_descarte = float(descarte.sum())
-        tot_sobra_limpa = float(sobra_limpa.sum())
         tot_sobra_buffet = float(sobra_buffet.sum())
         tot_clientes = float(clientes.sum())
         
@@ -179,9 +168,7 @@ def render():
             'displayModeBar': False
         }
 
-        # =========================================================
-        # METRIC CARDS - GRADE 2x2 QUADRADA LADO A LADO
-        # =========================================================
+        # INDICADORES DO PERÍODO (3 CARDS PRINCIPAIS)
         st.markdown("##### 📌 Indicadores do Período")
         
         c1, c2 = st.columns(2)
@@ -206,41 +193,31 @@ def render():
         c3, c4 = st.columns(2)
         with c3:
             st.markdown(f"""
-                <div class="metric-card" style="border-left-color: #4CAF50;">
-                    <div class="metric-card-title">Sobra Limpa</div>
-                    <div class="metric-card-value" style="color:#81C784">{tot_sobra_limpa:.3f} <span style="font-size:0.75rem">kg</span></div>
-                    <div class="metric-card-sub" style="color:#81C784">Aproveitável</div>
-                </div>
-            """, unsafe_allow_html=True)
-            
-        with c4:
-            st.markdown(f"""
                 <div class="metric-card" style="border-left-color: #FFB74D;">
                     <div class="metric-card-title">Sobra Buffet</div>
                     <div class="metric-card-value" style="color:#FFB74D">{tot_sobra_buffet:.3f} <span style="font-size:0.75rem">kg</span></div>
                     <div class="metric-card-sub" style="color:#FFB74D">Pós-Serviço</div>
                 </div>
             """, unsafe_allow_html=True)
-
-        st.markdown(f"""
-            <div class="metric-card" style="border-left-color: #AB47BC;">
-                <div class="metric-card-title">Atendimento & Média de Descarte</div>
-                <div class="metric-card-value" style="color:#E1BEE7">{int(tot_clientes)} <span style="font-size:0.75rem">clientes</span> | <span style="color:#FF8A80">{descarte_por_cliente_g:.1f}g</span>/pess.</div>
-            </div>
-        """, unsafe_allow_html=True)
+            
+        with c4:
+            st.markdown(f"""
+                <div class="metric-card" style="border-left-color: #AB47BC;">
+                    <div class="metric-card-title">Atendimento & Média</div>
+                    <div class="metric-card-value" style="color:#E1BEE7">{int(tot_clientes)} <span style="font-size:0.75rem">pess.</span></div>
+                    <div class="metric-card-sub" style="color:#FF8A80">{descarte_por_cliente_g:.1f}g descarte/pess.</div>
+                </div>
+            """, unsafe_allow_html=True)
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # =========================================================
         # GRÁFICO 1: BALANÇO DE PRODUÇÃO
-        # =========================================================
         st.markdown("##### ⚖️ Balanço da Cozinha")
         df_balanco = pd.DataFrame({
-            'Categoria': ['Prod. Inicial', 'Reposição', 'Sobra Limpa', 'Sobra Buffet', 'Descarte'],
+            'Categoria': ['Prod. Inicial', 'Reposição', 'Sobra Buffet', 'Descarte'],
             'Peso (kg)': [
                 float(prod_ini.sum()),
                 float(reposicao.sum()),
-                tot_sobra_limpa,
                 tot_sobra_buffet,
                 tot_descarte
             ]
@@ -249,7 +226,7 @@ def render():
             df_balanco, x='Categoria', y='Peso (kg)',
             text_auto='.3f',
             color='Categoria',
-            color_discrete_sequence=['#1E88E5', '#00ACC1', '#43A047', '#FB8C00', '#E53935']
+            color_discrete_sequence=['#1E88E5', '#00ACC1', '#FB8C00', '#E53935']
         )
         fig_balanco.update_layout(
             showlegend=False,
@@ -262,9 +239,7 @@ def render():
         )
         st.plotly_chart(fig_balanco, use_container_width=True, config=config_plotly_mobile)
 
-        # =========================================================
         # GRÁFICO 2: DESCARTE POR PRATO
-        # =========================================================
         if 'ID_Prato' in df.columns:
             st.markdown("##### 🍲 Descarte Acumulado por Prato")
             df_temp_prato = pd.DataFrame({'Prato': df['ID_Prato'], 'Descarte': descarte})
@@ -285,18 +260,16 @@ def render():
             )
             st.plotly_chart(fig_bar, use_container_width=True, config=config_plotly_mobile)
 
-        # =========================================================
-        # GRÁFICO 3: PROPORÇÃO DE SOBRAS (DONUT)
-        # =========================================================
-        st.markdown("##### 🍕 Destino dos Alimentos")
+        # GRÁFICO 3: PROPORÇÃO SOBRA BUFFET VS DESCARTE
+        st.markdown("##### 🍕 Proporção Sobra Buffet vs Descarte")
         df_rosca = pd.DataFrame({
-            'Tipo': ['Descarte Total', 'Sobra Limpa', 'Sobra Buffet'],
-            'Peso': [tot_descarte, tot_sobra_limpa, tot_sobra_buffet]
+            'Tipo': ['Descarte Total', 'Sobra Buffet'],
+            'Peso': [tot_descarte, tot_sobra_buffet]
         })
         if df_rosca['Peso'].sum() > 0:
             fig_pie = px.pie(
                 df_rosca, names='Tipo', values='Peso', hole=0.5,
-                color_discrete_sequence=['#E53935', '#43A047', '#FB8C00']
+                color_discrete_sequence=['#E53935', '#FB8C00']
             )
             fig_pie.update_layout(
                 paper_bgcolor='rgba(0,0,0,0)',
@@ -306,9 +279,7 @@ def render():
             )
             st.plotly_chart(fig_pie, use_container_width=True, config=config_plotly_mobile)
 
-        # =========================================================
         # GRÁFICO 4: EVOLUÇÃO TEMPORAL
-        # =========================================================
         if 'Data' in df.columns:
             st.markdown("##### 📈 Linha do Tempo de Descarte")
             df_temp_data = pd.DataFrame({'Data': df['Data'], 'Descarte': descarte})
@@ -328,9 +299,7 @@ def render():
             )
             st.plotly_chart(fig_line, use_container_width=True, config=config_plotly_mobile)
 
-        # =========================================================
-        # TABELA DE REGISTROS FILTRADOS
-        # =========================================================
+        # TABELA DE REGISTROS
         st.markdown("---")
         st.markdown("##### 📋 Lançamentos do Período")
         
@@ -338,7 +307,7 @@ def render():
         if 'Data_DT' in df_exibicao.columns:
             df_exibicao.drop(columns=['Data_DT'], inplace=True)
 
-        cols_peso = ['Prod_Inicial_KG', 'Reposicao_KG', 'Sobra_Limpa_KG', 'Sobra_Buffet_KG', 'Descarte_KG']
+        cols_peso = ['Prod_Inicial_KG', 'Reposicao_KG', 'Sobra_Buffet_KG', 'Descarte_KG']
         
         for c in cols_peso:
             if c in df_exibicao.columns:
