@@ -61,7 +61,7 @@ def converter_para_numero(serie):
     ).fillna(0.0)
 
 # =========================================================
-# GERADOR DE GRÁFICOS PARA PDF (MODO CLARO / CLEAN)
+# GERADOR DE GRÁFICOS PARA PDF (QUADRANTES & MODO CLARO)
 # =========================================================
 def gerar_img_heatmap(df_matriz):
     if df_matriz.empty:
@@ -93,7 +93,6 @@ def gerar_img_heatmap(df_matriz):
     fig, ax = plt.subplots(figsize=(6.5, altura), facecolor='#FFFFFF')
     ax.set_facecolor('#FFFFFF')
 
-    # Paleta de cores clara para impressão
     im = ax.imshow(z_array, cmap='Reds', aspect='auto', alpha=0.85)
 
     ax.set_xticks(np.arange(len(colunas)))
@@ -101,7 +100,6 @@ def gerar_img_heatmap(df_matriz):
     ax.set_xticklabels(colunas, color='#111111', fontsize=8.5, fontweight='bold')
     ax.set_yticklabels(pratos, color='#222222', fontsize=8.5)
 
-    # Texto escuro para contraste dinâmico nas células
     max_val = z_array.max() if z_array.max() > 0 else 1
     for i in range(len(pratos)):
         for j in range(len(colunas)):
@@ -120,21 +118,21 @@ def gerar_img_heatmap(df_matriz):
     return buf
 
 def gerar_img_balanco(prod_ini, reposicao, tot_sobra, tot_descarte):
-    fig, ax = plt.subplots(figsize=(6, 2.5), facecolor='#FFFFFF')
+    fig, ax = plt.subplots(figsize=(3.2, 2.2), facecolor='#FFFFFF')
     ax.set_facecolor('#FFFFFF')
     
-    categorias = ['Prod. Inicial', 'Reposição', 'Sobra Buffet', 'Descarte']
+    categorias = ['Prod.', 'Repo.', 'Sobra', 'Desc.']
     valores = [float(prod_ini.sum()), float(reposicao.sum()), tot_sobra, tot_descarte]
     cores = ['#1565C0', '#00838F', '#EF6C00', '#C62828']
     
-    bars = ax.bar(categorias, valores, color=cores, width=0.5)
+    bars = ax.bar(categorias, valores, color=cores, width=0.55)
     
     for bar in bars:
         yval = bar.get_height()
         ax.text(bar.get_x() + bar.get_width()/2.0, yval + (max(valores)*0.02 if max(valores)>0 else 0.05), 
-                f'{yval:.3f} kg', ha='center', va='bottom', color='#111111', fontsize=8, fontweight='bold')
+                f'{yval:.2f}', ha='center', va='bottom', color='#111111', fontsize=7, fontweight='bold')
         
-    ax.tick_params(colors='#333333', labelsize=8.5)
+    ax.tick_params(colors='#333333', labelsize=7.5)
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     ax.spines['left'].set_color('#CCCCCC')
@@ -149,25 +147,25 @@ def gerar_img_balanco(prod_ini, reposicao, tot_sobra, tot_descarte):
     return buf
 
 def gerar_img_rosca(tot_descarte, tot_sobra):
-    fig, ax = plt.subplots(figsize=(6, 2.4), facecolor='#FFFFFF')
+    fig, ax = plt.subplots(figsize=(3.2, 2.2), facecolor='#FFFFFF')
     ax.set_facecolor('#FFFFFF')
     
-    labels = ['Descarte Total', 'Sobra Buffet']
+    labels = ['Descarte', 'Sobra']
     valores = [tot_descarte, tot_sobra]
     cores = ['#C62828', '#EF6C00']
     
     if sum(valores) > 0:
         wedges, texts, autotexts = ax.pie(
             valores, labels=labels, colors=cores, autopct='%1.1f%%',
-            startangle=90, pctdistance=0.75,
-            textprops=dict(color="#222222", fontsize=8.5, weight="bold")
+            startangle=90, pctdistance=0.7,
+            textprops=dict(color="#222222", fontsize=7.5, weight="bold")
         )
         for autotext in autotexts:
             autotext.set_color('#FFFFFF')
         centre_circle = plt.Circle((0,0), 0.50, fc='#FFFFFF')
         fig.gca().add_artist(centre_circle)
     else:
-        ax.text(0, 0, 'Sem dados no período', color='#888888', ha='center', va='center')
+        ax.text(0, 0, 'Sem dados', color='#888888', ha='center', va='center')
         
     buf = io.BytesIO()
     plt.tight_layout()
@@ -177,13 +175,13 @@ def gerar_img_rosca(tot_descarte, tot_sobra):
     return buf
 
 def gerar_img_linha(df_data):
-    fig, ax = plt.subplots(figsize=(6, 2.4), facecolor='#FFFFFF')
+    fig, ax = plt.subplots(figsize=(6.5, 2.2), facecolor='#FFFFFF')
     ax.set_facecolor('#FFFFFF')
     
-    ax.plot(df_data['Data'], df_data['Descarte'], color='#C62828', marker='o', linewidth=2, markersize=5)
+    ax.plot(df_data['Data'], df_data['Descarte'], color='#C62828', marker='o', linewidth=2, markersize=4)
     
-    ax.tick_params(colors='#333333', labelsize=8)
-    plt.xticks(rotation=35)
+    ax.tick_params(colors='#333333', labelsize=7.5)
+    plt.xticks(rotation=30)
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     ax.spines['left'].set_color('#CCCCCC')
@@ -198,7 +196,7 @@ def gerar_img_linha(df_data):
     return buf
 
 # =========================================================
-# GERADOR DE PDF EXECUTIVO (CLEAN / IMPRESSÃO)
+# GERADOR DE PDF EXECUTIVO
 # =========================================================
 def gerar_pdf_relatorio(df, tot_prod, tot_descarte, tot_sobra, tot_clientes, dt_inicio, dt_fim, prod_ini, reposicao, df_data, df_matriz):
     buffer = io.BytesIO()
@@ -214,46 +212,16 @@ def gerar_pdf_relatorio(df, tot_prod, tot_descarte, tot_sobra, tot_clientes, dt_
     elements = []
     styles = getSampleStyleSheet()
 
-    # Estilos com espaçamentos corrigidos
-    style_header_app = ParagraphStyle(
-        'HeaderAppTitle',
-        fontName='Helvetica-Bold',
-        fontSize=14,
-        textColor=colors.white,
-        alignment=0
-    )
+    style_header_app = ParagraphStyle('HeaderAppTitle', fontName='Helvetica-Bold', fontSize=14, textColor=colors.white, alignment=0)
+    style_sub = ParagraphStyle('DocSub', fontName='Helvetica', fontSize=8.5, textColor=colors.HexColor('#555555'), spaceAfter=10, spaceBefore=8)
+    style_sec_title = ParagraphStyle('SecTitle', fontName='Helvetica-Bold', fontSize=10.5, textColor=colors.HexColor('#B71C1C'), spaceAfter=4, spaceBefore=10)
+    style_card_title = ParagraphStyle('CardTitle', fontName='Helvetica-Bold', fontSize=7.5, textColor=colors.HexColor('#666666'), alignment=1)
+    style_card_val = ParagraphStyle('CardVal', fontName='Helvetica-Bold', fontSize=10.5, textColor=colors.HexColor('#111111'), alignment=1)
 
-    style_sub = ParagraphStyle(
-        'DocSub',
-        fontName='Helvetica',
-        fontSize=8.5,
-        textColor=colors.HexColor('#555555'),
-        spaceAfter=10,
-        spaceBefore=8
-    )
-
-    style_sec_title = ParagraphStyle(
-        'SecTitle',
-        fontName='Helvetica-Bold',
-        fontSize=10.5,
-        textColor=colors.HexColor('#B71C1C'),
-        spaceAfter=4,
-        spaceBefore=10
-    )
-
-    style_card_title = ParagraphStyle(
-        'CardTitle', fontName='Helvetica-Bold', fontSize=7.5, textColor=colors.HexColor('#666666'), alignment=1
-    )
-
-    style_card_val = ParagraphStyle(
-        'CardVal', fontName='Helvetica-Bold', fontSize=10.5, textColor=colors.HexColor('#111111'), alignment=1
-    )
-
-    # DATA E HORA DE BRASÍLIA
     agora_brasilia = datetime.now(ZoneInfo("America/Sao_Paulo"))
     dt_emissao_str = agora_brasilia.strftime('%d/%m/%Y às %H:%M:%S')
 
-    # 1. BARRA SUPERIOR VERMELHA (IGUAL AO APP)
+    # BARRA SUPERIOR VERMELHA
     header_table_data = [[
         Paragraph("<b>DON MAX BUFFET</b>", style_header_app),
         Paragraph("<font color='#FFFFFF'><b>RELATÓRIO EXECUTIVO</b></font>", ParagraphStyle('HRight', fontName='Helvetica-Bold', fontSize=9, textColor=colors.white, alignment=2))
@@ -270,11 +238,11 @@ def gerar_pdf_relatorio(df, tot_prod, tot_descarte, tot_sobra, tot_clientes, dt_
     ]))
     elements.append(t_header)
 
-    # SUBTÍTULO COM DATAS
-    dt_str = f"Período Analisado: <b>{dt_inicio.strftime('%d/%m/%Y')}</b> até <b>{dt_fim.strftime('%d/%m/%Y')}</b> &nbsp;|&nbsp; Emitido em: {dt_emissao_str} (Horário de Brasília)"
+    # SUBTÍTULO
+    dt_str = f"Período Analisado: <b>{dt_inicio.strftime('%d/%m/%Y')}</b> até <b>{dt_fim.strftime('%d/%m/%Y')}</b> &nbsp;|&nbsp; Emitido em: {dt_emissao_str}"
     elements.append(Paragraph(dt_str, style_sub))
 
-    # 2. CARDS DE INDICADORES (CLEAN)
+    # CARDS DE INDICADORES
     cards_data = [
         [
             Paragraph("PRODUÇÃO TOTAL", style_card_title),
@@ -302,7 +270,7 @@ def gerar_pdf_relatorio(df, tot_prod, tot_descarte, tot_sobra, tot_clientes, dt_
     elements.append(t_cards)
     elements.append(Spacer(1, 8))
 
-    # 3. MATRIZ DE DESEMPENHO NO PDF
+    # MATRIZ DE DESEMPENHO NO PDF (COM LINHA DE TOTAL)
     if not df_matriz.empty:
         elements.append(Paragraph("<b>Matriz de Desempenho por Produto</b>", style_sec_title))
         img_h = gerar_img_heatmap(df_matriz)
@@ -310,23 +278,38 @@ def gerar_pdf_relatorio(df, tot_prod, tot_descarte, tot_sobra, tot_clientes, dt_
             altura_h = max(160, len(df_matriz) * 28)
             elements.append(Image(img_h, width=500, height=altura_h))
 
-    # 4. BALANÇO DA COZINHA
-    elements.append(Paragraph("<b>Balanço da Cozinha</b>", style_sec_title))
+    # DISPOSIÇÃO EM QUADRANTES (GRÁFICOS LADO A LADO)
+    elements.append(Paragraph("<b>Análise Comparativa de Produção</b>", style_sec_title))
     img_b = gerar_img_balanco(prod_ini, reposicao, tot_sobra, tot_descarte)
-    elements.append(Image(img_b, width=500, height=200))
-
-    # 5. PROPORÇÃO SOBRA BUFFET VS DESCARTE
-    elements.append(Paragraph("<b>Proporção Sobra Buffet vs Descarte</b>", style_sec_title))
     img_r = gerar_img_rosca(tot_descarte, tot_sobra)
-    elements.append(Image(img_r, width=500, height=190))
+    
+    quadros_table_data = [
+        [
+            Paragraph("<b>Balanço da Cozinha</b>", ParagraphStyle('SubB', fontName='Helvetica-Bold', fontSize=9, textColor=colors.HexColor('#333333'))),
+            Paragraph("<b>Sobra vs Descarte</b>", ParagraphStyle('SubR', fontName='Helvetica-Bold', fontSize=9, textColor=colors.HexColor('#333333')))
+        ],
+        [
+            Image(img_b, width=250, height=160),
+            Image(img_r, width=250, height=160)
+        ]
+    ]
+    
+    t_quadros = Table(quadros_table_data, colWidths=[260, 260])
+    t_quadros.setStyle(TableStyle([
+        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('TOPPADDING', (0,0), (-1,-1), 2),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 2),
+    ]))
+    elements.append(t_quadros)
 
-    # 6. LINHA DO TEMPO DE DESCARTE
+    # LINHA DO TEMPO
     if not df_data.empty:
         elements.append(Paragraph("<b>Linha do Tempo de Descarte</b>", style_sec_title))
         img_l = gerar_img_linha(df_data)
-        elements.append(Image(img_l, width=500, height=190))
+        elements.append(Image(img_l, width=500, height=170))
 
-    # 7. TABELA DE DETALHAMENTO
+    # TABELA DE DETALHAMENTO
     elements.append(Paragraph("<b>Detalhamento de Lançamentos</b>", style_sec_title))
 
     col_names_pdf = ['Data', 'Prato / Item', 'Prod. Ini', 'Reposição', 'Sobra Buf.', 'Descarte']
@@ -482,6 +465,7 @@ def render():
             df_data = df_temp_data.groupby(['Data_DT', 'Data'])['Descarte'].sum().reset_index()
             df_data = df_data.sort_values('Data_DT', ascending=True)
 
+        # MATRIZ DE DESEMPENHO COM LINHA DE TOTAIS GERAIS
         df_matriz = pd.DataFrame()
         if 'ID_Prato' in df.columns:
             df_matriz = df.groupby('ID_Prato').agg({
@@ -491,6 +475,17 @@ def render():
             }).reset_index()
             df_matriz['Perda_%'] = (df_matriz['Descarte_Calc'] / df_matriz['Prod_Total_Calc'] * 100).fillna(0)
             df_matriz = df_matriz.sort_values(by='Descarte_Calc', ascending=True)
+
+            # LINHA ADICIONAL DE TOTAL GERAL
+            pct_total_geral = (tot_descarte / tot_prod * 100) if tot_prod > 0 else 0.0
+            linha_total = pd.DataFrame([{
+                'ID_Prato': 'TOTAL GERAL',
+                'Prod_Total_Calc': tot_prod,
+                'Sobra_Buffet_Calc': tot_sobra_buffet,
+                'Descarte_Calc': tot_descarte,
+                'Perda_%': pct_total_geral
+            }])
+            df_matriz = pd.concat([df_matriz, linha_total], ignore_index=True)
 
         config_plotly_mobile = {
             'staticPlot': True,
@@ -590,54 +585,57 @@ def render():
 
             st.plotly_chart(fig_heatmap, use_container_width=True, config=config_plotly_mobile)
 
-        # 2. GRÁFICO 1: BALANÇO DE PRODUÇÃO
-        st.markdown("##### Balanço da Cozinha")
-        df_balanco = pd.DataFrame({
-            'Categoria': ['Prod. Inicial', 'Reposição', 'Sobra Buffet', 'Descarte'],
-            'Peso (kg)': [
-                float(prod_ini.sum()),
-                float(reposicao.sum()),
-                tot_sobra_buffet,
-                tot_descarte
-            ]
-        })
-        fig_balanco = px.bar(
-            df_balanco, x='Categoria', y='Peso (kg)',
-            text_auto='.3f',
-            color='Categoria',
-            color_discrete_sequence=['#1E88E5', '#00ACC1', '#FB8C00', '#E53935']
-        )
-        fig_balanco.update_layout(
-            showlegend=False,
-            paper_bgcolor='rgba(0,0,0,0)',
-            plot_bgcolor='rgba(0,0,0,0)',
-            font=dict(color="#E0E0E0"),
-            margin=dict(l=5, r=5, t=25, b=5),
-            xaxis=dict(showgrid=False, fixedrange=True),
-            yaxis=dict(showgrid=True, gridcolor='#2D2D2D', fixedrange=True)
-        )
-        st.plotly_chart(fig_balanco, use_container_width=True, config=config_plotly_mobile)
+        # 2. DISPOSIÇÃO EM QUADRANTES NO PAINEL (LADO A LADO)
+        col_g1, col_g2 = st.columns(2)
 
-        # 3. GRÁFICO 2: PROPORÇÃO SOBRA BUFFET VS DESCARTE
-        st.markdown("##### Proporção Sobra Buffet vs Descarte")
-        df_rosca = pd.DataFrame({
-            'Tipo': ['Descarte Total', 'Sobra Buffet'],
-            'Peso': [tot_descarte, tot_sobra_buffet]
-        })
-        if df_rosca['Peso'].sum() > 0:
-            fig_pie = px.pie(
-                df_rosca, names='Tipo', values='Peso', hole=0.5,
-                color_discrete_sequence=['#E53935', '#FB8C00']
+        with col_g1:
+            st.markdown("##### Balanço da Cozinha")
+            df_balanco = pd.DataFrame({
+                'Categoria': ['Prod. Inicial', 'Reposição', 'Sobra Buffet', 'Descarte'],
+                'Peso (kg)': [
+                    float(prod_ini.sum()),
+                    float(reposicao.sum()),
+                    tot_sobra_buffet,
+                    tot_descarte
+                ]
+            })
+            fig_balanco = px.bar(
+                df_balanco, x='Categoria', y='Peso (kg)',
+                text_auto='.3f',
+                color='Categoria',
+                color_discrete_sequence=['#1E88E5', '#00ACC1', '#FB8C00', '#E53935']
             )
-            fig_pie.update_layout(
+            fig_balanco.update_layout(
+                showlegend=False,
                 paper_bgcolor='rgba(0,0,0,0)',
+                plot_bgcolor='rgba(0,0,0,0)',
                 font=dict(color="#E0E0E0"),
-                margin=dict(l=5, r=5, t=10, b=5),
-                legend=dict(orientation="h", yanchor="bottom", y=-0.2, xanchor="center", x=0.5)
+                margin=dict(l=5, r=5, t=25, b=5),
+                xaxis=dict(showgrid=False, fixedrange=True),
+                yaxis=dict(showgrid=True, gridcolor='#2D2D2D', fixedrange=True)
             )
-            st.plotly_chart(fig_pie, use_container_width=True, config=config_plotly_mobile)
+            st.plotly_chart(fig_balanco, use_container_width=True, config=config_plotly_mobile)
 
-        # 4. GRÁFICO 3: EVOLUÇÃO TEMPORAL
+        with col_g2:
+            st.markdown("##### Sobra vs Descarte")
+            df_rosca = pd.DataFrame({
+                'Tipo': ['Descarte Total', 'Sobra Buffet'],
+                'Peso': [tot_descarte, tot_sobra_buffet]
+            })
+            if df_rosca['Peso'].sum() > 0:
+                fig_pie = px.pie(
+                    df_rosca, names='Tipo', values='Peso', hole=0.5,
+                    color_discrete_sequence=['#E53935', '#FB8C00']
+                )
+                fig_pie.update_layout(
+                    paper_bgcolor='rgba(0,0,0,0)',
+                    font=dict(color="#E0E0E0"),
+                    margin=dict(l=5, r=5, t=10, b=5),
+                    legend=dict(orientation="h", yanchor="bottom", y=-0.2, xanchor="center", x=0.5)
+                )
+                st.plotly_chart(fig_pie, use_container_width=True, config=config_plotly_mobile)
+
+        # 3. LINHA DO TEMPO DE DESCARTE
         if not df_data.empty:
             st.markdown("##### Linha do Tempo de Descarte")
             fig_line = px.line(
