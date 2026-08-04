@@ -5,6 +5,13 @@ import plotly.graph_objects as go
 import gspread
 from google.oauth2.service_account import Credentials
 from datetime import datetime, date
+import io
+
+# ReportLab para geração do PDF
+from reportlab.lib.pagesizes import letter
+from reportlab.lib import colors
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 
 @st.cache_resource
 def conectar_gsheets():
@@ -45,6 +52,139 @@ def converter_para_numero(serie):
         .str.replace(',', '.'), 
         errors='coerce'
     ).fillna(0.0)
+
+# =========================================================
+# GERADOR DE PDF MODERNO E ESTILIZADO
+# =========================================================
+def gerar_pdf_relatorio(df, tot_prod, tot_descarte, tot_sobra, tot_clientes, dt_inicio, dt_fim):
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=letter,
+        rightMargin=36,
+        leftMargin=36,
+        topMargin=36,
+        bottomMargin=36
+    )
+    
+    elements = []
+    styles = getSampleStyleSheet()
+
+    # Estilos Customizados
+    style_title = ParagraphStyle(
+        'DocTitle',
+        parent=styles['Normal'],
+        fontName='Helvetica-Bold',
+        fontSize=20,
+        textColor=colors.HexColor('#B71C1C'),
+        spaceAfter=4
+    )
+    
+    style_sub = ParagraphStyle(
+        'DocSub',
+        parent=styles['Normal'],
+        fontName='Helvetica',
+        fontSize=10,
+        textColor=colors.HexColor('#666666'),
+        spaceAfter=15
+    )
+
+    style_card_title = ParagraphStyle(
+        'CardTitle',
+        fontName='Helvetica-Bold',
+        fontSize=9,
+        textColor=colors.HexColor('#888888'),
+        alignment=1
+    )
+
+    style_card_val = ParagraphStyle(
+        'CardVal',
+        fontName='Helvetica-Bold',
+        fontSize=12,
+        textColor=colors.HexColor('#111111'),
+        alignment=1
+    )
+
+    # 1. CABEÇALHO DO RELATÓRIO
+    elements.append(Paragraph("DON MAX BUFFET", style_title))
+    dt_str = f"Período: {dt_inicio.strftime('%d/%m/%Y')} até {dt_fim.strftime('%d/%m/%Y')} | Gerado em: {datetime.now().strftime('%d/%m/%Y %H:%M')}"
+    elements.append(Paragraph(dt_str, style_sub))
+    elements.append(HRFlowable(width="100%", thickness=1.5, color=colors.HexColor('#B71C1C'), spaceAfter=15))
+
+    # 2. CARDS DE INDICADORES (TABELA 2x2 ESTILIZADA)
+    cards_data = [
+        [
+            Paragraph("PRODUÇÃO TOTAL", style_card_title),
+            Paragraph("DESCARTE TOTAL", style_card_title),
+            Paragraph("SOBRA BUFFET", style_card_title),
+            Paragraph("ATENDIMENTO", style_card_title)
+        ],
+        [
+            Paragraph(f"<b>{tot_prod:.3f} kg</b>", style_card_val),
+            Paragraph(f"<font color='#B71C1C'><b>{tot_descarte:.3f} kg</b></font>", style_card_val),
+            Paragraph(f"<b>{tot_sobra:.3f} kg</b>", style_card_val),
+            Paragraph(f"<b>{int(tot_clientes)} clientes</b>", style_card_val)
+        ]
+    ]
+
+    t_cards = Table(cards_data, colWidths=[130, 130, 130, 130])
+    t_cards.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#F8F9FA')),
+        ('BORDER', (0,0), (-1,-1), 1, colors.HexColor('#E0E0E0')),
+        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('TOPPADDING', (0,0), (-1,-1), 8),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 8),
+    ]))
+    
+    elements.append(t_cards)
+    elements.append(Spacer(1, 20))
+
+    # 3. TABELA DE LANÇAMENTOS
+    elements.append(Paragraph("<b>Detalhamento de Lançamentos</b>", ParagraphStyle('SecTitle', fontName='Helvetica-Bold', fontSize=12, textColor=colors.HexColor('#B71C1C'), spaceAfter=8)))
+
+    cols_desejadas = ['Data', 'ID_Prato', 'Prod_Inicial_KG', 'Reposicao_KG', 'Sobra_Buffet_KG', 'Descarte_KG']
+    col_names_pdf = ['Data', 'Prato / Item', 'Prod. Ini', 'Reposição', 'Sobra Buf.', 'Descarte']
+    
+    # Prepara dados da tabela
+    table_data = [col_names_pdf]
+
+    for _, row in df.iterrows():
+        linha = [
+            str(row.get('Data', '')),
+            str(row.get('ID_Prato', '-'))[:22], # Trunca texto muito longo
+            f"{float(converter_para_numero(pd.Series([row.get('Prod_Inicial_KG', 0)]))[0]):.3f} kg",
+            f"{float(converter_para_numero(pd.Series([row.get('Reposicao_KG', 0)]))[0]):.3f} kg",
+            f"{float(converter_para_numero(pd.Series([row.get('Sobra_Buffet_KG', 0)]))[0]):.3f} kg",
+            f"{float(converter_para_numero(pd.Series([row.get('Descarte_KG', 0)]))[0]):.3f} kg",
+        ]
+        table_data.append(linha)
+
+    t_table = Table(table_data, colWidths=[65, 165, 70, 70, 75, 75])
+    t_table.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#B71C1C')),
+        ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0,0), (-1,0), 9),
+        ('BOTTOMPADDING', (0,0), (-1,0), 6),
+        ('TOPPADDING', (0,0), (-1,0), 6),
+        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+        ('ALIGN', (1,1), (1,-1), 'LEFT'),
+        ('FONTNAME', (0,1), (-1,-1), 'Helvetica'),
+        ('FONTSIZE', (0,1), (-1,-1), 8),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#E0E0E0')),
+        ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, colors.HexColor('#F9F9F9')]),
+        ('TOPPADDING', (0,1), (-1,-1), 5),
+        ('BOTTOMPADDING', (0,1), (-1,-1), 5),
+    ]))
+
+    elements.append(t_table)
+
+    # Constrói o PDF
+    doc.build(elements)
+    buffer.seek(0)
+    return buffer
+
 
 def render():
     st.markdown("""
@@ -99,25 +239,10 @@ def render():
             color: #FFFFFF;
             line-height: 1.1;
         }
-        .metric-card-sub {
-            font-size: 0.65rem;
-            color: #FF5252;
-            font-weight: 600;
-            margin-top: 3px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
         </style>
     """, unsafe_allow_html=True)
 
     st.markdown("<div class='section-header'>DASHBOARD</div>", unsafe_allow_html=True)
-    
-    col_hdr_left, col_hdr_right = st.columns([0.65, 0.35])
-    with col_hdr_right:
-        if st.button("Atualizar", use_container_width=True):
-            st.cache_data.clear()
-            st.rerun()
 
     dados = carregar_dados_painel()
     
@@ -165,8 +290,28 @@ def render():
         tot_descarte = float(descarte.sum())
         tot_sobra_buffet = float(sobra_buffet.sum())
         tot_clientes = float(clientes.sum())
-        
-        descarte_por_cliente_g = (tot_descarte / tot_clientes * 1000) if tot_clientes > 0 else 0.0
+
+        # BOTÕES SUPERIORES: ATUALIZAR E GERAR PDF
+        col_hdr_left, col_hdr_right = st.columns([0.5, 0.5])
+        with col_hdr_left:
+            if st.button("🔄 Atualizar", use_container_width=True):
+                st.cache_data.clear()
+                st.rerun()
+
+        with col_hdr_right:
+            # GERA O PDF RESPEITANDO O FILTRO DE DATA SELECIONADO
+            pdf_bytes = gerar_pdf_relatorio(
+                df, tot_prod, tot_descarte, tot_sobra_buffet, tot_clientes,
+                filtro_datas[0] if isinstance(filtro_datas, tuple) else data_min,
+                filtro_datas[1] if isinstance(filtro_datas, tuple) else data_max
+            )
+            st.download_button(
+                label="📄 Baixar PDF",
+                data=pdf_bytes,
+                file_name=f"Relatorio_DonMax_{datetime.now().strftime('%d%m%Y')}.pdf",
+                mime="application/pdf",
+                use_container_width=True
+            )
 
         config_plotly_mobile = {
             'staticPlot': True,
@@ -212,9 +357,7 @@ def render():
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # =========================================================
-        # NOVO: MATRIZ DE CALOR (HEATMAP) POR PRODUTO
-        # =========================================================
+        # MATRIZ DE CALOR (HEATMAP) POR PRODUTO
         if 'ID_Prato' in df.columns:
             st.markdown("##### Matriz de Desempenho por Produto")
 
@@ -224,16 +367,12 @@ def render():
                 'Descarte_Calc': 'sum'
             }).reset_index()
 
-            # Calcula % Perda
             df_matriz['Perda_%'] = (df_matriz['Descarte_Calc'] / df_matriz['Prod_Total_Calc'] * 100).fillna(0)
-
-            # Ordena pelos pratos com maior descarte
             df_matriz = df_matriz.sort_values(by='Descarte_Calc', ascending=True)
 
             pratos = df_matriz['ID_Prato'].tolist()
             colunas_heatmap = ['Produção Total', 'Sobra Buffet', 'Descarte Total', '% Perda/Prod.']
 
-            # Matriz de valores para visualização
             z_values = []
             text_values = []
 
@@ -243,7 +382,6 @@ def render():
                 desc = row['Descarte_Calc']
                 pct = row['Perda_%']
 
-                # Normalização de intensidade de cor para cada coluna
                 z_values.append([p_tot, s_buf, desc, pct])
                 text_values.append([
                     f"{p_tot:.2f} kg",
@@ -268,7 +406,6 @@ def render():
                 showscale=False
             ))
 
-            # Ajusta altura baseada na quantidade de produtos cadastrados
             altura_matriz = max(280, len(pratos) * 45)
 
             fig_heatmap.update_layout(
@@ -334,14 +471,8 @@ def render():
         if 'Data' in df.columns:
             st.markdown("##### Linha do Tempo de Descarte")
             df_temp_data = pd.DataFrame({'Data': df['Data'], 'Descarte': descarte})
-            
-            # Converte a coluna Data para datetime temporário para permitir a ordenação cronológica exata
             df_temp_data['Data_DT'] = pd.to_datetime(df_temp_data['Data'], format='%d/%m/%Y', errors='coerce')
-            
-            # Agrupa os valores mantendo a data original e a data convertida
             df_data = df_temp_data.groupby(['Data_DT', 'Data'])['Descarte'].sum().reset_index()
-            
-            # ORDENAÇÃO CRESCENTE POR DATA (Do mais antigo para o mais recente)
             df_data = df_data.sort_values('Data_DT', ascending=True)
             
             fig_line = px.line(
