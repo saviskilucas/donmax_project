@@ -4,4 +4,4 @@ google-auth
 pandas
 plotly
 reportlab
-kaleido
+matplotlib
