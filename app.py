@@ -153,7 +153,7 @@ st.markdown("""
         border-radius: 30px !important;
         box-shadow: 0px 8px 25px rgba(0, 0, 0, 0.8) !important;
         border: 2px solid #2D2D2D !important;
-        height: 60px !important;
+        height: 90px !important;
         padding: 4px !important;
         display: flex !important;
         align-items: center !important;
