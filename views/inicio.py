@@ -134,23 +134,91 @@ def enviar_email_recuperacao_admin(usuario_solicitante, usuario_encontrado):
 
 def render():
     if not st.session_state.get("usuario_logado"):
-        st.markdown("<div class='section-header'>🔐 ACESSO AO SISTEMA</div>", unsafe_allow_html=True)
+        # CSS Exclusivo para deixar a Tela de Login estilizada
+        st.markdown("""
+            <style>
+            .login-card {
+                background-color: #1E1E1E;
+                border: 1px solid #2D2D2D;
+                border-top: 5px solid #B71C1C;
+                border-radius: 16px;
+                padding: 28px 20px 20px 20px;
+                box-shadow: 0px 8px 24px rgba(0, 0, 0, 0.6);
+                margin-top: 10px;
+                margin-bottom: 20px;
+            }
+            .login-header {
+                text-align: center;
+                margin-bottom: 20px;
+            }
+            .login-icon {
+                font-size: 2.8rem;
+                margin-bottom: 5px;
+            }
+            .login-title {
+                color: #FFFFFF;
+                font-size: 1.4rem;
+                font-weight: 800;
+                letter-spacing: 0.5px;
+                margin: 0;
+            }
+            .login-subtitle {
+                color: #888888;
+                font-size: 0.85rem;
+                margin-top: 4px;
+            }
+            /* Customização do botão de login do Streamlit */
+            div[data-testid="stForm"] {
+                border: none !important;
+                padding: 0 !important;
+            }
+            div[data-testid="stForm"] button[kind="primaryFormSubmit"],
+            div[data-testid="stForm"] button {
+                background-color: #B71C1C !important;
+                color: #FFFFFF !important;
+                border-radius: 12px !important;
+                height: 48px !important;
+                font-size: 1rem !important;
+                font-weight: 800 !important;
+                border: none !important;
+                margin-top: 10px !important;
+                box-shadow: 0px 4px 12px rgba(183, 28, 28, 0.4) !important;
+                transition: all 0.2s ease !important;
+            }
+            div[data-testid="stForm"] button:hover {
+                background-color: #D32F2F !important;
+                transform: translateY(-1px);
+            }
+            </style>
+        """, unsafe_allow_html=True)
+
+        # Container Principal Centralizado
+        col_esq, col_centro, col_dir = st.columns([0.1, 0.8, 0.1])
         
-        # APENAS DUAS ABAS: ENTRAR E ESQUECI A SENHA
-        tab_login, tab_esqueci = st.tabs(["🔐 Entrar", "🔑 Esqueci a Senha"])
-        
-        with tab_login:
-            with st.form("form_login"):
+        with col_centro:
+            # BANNER / LOGO
+            st.markdown("""
+                <div class="login-card">
+                    <div class="login-header">
+                        <div class="login-icon">🍽️</div>
+                        <div class="login-title">DON MAX BUFFET</div>
+                        <div class="login-subtitle">Gestão de Pesagens e Produção</div>
+                    </div>
+                </div>
+            """, unsafe_allow_html=True)
+
+            # FORMULÁRIO DE LOGIN
+            with st.form("form_login_principal"):
                 usuario_login = st.text_input("Usuário", placeholder="ex: nome.sobrenome")
                 senha_login = st.text_input("Senha", type="password", placeholder="••••••••")
-                btn_login = st.form_submit_button("ENTRAR NO SISTEMA")
+                btn_login = st.form_submit_button("ENTRAR NO SISTEMA", use_container_width=True)
                 
                 if btn_login:
                     usr_digitado = usuario_login.strip().lower()
                     senha_digitada = senha_login.strip()
                     
                     if not usr_digitado or not senha_digitada:
-                        st.warning("⚠️ Preencha usuário e senha para continuar.")
+                        st.warning("⚠️ Preencha usuário e senha.")
                     else:
                         usuarios = buscar_usuarios_sem_cache()
                         usuario_achado = None
@@ -180,26 +248,30 @@ def render():
                         else:
                             st.error("❌ Usuário ou senha incorretos.")
 
-        with tab_esqueci:
-            with st.form("form_esqueci"):
-                usr_recup = st.text_input("Insira seu Usuário (ex: nome.sobrenome)", placeholder="nome.sobrenome")
-                btn_recuperar = st.form_submit_button("SOLICITAR RECUPERAÇÃO DE SENHA")
-                
-                if btn_recuperar:
-                    usr_target = usr_recup.strip().lower()
-                    if not usr_target:
-                        st.warning("⚠️ Digite o usuário para buscar.")
-                    else:
-                        usuarios = buscar_usuarios_sem_cache()
-                        u_target = next((u for u in usuarios if u.get("login_identificador") == usr_target), None)
-                        
-                        if u_target:
-                            sucesso = enviar_email_recuperacao_admin(usr_target, u_target)
-                            if sucesso:
-                                st.success("📩 Solicitação enviada! A senha foi encaminhada ao e-mail do Administrador.")
+            # ÁREA DE RECUPERAÇÃO DE SENHA EXPANSÍVEL
+            st.markdown("<br>", unsafe_allow_html=True)
+            with st.expander("🔑 Esqueceu sua senha?"):
+                with st.form("form_esqueci_senha_exp"):
+                    usr_recup = st.text_input("Insira seu usuário cadastrado", placeholder="ex: nome.sobrenome")
+                    btn_recuperar = st.form_submit_button("SOLICITAR SENHA AO ADMIN", use_container_width=True)
+                    
+                    if btn_recuperar:
+                        usr_target = usr_recup.strip().lower()
+                        if not usr_target:
+                            st.warning("⚠️ Digite o usuário.")
                         else:
-                            st.error("❌ Usuário não localizado na base do sistema.")
+                            usuarios = buscar_usuarios_sem_cache()
+                            u_target = next((u for u in usuarios if u.get("login_identificador") == usr_target), None)
+                            
+                            if u_target:
+                                se_env = enviar_email_recuperacao_admin(usr_target, u_target)
+                                if se_env:
+                                    st.success("📩 Solicitação enviada ao Administrador por e-mail!")
+                            else:
+                                st.error("❌ Usuário não localizado.")
+
     else:
+        # TELA QUANDO O USUÁRIO JÁ ESTÁ LOGADO
         st.markdown("<div class='section-header'>🏠 PAINEL INICIAL</div>", unsafe_allow_html=True)
         st.subheader(f"Olá, {st.session_state['usuario_logado']}! 👋")
         st.info(f"Perfil de Acesso: **{st.session_state.get('nome_perfil_logado', 'Usuário')}**")
