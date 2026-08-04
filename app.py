@@ -44,10 +44,17 @@ aba = st.session_state["aba_ativa"]
 # =========================================================
 st.markdown("""
     <style>
-    /* MODO ESCURO FORÇADO EM TUDO */
-    html, body, [data-testid="stApp"], .stApp {
+    /* FORÇAR MODO ESCURO NA ESTRUTURA GLOBAL E REMOVER PADDINGS DO EMBED */
+    html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"], [data-testid="stMain"], .stApp {
         background-color: #121212 !important;
         color: #F8F9FA !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    /* REMOVE MARGENS E SPACING INTERNO DAS PÁGINAS EM EMBED */
+    div[data-testid="stAppViewContainer"] > section {
+        padding: 0 !important;
     }
 
     /* OCULTAR FOTO DO GITHUB, BADGES DO STREAMLIT E RODAPÉS NATIVOS */

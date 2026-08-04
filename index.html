@@ -17,21 +17,27 @@
     <link rel="manifest" href="manifest.json">
 
     <style>
-        /* ZERA TOTALMENTE AS MARGENS E PREENCHE COM MODO ESCURO */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
         html, body {
-            width: 100% !important;
-            height: 100% !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            height: 100dvh !important;
             margin: 0 !important;
             padding: 0 !important;
-            border: 0 !important;
-            outline: 0 !important;
+            border: none !important;
+            outline: none !important;
             overflow: hidden !important;
             background-color: #121212 !important;
             -webkit-user-select: none;
             user-select: none;
         }
 
-        /* CONTAINER FIXO DE COBERTURA TOTAL */
         .app-wrapper {
             position: fixed !important;
             top: 0 !important;
@@ -43,20 +49,18 @@
             height: 100dvh !important;
             margin: 0 !important;
             padding: 0 !important;
-            border: 0 !important;
             overflow: hidden !important;
             background-color: #121212 !important;
         }
 
-        /* IFRAME SEM BORDAS E LIGEIRAMENTE ESTICADO PARA CORTAR RESÍDUOS */
+        /* O IFRAME É APLIQUADO COM MARGEM NEGATIVA PARA CORTAR AS BORDAS DO EMBED DO STREAMLIT */
         iframe {
             position: absolute !important;
-            top: 0 !important;
-            left: -1px !important; /* Ajuste milimétrico para cortar linhas laterais */
-            width: calc(100% + 2px) !important; /* Compensa o ajuste lateral */
-            height: calc(100% + 55px) !important;
+            top: -4px !important;              /* Corta a borda branca do topo */
+            left: -4px !important;             /* Corta a borda branca da esquerda */
+            width: calc(100% + 8px) !important;/* Compensa a largura extra das laterais */
+            height: calc(100% + 60px) !important; /* Compensa o topo + esconde a barra inferior */
             border: none !important;
-            border: 0 !important;
             outline: none !important;
             margin: 0 !important;
             padding: 0 !important;
