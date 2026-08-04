@@ -452,6 +452,9 @@ def render():
     if dados:
         df = pd.DataFrame(dados)
         
+        # Cria ID sequencial de controle baseado na posição da planilha (Linha)
+        df['ID'] = range(1, len(df) + 1)
+
         if 'Data' in df.columns:
             df['Data_DT'] = pd.to_datetime(df['Data'], format='%d/%m/%Y', errors='coerce').dt.date
         else:
@@ -575,13 +578,18 @@ def render():
         st.markdown("<br>", unsafe_allow_html=True)
 
         # =========================================================
-        # 1. BALANÇO DA COZINHA
+        # 1. BALANÇO DA COZINHA (FORMATADO CORRETAMENTE EM KG DECIMAL)
         # =========================================================
         st.markdown("##### Balanço da Cozinha (Kg)")
         
         df_balanco = pd.DataFrame({
             'Categoria': ['Prod. Inicial', 'Reposição', 'Sobra Buffet', 'Descarte'],
-            'Peso (kg)': [tot_prod_ini, tot_reposicao, tot_sobra_buffet, tot_descarte]
+            'Peso (kg)': [
+                round(tot_prod_ini, 3), 
+                round(tot_reposicao, 3), 
+                round(tot_sobra_buffet, 3), 
+                round(tot_descarte, 3)
+            ]
         })
 
         fig_balanco = px.bar(
@@ -589,7 +597,7 @@ def render():
             x='Peso (kg)',
             y='Categoria',
             orientation='h',
-            text_auto='.3f',
+            text_auto='.1f', # Formata com 1 casa decimal limpa (ex: 10.3 kg)
             color='Categoria',
             color_discrete_map={
                 'Prod. Inicial': '#1E88E5',
@@ -606,7 +614,7 @@ def render():
             font=dict(color="#E0E0E0"),
             height=220,
             margin=dict(l=10, r=10, t=10, b=10),
-            xaxis=dict(showgrid=True, gridcolor='#2D2D2D', fixedrange=True),
+            xaxis=dict(showgrid=True, gridcolor='#2D2D2D', fixedrange=True, tickformat='.1f'),
             yaxis=dict(showgrid=False, fixedrange=True, title="", categoryorder='total ascending')
         )
 
@@ -738,7 +746,7 @@ def render():
         st.markdown("##### 📊 Lançamentos Registrados")
         
         # =========================================================
-        # TABELA DE LANÇAMENTOS LIMPA E COMPACTA
+        # TABELA DE LANÇAMENTOS COM COLUNA ID VISÍVEL
         # =========================================================
         df_exibicao = df.copy()
         
@@ -752,33 +760,36 @@ def render():
             if c in df_exibicao.columns:
                 df_exibicao[c] = converter_para_numero(df_exibicao[c]).apply(lambda x: f"{x:.3f} kg")
 
-        # Exibe a tabela original invertida (mais recentes no topo)
+        # Garante que 'ID' seja a primeira coluna visível na tabela
+        colunas_ordem = ['ID'] + [c for c in df_exibicao.columns if c != 'ID']
+        df_exibicao = df_exibicao[colunas_ordem]
+
         st.dataframe(df_exibicao.tail(10).iloc[::-1], use_container_width=True, hide_index=True)
 
         # =========================================================
-        # GERENCIADOR / GERENCIAMENTO DE LANÇAMENTOS (ADMIN E MASTER)
+        # SELEÇÃO DIRETA PELO ID (ADMIN E MASTER)
         # =========================================================
         perfil_atual = st.session_state.get("perfil_logado", "").lower()
         pode_editar_lancamento = perfil_atual in ["master", "admin"] or tem_permissao("lancamentos:editar")
 
         if pode_editar_lancamento:
             with st.expander("🛠️ **Gerenciar Lançamentos (Editar / Excluir)**"):
-                st.caption("Selecione um lançamento cadastrado abaixo para editar os valores ou remover o registro do banco de dados:")
+                st.caption("Selecione abaixo o **ID** do lançamento que você deseja alterar ou remover:")
                 
                 sheet_lancamentos = conectar_gsheets().worksheet("Lancamentos_Diarios")
                 
-                # Monta opções amigáveis para o Selectbox
-                opcoes_lancamentos = {}
-                for idx, r in df.iterrows():
-                    linha_planilha = idx + 2
-                    dt = str(r.get('Data', ''))
-                    prato = str(r.get('ID_Prato', '-'))
-                    resp = str(r.get('Responsavel', ''))
-                    opcoes_lancamentos[f"Linha {linha_planilha} | {dt} - {prato} ({resp})"] = (linha_planilha, r)
+                # Mapeia ID -> Registro para busca ultra rápida
+                mapa_ids = {}
+                for _, r in df.iterrows():
+                    id_visivel = int(r['ID'])
+                    linha_planilha = id_visivel + 1 # Linha 1 é o cabeçalho
+                    mapa_ids[id_visivel] = (linha_planilha, r)
 
-                if opcoes_lancamentos:
-                    sel_label = st.selectbox("Selecione o Lançamento:", options=list(opcoes_lancamentos.keys()))
-                    linha_sel, reg_sel = opcoes_lancamentos[sel_label]
+                ids_disponiveis = sorted(list(mapa_ids.keys()), reverse=True)
+
+                if ids_disponiveis:
+                    id_selecionado = st.selectbox("Selecione o ID do Lançamento:", options=ids_disponiveis, format_func=lambda x: f"ID #{x}")
+                    linha_sel, reg_sel = mapa_ids[id_selecionado]
 
                     dt_lan = str(reg_sel.get('Data', ''))
                     prato_lan = str(reg_sel.get('ID_Prato', '-'))
@@ -790,7 +801,9 @@ def render():
                     cli_num = int(converter_para_numero(pd.Series([reg_sel.get('Clientes_Atendidos', 0)]))[0])
                     obs_lan = str(reg_sel.get('Observacoes', ''))
 
-                    with st.form(key=f"form_editar_selecionado_{linha_sel}"):
+                    st.info(f"📍 **Lançamento ID #{id_selecionado}:** {dt_lan} — {prato_lan} ({resp_lan})")
+
+                    with st.form(key=f"form_editar_id_{id_selecionado}"):
                         c_ed1, c_ed2 = st.columns(2)
                         with c_ed1:
                             e_dt = st.text_input("Data (DD/MM/AAAA)", value=dt_lan)
@@ -823,7 +836,7 @@ def render():
                                 sheet_lancamentos.update_cell(linha_sel, 9, e_obs.strip())
 
                                 st.cache_data.clear()
-                                st.success("🟢 Lançamento atualizado com sucesso!")
+                                st.success(f"🟢 Lançamento ID #{id_selecionado} atualizado com sucesso!")
                                 st.rerun()
                             except Exception as e:
                                 st.error(f"❌ Erro ao atualizar lançamento: {e}")
@@ -832,7 +845,7 @@ def render():
                             try:
                                 sheet_lancamentos.delete_rows(linha_sel)
                                 st.cache_data.clear()
-                                st.success("🗑️ Lançamento excluído com sucesso!")
+                                st.success(f"🗑️ Lançamento ID #{id_selecionado} excluído com sucesso!")
                                 st.rerun()
                             except Exception as e:
                                 st.error(f"❌ Erro ao excluir lançamento: {e}")
