@@ -17,7 +17,19 @@ def carregar_usuarios_planilha():
 def carregar_pratos_planilha():
     try:
         sheet = conectar_gsheets().worksheet("Pratos")
-        return sheet.get_all_records()
+        registros = sheet.get_all_records()
+        
+        # Se get_all_records falhar por falta de cabeçalho padrão, faz leitura bruta
+        if not registros:
+            valores = sheet.get_all_values()
+            if len(valores) > 1:
+                cabecalho = [str(c).strip() for c in valores[0]]
+                linhas = valores[1:]
+                registros = [dict(zip(cabecalho, linha)) for linha in linhas]
+        else:
+            registros = [{str(k).strip(): v for k, v in r.items()} for r in registros]
+            
+        return registros
     except Exception as e:
         st.error(f"Erro ao carregar lista de pratos: {e}")
         return []
@@ -28,7 +40,6 @@ def carregar_pratos_planilha():
 def render():
     st.markdown("<div class='section-header'>⚙️ PAINEL DE CONFIGURAÇÕES</div>", unsafe_allow_html=True)
 
-    # Verifica permissões básicas
     pode_gerenciar_usr = tem_permissao("usuarios:gerenciar")
     pode_gerenciar_pratos = tem_permissao("pratos:gerenciar")
 
@@ -36,7 +47,6 @@ def render():
         st.error("⛔ Você não tem permissão para acessar o menu de Configurações.")
         return
 
-    # Tabs principais da tela de configurações
     aba_usr, aba_pratos = st.tabs(["👥 Gerenciar Usuários", "🍲 Gerenciar Produtos / Pratos"])
 
     # =========================================================
@@ -52,7 +62,6 @@ def render():
 
             tab_listar_usr, tab_criar_usr = st.tabs(["📋 Usuários Cadastrados", "➕ Novo Usuário"])
 
-            # TAB: LISTAR / EDITAR USUÁRIOS
             with tab_listar_usr:
                 registros_usr = carregar_usuarios_planilha()
                 if not registros_usr:
@@ -128,7 +137,6 @@ def render():
                                             except Exception as e:
                                                 st.error(f"❌ Erro ao excluir: {e}")
 
-            # TAB: CRIAR USUÁRIO
             with tab_criar_usr:
                 with st.form("form_novo_usuario_config"):
                     col1, col2 = st.columns(2)
@@ -177,7 +185,7 @@ def render():
                                 st.error(f"❌ Erro ao cadastrar usuário: {e}")
 
     # =========================================================
-    # SEÇÃO 2: GESTÃO DE PRATOS / PRODUTOS
+    # SEÇÃO 2: GESTÃO DE PRATOS / PRODUTOS (LEITURA FLEXÍVEL DE COLUNAS)
     # =========================================================
     with aba_pratos:
         if not pode_gerenciar_pratos:
@@ -185,20 +193,33 @@ def render():
         else:
             tab_listar_pratos, tab_criar_prato = st.tabs(["📋 Pratos Cadastrados", "➕ Novo Prato"])
 
-            # TAB: LISTAR / EDITAR PRATOS
             with tab_listar_pratos:
                 registros_pratos = carregar_pratos_planilha()
                 if not registros_pratos:
-                    st.info("Nenhum prato cadastrado até o momento.")
+                    st.info("Nenhum prato cadastrado na aba 'Pratos' da planilha.")
                 else:
                     sheet_pratos = conectar_gsheets().worksheet("Pratos")
 
                     for index, reg in enumerate(registros_pratos):
                         linha_planilha = index + 2
 
-                        nome_prato = str(reg.get("Prato", reg.get("prato", reg.get("ID_Prato", "")))).strip()
-                        categoria_prato = str(reg.get("Categoria", reg.get("categoria", "Geral"))).strip()
-                        ativo_prato = str(reg.get("Ativo", reg.get("ativo", "TRUE"))).strip().upper() == "TRUE"
+                        # Busca flexível pelos nomes de coluna mais comuns
+                        nome_prato = str(
+                            reg.get("ID_Prato", reg.get("Prato", reg.get("prato", reg.get("Nome", ""))))
+                        ).strip()
+
+                        categoria_prato = str(
+                            reg.get("Categoria", reg.get("categoria", reg.get("Grupo", "Geral")))
+                        ).strip()
+
+                        ativo_val = str(
+                            reg.get("Ativo", reg.get("ativo", reg.get("Status", "TRUE")))
+                        ).strip().upper()
+
+                        ativo_prato = ativo_val in ["TRUE", "VERDADEIRO", "1", "SIM", "S"]
+
+                        if not nome_prato:
+                            continue
 
                         status_emoji = "🟢 Ativo" if ativo_prato else "🔴 Inativo"
 
@@ -239,7 +260,6 @@ def render():
                                     except Exception as e:
                                         st.error(f"❌ Erro ao excluir prato: {e}")
 
-            # TAB: CRIAR PRATO
             with tab_criar_prato:
                 with st.form("form_novo_prato"):
                     col_np1, col_np2 = st.columns(2)
@@ -260,7 +280,9 @@ def render():
                             try:
                                 registros_pratos_atuais = carregar_pratos_planilha()
                                 ja_existe = any(
-                                    str(r.get("Prato", r.get("prato", r.get("ID_Prato", "")))).strip().lower() == nome_limpo_prato.lower()
+                                    str(
+                                        r.get("ID_Prato", r.get("Prato", r.get("prato", r.get("Nome", ""))))
+                                    ).strip().lower() == nome_limpo_prato.lower()
                                     for r in registros_pratos_atuais
                                 )
 
