@@ -5,18 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Don Max - Buffet</title>
 
+    <!-- Metadados PWA -->
     <link rel="icon" type="image/png" href="logo.png">
     <link rel="apple-touch-icon" href="logo.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Don Max">
+    <meta name="application-name" content="Don Max">
     <meta name="theme-color" content="#121212">
+
+    <link rel="manifest" href="manifest.json">
 
     <style>
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
+            -webkit-tap-highlight-color: transparent;
         }
+
         html, body {
             width: 100vw !important;
             height: 100vh !important;
@@ -27,21 +34,25 @@
             background-color: #121212 !important;
         }
 
+        /* O WAPPER É FIXADO NA TELA EXACTA DO DISPOSITIVO */
         .app-wrapper {
             position: fixed !important;
             top: 0 !important;
             left: 0 !important;
             width: 100vw !important;
-            /* Aumenta a altura para forçar a barra do Streamlit para fora do limite visível */
-            height: calc(100vh + 50px) !important;
-            height: calc(100dvh + 50px) !important;
+            height: 100vh !important;
+            height: 100dvh !important;
             overflow: hidden !important;
             background-color: #121212 !important;
         }
 
+        /* O IFRAME É ESTICADO PARA EMPURRAR A BARRA FLUTUANTE PARA FORA DA TELA */
         iframe {
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
             width: 100% !important;
-            height: 100% !important;
+            height: calc(100% + 55px) !important; /* Empurra a barra inferior para baixo do limite visível */
             border: none !important;
             outline: none !important;
             display: block !important;
