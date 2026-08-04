@@ -462,12 +462,10 @@ def render():
 
         data_min = df['Data_DT'].min() if not df['Data_DT'].dropna().empty else date.today()
         data_max = df['Data_DT'].max() if not df['Data_DT'].dropna().empty else date.today()
-
-        st.markdown("##### Filtrar por Período")
         
         if tem_permissao("dashboard:filtrar"):
             filtro_datas = st.date_input(
-                "",
+                "Selecione o intervalo no calendário:",
                 value=(data_min, data_max),
                 min_value=data_min,
                 max_value=data_max,
