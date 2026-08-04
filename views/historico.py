@@ -734,14 +734,33 @@ def render():
                     filtro_datas[1] if isinstance(filtro_datas, tuple) else data_max,
                     prod_ini, reposicao, df_data, df_matriz
                 )
-                st.download_button(
-                    label="📄 Baixar PDF",
-                    data=pdf_bytes,
-                    file_name=f"Relatorio_DonMax_{datetime.now(ZoneInfo('America/Sao_Paulo')).strftime('%d%m%Y')}.pdf",
-                    mime="application/pdf",
-                    use_container_width=True
-                )
+                import base64
 
+                # Converte os bytes do PDF em base64 para o navegador conseguir ler na nova aba
+                pdf_base64 = base64.b64encode(pdf_bytes.getvalue()).decode('utf-8')
+                pdf_display = f'data:application/pdf;base64,{pdf_base64}'
+
+                # Cria um botão estilizado que abre o PDF diretamente no leitor do navegador em nova aba
+                st.markdown(
+                    f'''
+                    <a href="{pdf_display}" target="_blank" style="text-decoration: none;">
+                        <button style="
+                            width: 100%;
+                            background-color: #B71C1C;
+                            color: white;
+                            padding: 8px 16px;
+                            border: none;
+                            border-radius: 8px;
+                            font-weight: bold;
+                            font-size: 0.9rem;
+                            cursor: pointer;
+                            text-align: center;">
+                            📄 Abrir PDF em Nova Aba
+                        </button>
+                    </a>
+                    ''',
+                    unsafe_allow_html=True
+                )
         st.markdown("---")
         st.markdown("##### 📊 Lançamentos Registrados")
         
