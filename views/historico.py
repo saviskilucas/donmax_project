@@ -8,7 +8,7 @@ from datetime import datetime, date
 from zoneinfo import ZoneInfo
 import io
 
-# Visualização nativa para PDF (sem necessidade do Chrome)
+# Visualização para PDF em Modo Claro (Impresso)
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -17,7 +17,7 @@ import numpy as np
 # ReportLab para geração do PDF
 from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable, Image
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 
 @st.cache_resource
@@ -61,7 +61,7 @@ def converter_para_numero(serie):
     ).fillna(0.0)
 
 # =========================================================
-# GERADOR DE GRÁFICOS PARA PDF (MATPLOTLIB)
+# GERADOR DE GRÁFICOS PARA PDF (MODO CLARO / CLEAN)
 # =========================================================
 def gerar_img_heatmap(df_matriz):
     if df_matriz.empty:
@@ -70,7 +70,6 @@ def gerar_img_heatmap(df_matriz):
     pratos = df_matriz['ID_Prato'].tolist()
     colunas = ['Produção Total', 'Sobra Buffet', 'Descarte Total', '% Perda/Prod.']
     
-    # Matriz numerica para renderização
     z_values = []
     text_values = []
 
@@ -89,112 +88,117 @@ def gerar_img_heatmap(df_matriz):
         ])
 
     z_array = np.array(z_values)
-    altura = max(2.5, len(pratos) * 0.45)
+    altura = max(2.2, len(pratos) * 0.42)
 
-    fig, ax = plt.subplots(figsize=(6.5, altura), facecolor='#1E1E1E')
-    ax.set_facecolor('#1E1E1E')
+    fig, ax = plt.subplots(figsize=(6.5, altura), facecolor='#FFFFFF')
+    ax.set_facecolor('#FFFFFF')
 
-    # Deseha o heatmap com colormap avermelhado
-    im = ax.imshow(z_array, cmap='YlOrRd', aspect='auto')
+    # Paleta de cores clara para impressão
+    im = ax.imshow(z_array, cmap='Reds', aspect='auto', alpha=0.85)
 
     ax.set_xticks(np.arange(len(colunas)))
     ax.set_yticks(np.arange(len(pratos)))
-    ax.set_xticklabels(colunas, color='#FFFFFF', fontsize=8, fontweight='bold')
-    ax.set_yticklabels(pratos, color='#FFFFFF', fontsize=8)
+    ax.set_xticklabels(colunas, color='#111111', fontsize=8.5, fontweight='bold')
+    ax.set_yticklabels(pratos, color='#222222', fontsize=8.5)
 
-    # Escreve o texto formatado dentro de cada célula
+    # Texto escuro para contraste dinâmico nas células
+    max_val = z_array.max() if z_array.max() > 0 else 1
     for i in range(len(pratos)):
         for j in range(len(colunas)):
-            ax.text(j, i, text_values[i][j], ha="center", va="center", color="#FFFFFF", fontsize=7.5, fontweight='bold')
+            val_norm = z_array[i, j] / max_val
+            color_text = "#FFFFFF" if val_norm > 0.65 else "#111111"
+            ax.text(j, i, text_values[i][j], ha="center", va="center", color=color_text, fontsize=8, fontweight='bold')
 
     ax.spines[:].set_visible(False)
     ax.tick_params(top=True, bottom=False, labeltop=True, labelbottom=False)
 
     buf = io.BytesIO()
     plt.tight_layout()
-    plt.savefig(buf, format='png', dpi=200, facecolor=fig.get_facecolor())
+    plt.savefig(buf, format='png', dpi=220, facecolor=fig.get_facecolor())
     plt.close(fig)
     buf.seek(0)
     return buf
 
 def gerar_img_balanco(prod_ini, reposicao, tot_sobra, tot_descarte):
-    fig, ax = plt.subplots(figsize=(6, 2.8), facecolor='#1E1E1E')
-    ax.set_facecolor('#1E1E1E')
+    fig, ax = plt.subplots(figsize=(6, 2.5), facecolor='#FFFFFF')
+    ax.set_facecolor('#FFFFFF')
     
     categorias = ['Prod. Inicial', 'Reposição', 'Sobra Buffet', 'Descarte']
     valores = [float(prod_ini.sum()), float(reposicao.sum()), tot_sobra, tot_descarte]
-    cores = ['#1E88E5', '#00ACC1', '#FB8C00', '#E53935']
+    cores = ['#1565C0', '#00838F', '#EF6C00', '#C62828']
     
-    bars = ax.bar(categorias, valores, color=cores, width=0.55)
+    bars = ax.bar(categorias, valores, color=cores, width=0.5)
     
     for bar in bars:
         yval = bar.get_height()
-        ax.text(bar.get_x() + bar.get_width()/2.0, yval + (max(valores)*0.02 if max(valores)>0 else 0.1), 
-                f'{yval:.3f} kg', ha='center', va='bottom', color='#FFFFFF', fontsize=8, fontweight='bold')
+        ax.text(bar.get_x() + bar.get_width()/2.0, yval + (max(valores)*0.02 if max(valores)>0 else 0.05), 
+                f'{yval:.3f} kg', ha='center', va='bottom', color='#111111', fontsize=8, fontweight='bold')
         
-    ax.tick_params(colors='#CCCCCC', labelsize=8)
+    ax.tick_params(colors='#333333', labelsize=8.5)
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
-    ax.spines['left'].set_color('#444444')
-    ax.spines['bottom'].set_color('#444444')
-    ax.grid(axis='y', color='#333333', linestyle='--', alpha=0.7)
+    ax.spines['left'].set_color('#CCCCCC')
+    ax.spines['bottom'].set_color('#CCCCCC')
+    ax.grid(axis='y', color='#E0E0E0', linestyle='--', alpha=0.7)
     
     buf = io.BytesIO()
     plt.tight_layout()
-    plt.savefig(buf, format='png', dpi=200, facecolor=fig.get_facecolor())
+    plt.savefig(buf, format='png', dpi=220, facecolor=fig.get_facecolor())
     plt.close(fig)
     buf.seek(0)
     return buf
 
 def gerar_img_rosca(tot_descarte, tot_sobra):
-    fig, ax = plt.subplots(figsize=(6, 2.6), facecolor='#1E1E1E')
-    ax.set_facecolor('#1E1E1E')
+    fig, ax = plt.subplots(figsize=(6, 2.4), facecolor='#FFFFFF')
+    ax.set_facecolor('#FFFFFF')
     
     labels = ['Descarte Total', 'Sobra Buffet']
     valores = [tot_descarte, tot_sobra]
-    cores = ['#E53935', '#FB8C00']
+    cores = ['#C62828', '#EF6C00']
     
     if sum(valores) > 0:
         wedges, texts, autotexts = ax.pie(
             valores, labels=labels, colors=cores, autopct='%1.1f%%',
             startangle=90, pctdistance=0.75,
-            textprops=dict(color="#FFFFFF", fontsize=8, weight="bold")
+            textprops=dict(color="#222222", fontsize=8.5, weight="bold")
         )
-        centre_circle = plt.Circle((0,0), 0.50, fc='#1E1E1E')
+        for autotext in autotexts:
+            autotext.set_color('#FFFFFF')
+        centre_circle = plt.Circle((0,0), 0.50, fc='#FFFFFF')
         fig.gca().add_artist(centre_circle)
     else:
-        ax.text(0, 0, 'Sem dados para o período', color='#888888', ha='center', va='center')
+        ax.text(0, 0, 'Sem dados no período', color='#888888', ha='center', va='center')
         
     buf = io.BytesIO()
     plt.tight_layout()
-    plt.savefig(buf, format='png', dpi=200, facecolor=fig.get_facecolor())
+    plt.savefig(buf, format='png', dpi=220, facecolor=fig.get_facecolor())
     plt.close(fig)
     buf.seek(0)
     return buf
 
 def gerar_img_linha(df_data):
-    fig, ax = plt.subplots(figsize=(6, 2.6), facecolor='#1E1E1E')
-    ax.set_facecolor('#1E1E1E')
+    fig, ax = plt.subplots(figsize=(6, 2.4), facecolor='#FFFFFF')
+    ax.set_facecolor('#FFFFFF')
     
-    ax.plot(df_data['Data'], df_data['Descarte'], color='#FF5252', marker='o', linewidth=2, markersize=5)
+    ax.plot(df_data['Data'], df_data['Descarte'], color='#C62828', marker='o', linewidth=2, markersize=5)
     
-    ax.tick_params(colors='#CCCCCC', labelsize=8)
-    plt.xticks(rotation=45)
+    ax.tick_params(colors='#333333', labelsize=8)
+    plt.xticks(rotation=35)
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
-    ax.spines['left'].set_color('#444444')
-    ax.spines['bottom'].set_color('#444444')
-    ax.grid(axis='y', color='#333333', linestyle='--', alpha=0.7)
+    ax.spines['left'].set_color('#CCCCCC')
+    ax.spines['bottom'].set_color('#CCCCCC')
+    ax.grid(axis='y', color='#E0E0E0', linestyle='--', alpha=0.7)
     
     buf = io.BytesIO()
     plt.tight_layout()
-    plt.savefig(buf, format='png', dpi=200, facecolor=fig.get_facecolor())
+    plt.savefig(buf, format='png', dpi=220, facecolor=fig.get_facecolor())
     plt.close(fig)
     buf.seek(0)
     return buf
 
 # =========================================================
-# GERADOR DE PDF COMPLETO COM ESTILO E FUSO DE BRASÍLIA
+# GERADOR DE PDF EXECUTIVO (CLEAN / IMPRESSÃO)
 # =========================================================
 def gerar_pdf_relatorio(df, tot_prod, tot_descarte, tot_sobra, tot_clientes, dt_inicio, dt_fim, prod_ini, reposicao, df_data, df_matriz):
     buffer = io.BytesIO()
@@ -210,52 +214,67 @@ def gerar_pdf_relatorio(df, tot_prod, tot_descarte, tot_sobra, tot_clientes, dt_
     elements = []
     styles = getSampleStyleSheet()
 
-    style_title = ParagraphStyle(
-        'DocTitle',
-        parent=styles['Normal'],
+    # Estilos com espaçamentos corrigidos
+    style_header_app = ParagraphStyle(
+        'HeaderAppTitle',
         fontName='Helvetica-Bold',
-        fontSize=18,
-        textColor=colors.HexColor('#B71C1C'),
-        spaceAfter=4
+        fontSize=14,
+        textColor=colors.white,
+        alignment=0
     )
-    
+
     style_sub = ParagraphStyle(
         'DocSub',
-        parent=styles['Normal'],
         fontName='Helvetica',
-        fontSize=9,
-        textColor=colors.HexColor('#666666'),
-        spaceAfter=12
+        fontSize=8.5,
+        textColor=colors.HexColor('#555555'),
+        spaceAfter=10,
+        spaceBefore=8
     )
 
     style_sec_title = ParagraphStyle(
         'SecTitle',
         fontName='Helvetica-Bold',
-        fontSize=11,
+        fontSize=10.5,
         textColor=colors.HexColor('#B71C1C'),
-        spaceAfter=6,
+        spaceAfter=4,
         spaceBefore=10
     )
 
     style_card_title = ParagraphStyle(
-        'CardTitle', fontName='Helvetica-Bold', fontSize=8, textColor=colors.HexColor('#888888'), alignment=1
+        'CardTitle', fontName='Helvetica-Bold', fontSize=7.5, textColor=colors.HexColor('#666666'), alignment=1
     )
 
     style_card_val = ParagraphStyle(
-        'CardVal', fontName='Helvetica-Bold', fontSize=11, textColor=colors.HexColor('#111111'), alignment=1
+        'CardVal', fontName='Helvetica-Bold', fontSize=10.5, textColor=colors.HexColor('#111111'), alignment=1
     )
 
     # DATA E HORA DE BRASÍLIA
     agora_brasilia = datetime.now(ZoneInfo("America/Sao_Paulo"))
     dt_emissao_str = agora_brasilia.strftime('%d/%m/%Y às %H:%M:%S')
 
-    # CABEÇALHO DO RELATÓRIO
-    elements.append(Paragraph("DON MAX BUFFET - RELATÓRIO EXECUTIVO", style_title))
-    dt_str = f"Período: {dt_inicio.strftime('%d/%m/%Y')} até {dt_fim.strftime('%d/%m/%Y')} | Gerado em: {dt_emissao_str} (Fuso de Brasília)"
-    elements.append(Paragraph(dt_str, style_sub))
-    elements.append(HRFlowable(width="100%", thickness=1.5, color=colors.HexColor('#B71C1C'), spaceAfter=12))
+    # 1. BARRA SUPERIOR VERMELHA (IGUAL AO APP)
+    header_table_data = [[
+        Paragraph("<b>DON MAX BUFFET</b>", style_header_app),
+        Paragraph("<font color='#FFFFFF'><b>RELATÓRIO EXECUTIVO</b></font>", ParagraphStyle('HRight', fontName='Helvetica-Bold', fontSize=9, textColor=colors.white, alignment=2))
+    ]]
+    
+    t_header = Table(header_table_data, colWidths=[270, 270])
+    t_header.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#B71C1C')),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('TOPPADDING', (0,0), (-1,-1), 10),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 10),
+        ('LEFTPADDING', (0,0), (-1,-1), 12),
+        ('RIGHTPADDING', (0,0), (-1,-1), 12),
+    ]))
+    elements.append(t_header)
 
-    # CARDS DE INDICADORES
+    # SUBTÍTULO COM DATAS
+    dt_str = f"Período Analisado: <b>{dt_inicio.strftime('%d/%m/%Y')}</b> até <b>{dt_fim.strftime('%d/%m/%Y')}</b> &nbsp;|&nbsp; Emitido em: {dt_emissao_str} (Horário de Brasília)"
+    elements.append(Paragraph(dt_str, style_sub))
+
+    # 2. CARDS DE INDICADORES (CLEAN)
     cards_data = [
         [
             Paragraph("PRODUÇÃO TOTAL", style_card_title),
@@ -271,43 +290,43 @@ def gerar_pdf_relatorio(df, tot_prod, tot_descarte, tot_sobra, tot_clientes, dt_
         ]
     ]
 
-    t_cards = Table(cards_data, colWidths=[130, 130, 130, 130])
+    t_cards = Table(cards_data, colWidths=[135, 135, 135, 135])
     t_cards.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#F8F9FA')),
-        ('BORDER', (0,0), (-1,-1), 1, colors.HexColor('#E0E0E0')),
+        ('BORDER', (0,0), (-1,-1), 0.8, colors.HexColor('#E0E0E0')),
         ('ALIGN', (0,0), (-1,-1), 'CENTER'),
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
         ('TOPPADDING', (0,0), (-1,-1), 6),
         ('BOTTOMPADDING', (0,0), (-1,-1), 6),
     ]))
     elements.append(t_cards)
-    elements.append(Spacer(1, 10))
+    elements.append(Spacer(1, 8))
 
-    # 1. MATRIZ DE DESEMPENHO NO PDF
+    # 3. MATRIZ DE DESEMPENHO NO PDF
     if not df_matriz.empty:
         elements.append(Paragraph("<b>Matriz de Desempenho por Produto</b>", style_sec_title))
         img_h = gerar_img_heatmap(df_matriz)
         if img_h:
-            altura_h = max(180, len(df_matriz) * 30)
-            elements.append(Image(img_h, width=480, height=altura_h))
+            altura_h = max(160, len(df_matriz) * 28)
+            elements.append(Image(img_h, width=500, height=altura_h))
 
-    # 2. BALANÇO DA COZINHA
+    # 4. BALANÇO DA COZINHA
     elements.append(Paragraph("<b>Balanço da Cozinha</b>", style_sec_title))
     img_b = gerar_img_balanco(prod_ini, reposicao, tot_sobra, tot_descarte)
-    elements.append(Image(img_b, width=480, height=210))
+    elements.append(Image(img_b, width=500, height=200))
 
-    # 3. PROPORÇÃO SOBRA BUFFET VS DESCARTE
+    # 5. PROPORÇÃO SOBRA BUFFET VS DESCARTE
     elements.append(Paragraph("<b>Proporção Sobra Buffet vs Descarte</b>", style_sec_title))
     img_r = gerar_img_rosca(tot_descarte, tot_sobra)
-    elements.append(Image(img_r, width=480, height=200))
+    elements.append(Image(img_r, width=500, height=190))
 
-    # 4. LINHA DO TEMPO
+    # 6. LINHA DO TEMPO DE DESCARTE
     if not df_data.empty:
         elements.append(Paragraph("<b>Linha do Tempo de Descarte</b>", style_sec_title))
         img_l = gerar_img_linha(df_data)
-        elements.append(Image(img_l, width=480, height=200))
+        elements.append(Image(img_l, width=500, height=190))
 
-    # TABELA DE LANÇAMENTOS
+    # 7. TABELA DE DETALHAMENTO
     elements.append(Paragraph("<b>Detalhamento de Lançamentos</b>", style_sec_title))
 
     col_names_pdf = ['Data', 'Prato / Item', 'Prod. Ini', 'Reposição', 'Sobra Buf.', 'Descarte']
@@ -329,7 +348,7 @@ def gerar_pdf_relatorio(df, tot_prod, tot_descarte, tot_sobra, tot_clientes, dt_
         ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#B71C1C')),
         ('TEXTCOLOR', (0,0), (-1,0), colors.white),
         ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0,0), (-1,0), 9),
+        ('FONTSIZE', (0,0), (-1,0), 8.5),
         ('BOTTOMPADDING', (0,0), (-1,0), 5),
         ('TOPPADDING', (0,0), (-1,0), 5),
         ('ALIGN', (0,0), (-1,-1), 'CENTER'),
@@ -337,7 +356,7 @@ def gerar_pdf_relatorio(df, tot_prod, tot_descarte, tot_sobra, tot_clientes, dt_
         ('FONTNAME', (0,1), (-1,-1), 'Helvetica'),
         ('FONTSIZE', (0,1), (-1,-1), 8),
         ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#E0E0E0')),
-        ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, colors.HexColor('#F9F9F9')]),
+        ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, colors.HexColor('#F8F9FA')]),
         ('TOPPADDING', (0,1), (-1,-1), 4),
         ('BOTTOMPADDING', (0,1), (-1,-1), 4),
     ]))
