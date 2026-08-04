@@ -70,20 +70,22 @@ def gerar_img_heatmap(df_matriz):
         return None
 
     pratos = df_matriz['ID_Prato'].tolist()
-    colunas = ['Produção Total', 'Sobra Buffet', 'Descarte Total', '% Perda/Prod.']
+    colunas = ['Produção Ini.', 'Reposição', 'Sobra Buffet', 'Descarte Total', '% Perda']
     
     z_values = []
     text_values = []
 
     for _, row in df_matriz.iterrows():
-        p_tot = row['Prod_Total_Calc']
+        p_ini = row['Prod_Ini_Calc']
+        repo = row['Reposicao_Calc']
         s_buf = row['Sobra_Buffet_Calc']
         desc = row['Descarte_Calc']
         pct = row['Perda_%']
 
-        z_values.append([p_tot, s_buf, desc, pct])
+        z_values.append([p_ini, repo, s_buf, desc, pct])
         text_values.append([
-            f"{p_tot:.2f} kg",
+            f"{p_ini:.2f} kg",
+            f"{repo:.2f} kg",
             f"{s_buf:.2f} kg",
             f"{desc:.2f} kg",
             f"{pct:.1f}%"
@@ -99,8 +101,8 @@ def gerar_img_heatmap(df_matriz):
 
     ax.set_xticks(np.arange(len(colunas)))
     ax.set_yticks(np.arange(len(pratos)))
-    ax.set_xticklabels(colunas, color='#111111', fontsize=8.5, fontweight='bold')
-    ax.set_yticklabels(pratos, color='#222222', fontsize=8.5)
+    ax.set_xticklabels(colunas, color='#111111', fontsize=8, fontweight='bold')
+    ax.set_yticklabels(pratos, color='#222222', fontsize=8)
 
     max_val = z_array[:-1].max() if len(pratos) > 1 and z_array[:-1].max() > 0 else 1
 
@@ -109,11 +111,11 @@ def gerar_img_heatmap(df_matriz):
         for j in range(len(colunas)):
             if is_total:
                 ax.add_patch(plt.Rectangle((j - 0.5, i - 0.5), 1, 1, fill=True, color='#262626', ec='#111111', lw=1, zorder=3))
-                ax.text(j, i, text_values[i][j], ha="center", va="center", color='#FFFFFF', fontsize=8.5, fontweight='bold', zorder=4)
+                ax.text(j, i, text_values[i][j], ha="center", va="center", color='#FFFFFF', fontsize=8, fontweight='bold', zorder=4)
             else:
                 val_norm = z_array[i, j] / max_val
                 color_text = "#FFFFFF" if val_norm > 0.65 else "#111111"
-                ax.text(j, i, text_values[i][j], ha="center", va="center", color=color_text, fontsize=8, fontweight='bold')
+                ax.text(j, i, text_values[i][j], ha="center", va="center", color=color_text, fontsize=7.5, fontweight='bold')
 
     ax.spines[:].set_visible(False)
     ax.tick_params(top=True, bottom=False, labeltop=True, labelbottom=False)
@@ -485,10 +487,14 @@ def render():
         descarte = converter_para_numero(df['Descarte_KG']) if 'Descarte_KG' in df.columns else pd.Series([0]*len(df))
         clientes = converter_para_numero(df['Clientes_Atendidos']) if 'Clientes_Atendidos' in df.columns else pd.Series([0]*len(df))
 
+        df['Prod_Ini_Calc'] = prod_ini
+        df['Reposicao_Calc'] = reposicao
         df['Prod_Total_Calc'] = prod_ini + reposicao
         df['Descarte_Calc'] = descarte
         df['Sobra_Buffet_Calc'] = sobra_buffet
 
+        tot_prod_ini = float(prod_ini.sum())
+        tot_reposicao = float(reposicao.sum())
         tot_prod = float(df['Prod_Total_Calc'].sum())
         tot_descarte = float(descarte.sum())
         tot_sobra_buffet = float(sobra_buffet.sum())
@@ -501,24 +507,31 @@ def render():
             df_data = df_temp_data.groupby(['Data_DT', 'Data'])['Descarte'].sum().reset_index()
             df_data = df_data.sort_values('Data_DT', ascending=True)
 
+        # PREPARAÇÃO DO HEATMAP COM A LINHA TOTAL GERAL EMBAIXO
         df_matriz = pd.DataFrame()
         if 'ID_Prato' in df.columns:
             df_matriz = df.groupby('ID_Prato').agg({
-                'Prod_Total_Calc': 'sum',
+                'Prod_Ini_Calc': 'sum',
+                'Reposicao_Calc': 'sum',
                 'Sobra_Buffet_Calc': 'sum',
                 'Descarte_Calc': 'sum'
             }).reset_index()
-            df_matriz['Perda_%'] = (df_matriz['Descarte_Calc'] / df_matriz['Prod_Total_Calc'] * 100).fillna(0)
-            df_matriz = df_matriz.sort_values(by='Descarte_Calc', ascending=True)
+            df_matriz['Perda_%'] = (df_matriz['Descarte_Calc'] / (df_matriz['Prod_Ini_Calc'] + df_matriz['Reposicao_Calc']) * 100).fillna(0)
+            
+            # Ordena os pratos do maior para o menor descarte
+            df_matriz = df_matriz.sort_values(by='Descarte_Calc', ascending=False)
 
             pct_total_geral = (tot_descarte / tot_prod * 100) if tot_prod > 0 else 0.0
             linha_total = pd.DataFrame([{
                 'ID_Prato': 'TOTAL GERAL',
-                'Prod_Total_Calc': tot_prod,
+                'Prod_Ini_Calc': tot_prod_ini,
+                'Reposicao_Calc': tot_reposicao,
                 'Sobra_Buffet_Calc': tot_sobra_buffet,
                 'Descarte_Calc': tot_descarte,
                 'Perda_%': pct_total_geral
             }])
+            
+            # Concatena garantindo que TOTAL GERAL seja a ÚLTIMA LINHA
             df_matriz = pd.concat([df_matriz, linha_total], ignore_index=True)
 
         config_plotly_mobile = {
@@ -564,24 +577,70 @@ def render():
 
         st.markdown("<br>", unsafe_allow_html=True)
 
+        # =========================================================
+        # 1. BALANÇO DA COZINHA (BARRAS HORIZONTAIS POR CATEGORIA)
+        # =========================================================
+        st.markdown("##### Balanço da Cozinha (Kg)")
+        
+        df_balanco = pd.DataFrame({
+            'Categoria': ['Prod. Inicial', 'Reposição', 'Sobra Buffet', 'Descarte'],
+            'Peso (kg)': [tot_prod_ini, tot_reposicao, tot_sobra_buffet, tot_descarte]
+        })
+
+        fig_balanco = px.bar(
+            df_balanco,
+            x='Peso (kg)',
+            y='Categoria',
+            orientation='h',
+            text_auto='.3f',
+            color='Categoria',
+            color_discrete_map={
+                'Prod. Inicial': '#1E88E5',
+                'Reposição': '#00ACC1',
+                'Sobra Buffet': '#FB8C00',
+                'Descarte': '#E53935'
+            }
+        )
+
+        fig_balanco.update_layout(
+            showlegend=False,
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)',
+            font=dict(color="#E0E0E0"),
+            height=220,
+            margin=dict(l=10, r=10, t=10, b=10),
+            xaxis=dict(showgrid=True, gridcolor='#2D2D2D', fixedrange=True),
+            yaxis=dict(showgrid=False, fixedrange=True, title="", categoryorder='total ascending')
+        )
+
+        st.plotly_chart(fig_balanco, use_container_width=True, config=config_plotly_mobile)
+
+        # =========================================================
+        # 2. HEATMAP (COM REPOSIÇÃO E TOTAL GERAL EMBAIXO)
+        # =========================================================
         if tem_permissao("dashboard:matriz") and not df_matriz.empty:
             st.markdown("##### Matriz de Desempenho por Produto")
 
-            pratos = df_matriz['ID_Prato'].tolist()
-            colunas_heatmap = ['Produção Total', 'Sobra Buffet', 'Descarte Total', '% Perda/Prod.']
+            # Inverte para exibição correta no gráfico do Plotly (de baixo para cima)
+            df_matriz_plot = df_matriz.iloc[::-1].copy()
+
+            pratos = df_matriz_plot['ID_Prato'].tolist()
+            colunas_heatmap = ['Prod. Inicial', 'Reposição', 'Sobra Buffet', 'Descarte Total', '% Perda']
 
             z_values = []
             text_values = []
 
-            for _, row in df_matriz.iterrows():
-                p_tot = row['Prod_Total_Calc']
+            for _, row in df_matriz_plot.iterrows():
+                p_ini = row['Prod_Ini_Calc']
+                repo = row['Reposicao_Calc']
                 s_buf = row['Sobra_Buffet_Calc']
                 desc = row['Descarte_Calc']
                 pct = row['Perda_%']
 
-                z_values.append([p_tot, s_buf, desc, pct])
+                z_values.append([p_ini, repo, s_buf, desc, pct])
                 text_values.append([
-                    f"{p_tot:.2f} kg",
+                    f"{p_ini:.2f} kg",
+                    f"{repo:.2f} kg",
                     f"{s_buf:.2f} kg",
                     f"{desc:.2f} kg",
                     f"{pct:.1f}%"
@@ -593,7 +652,7 @@ def render():
                 y=pratos,
                 text=text_values,
                 texttemplate="%{text}",
-                textfont={"size": 11, "color": "#FFFFFF"},
+                textfont={"size": 10, "color": "#FFFFFF"},
                 colorscale=[
                     [0.0, '#1E1E1E'],
                     [0.3, '#37474F'],
@@ -619,63 +678,7 @@ def render():
             st.caption("ℹ️ *A linha TOTAL GERAL exibe o Descarte Médio Ponderado Global de toda a produção.*")
 
         # =========================================================
-        # 1º GRÁFICO: BALANÇO DA COZINHA (BARRAS HORIZONTAIS POR ITEM)
-        # =========================================================
-        st.markdown("##### Balanço da Cozinha por Prato (Kg)")
-        
-        if 'ID_Prato' in df.columns:
-            df_balanco_prato = df.groupby('ID_Prato').agg({
-                'Prod_Total_Calc': 'sum',
-                'Sobra_Buffet_Calc': 'sum',
-                'Descarte_Calc': 'sum'
-            }).reset_index()
-
-            df_melted = df_balanco_prato.melt(
-                id_vars=['ID_Prato'],
-                value_vars=['Prod_Total_Calc', 'Sobra_Buffet_Calc', 'Descarte_Calc'],
-                var_name='Métrica',
-                value_name='Peso (kg)'
-            )
-
-            mapa_nomes = {
-                'Prod_Total_Calc': 'Produção Total',
-                'Sobra_Buffet_Calc': 'Sobra Buffet',
-                'Descarte_Calc': 'Descarte'
-            }
-            df_melted['Métrica'] = df_melted['Métrica'].map(mapa_nomes)
-
-            fig_balanco = px.bar(
-                df_melted,
-                x='Peso (kg)',
-                y='ID_Prato',
-                color='Métrica',
-                barmode='group',
-                orientation='h',
-                text_auto='.2f',
-                color_discrete_map={
-                    'Produção Total': '#1E88E5',
-                    'Sobra Buffet': '#FB8C00',
-                    'Descarte': '#E53935'
-                }
-            )
-
-            altura_balanco = max(280, len(df_balanco_prato) * 50)
-
-            fig_balanco.update_layout(
-                paper_bgcolor='rgba(0,0,0,0)',
-                plot_bgcolor='rgba(0,0,0,0)',
-                font=dict(color="#E0E0E0"),
-                height=altura_balanco,
-                margin=dict(l=10, r=10, t=10, b=10),
-                xaxis=dict(showgrid=True, gridcolor='#2D2D2D', fixedrange=True),
-                yaxis=dict(showgrid=False, fixedrange=True, title=""),
-                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
-            )
-
-            st.plotly_chart(fig_balanco, use_container_width=True, config=config_plotly_mobile)
-
-        # =========================================================
-        # 2º GRÁFICO: SOBRA VS DESCARTE (ROSCA / PIZZA)
+        # 3. SOBRA VS DESCARTE (ROSCA / PIZZA)
         # =========================================================
         st.markdown("##### Sobra vs Descarte")
         df_rosca = pd.DataFrame({
@@ -742,7 +745,8 @@ def render():
         if 'Data_DT' in df_exibicao.columns:
             df_exibicao.drop(columns=['Data_DT'], inplace=True)
         if 'Prod_Total_Calc' in df_exibicao.columns:
-            df_exibicao.drop(columns=['Prod_Total_Calc', 'Descarte_Calc', 'Sobra_Buffet_Calc'], inplace=True)
+            cols_remover = ['Prod_Ini_Calc', 'Reposicao_Calc', 'Prod_Total_Calc', 'Descarte_Calc', 'Sobra_Buffet_Calc']
+            df_exibicao.drop(columns=[c for c in cols_remover if c in df_exibicao.columns], inplace=True)
 
         cols_peso = ['Prod_Inicial_KG', 'Reposicao_KG', 'Sobra_Buffet_KG', 'Descarte_KG']
         
