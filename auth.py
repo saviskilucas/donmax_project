@@ -10,17 +10,19 @@ def conectar_gsheets():
 
 # DICIONÁRIO COMPLETO DE PERMISSÕES DO SISTEMA
 TODAS_PERMISSOES = {
-    "pesagem:visualizar": "Lançamentos - Acessar Formulário de Pesagem",
-    "pesagem:criar": "Lançamentos - Registrar Novas Pesagens",
-    "pesagem:editar": "Lançamentos - Editar Lançamentos do Dia",
-    "pesagem:excluir": "Lançamentos - Excluir Lançamentos do Dia",
+    "pesagem:visualizar": "Lançamentos - Acessar Tela de Lançamentos",
+    "pesagem:criar": "Lançamentos - Registrar Dados",
+    "campo:data": "Formulário - Selecionar/Editar Data",
+    "campo:prato": "Formulário - Selecionar Prato / Item",
+    "campo:pesos": "Formulário - Lançar Pesos (Produção/Descarte/Sobra)",
+    "campo:clientes": "Formulário - Lançar Clientes Atendidos",
+    "campo:obs": "Formulário - Lançar Observações",
     "dashboard:visualizar": "Dashboard - Visualizar Painel de Métricas",
     "dashboard:filtrar": "Dashboard - Alterar Filtros de Data",
     "dashboard:matriz": "Dashboard - Ver Matriz de Desempenho por Prato",
     "relatorios:exportar_pdf": "Relatórios - Gerar e Baixar PDF Executivo",
     "usuarios:gerenciar": "Administração - Gerenciar Contas de Usuários",
-    "perfis:gerenciar": "Administração - Criar/Editar Perfis e Permissões",
-    "historico:editar_passado": "Administração - Editar Registros Passados"
+    "perfis:gerenciar": "Administração - Criar/Editar Perfis e Permissões"
 }
 
 def buscar_perfis():
@@ -29,7 +31,6 @@ def buscar_perfis():
         registros = sheet.get_all_records()
         perfis = {}
         for r in registros:
-            # Trata chaves da planilha independentemente de maiúsculas/minusculas ou underlines
             item_limpo = {str(k).strip().lower().replace("_", "").replace(" ", ""): str(v).strip() for k, v in r.items()}
             
             id_p = item_limpo.get("idperfil", "").lower()
@@ -49,12 +50,11 @@ def buscar_perfis():
                 "permissoes": lista_perms
             }
             
-        # Garantia de fallback para Administrador caso a planilha esteja vazia
         if "administrador" not in perfis:
             perfis["administrador"] = {"nome": "Admin", "permissoes": ["ALL"]}
             
         return perfis
-    except Exception as e:
+    except Exception:
         return {"administrador": {"nome": "Admin", "permissoes": ["ALL"]}}
 
 def tem_permissao(chave_permissao):
