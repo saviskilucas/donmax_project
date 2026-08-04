@@ -518,7 +518,6 @@ def render():
             }).reset_index()
             df_matriz['Perda_%'] = (df_matriz['Descarte_Calc'] / (df_matriz['Prod_Ini_Calc'] + df_matriz['Reposicao_Calc']) * 100).fillna(0)
             
-            # Ordena os pratos do maior para o menor descarte
             df_matriz = df_matriz.sort_values(by='Descarte_Calc', ascending=False)
 
             pct_total_geral = (tot_descarte / tot_prod * 100) if tot_prod > 0 else 0.0
@@ -531,7 +530,6 @@ def render():
                 'Perda_%': pct_total_geral
             }])
             
-            # Concatena garantindo que TOTAL GERAL seja a ÚLTIMA LINHA
             df_matriz = pd.concat([df_matriz, linha_total], ignore_index=True)
 
         config_plotly_mobile = {
@@ -578,7 +576,7 @@ def render():
         st.markdown("<br>", unsafe_allow_html=True)
 
         # =========================================================
-        # 1. BALANÇO DA COZINHA (BARRAS HORIZONTAIS POR CATEGORIA)
+        # 1. BALANÇO DA COZINHA
         # =========================================================
         st.markdown("##### Balanço da Cozinha (Kg)")
         
@@ -616,12 +614,11 @@ def render():
         st.plotly_chart(fig_balanco, use_container_width=True, config=config_plotly_mobile)
 
         # =========================================================
-        # 2. HEATMAP (COM REPOSIÇÃO E TOTAL GERAL EMBAIXO)
+        # 2. HEATMAP
         # =========================================================
         if tem_permissao("dashboard:matriz") and not df_matriz.empty:
             st.markdown("##### Matriz de Desempenho por Produto")
 
-            # Inverte para exibição correta no gráfico do Plotly (de baixo para cima)
             df_matriz_plot = df_matriz.iloc[::-1].copy()
 
             pratos = df_matriz_plot['ID_Prato'].tolist()
@@ -678,7 +675,7 @@ def render():
             st.caption("ℹ️ *A linha TOTAL GERAL exibe o Descarte Médio Ponderado Global de toda a produção.*")
 
         # =========================================================
-        # 3. SOBRA VS DESCARTE (ROSCA / PIZZA)
+        # 3. SOBRA VS DESCARTE
         # =========================================================
         st.markdown("##### Sobra vs Descarte")
         df_rosca = pd.DataFrame({
@@ -739,22 +736,89 @@ def render():
                 )
 
         st.markdown("---")
-        st.markdown("##### Lançamentos")
-        
-        df_exibicao = df.copy()
-        if 'Data_DT' in df_exibicao.columns:
-            df_exibicao.drop(columns=['Data_DT'], inplace=True)
-        if 'Prod_Total_Calc' in df_exibicao.columns:
-            cols_remover = ['Prod_Ini_Calc', 'Reposicao_Calc', 'Prod_Total_Calc', 'Descarte_Calc', 'Sobra_Buffet_Calc']
-            df_exibicao.drop(columns=[c for c in cols_remover if c in df_exibicao.columns], inplace=True)
+        st.markdown("##### 📝 Lançamentos Registrados")
 
-        cols_peso = ['Prod_Inicial_KG', 'Reposicao_KG', 'Sobra_Buffet_KG', 'Descarte_KG']
-        
-        for c in cols_peso:
-            if c in df_exibicao.columns:
-                df_exibicao[c] = converter_para_numero(df_exibicao[c]).apply(lambda x: f"{x:.3f} kg")
+        # =========================================================
+        # 4. TABELA E EDIÇÃO / EXCLUSÃO DE LANÇAMENTOS (ADMIN / MASTER)
+        # =========================================================
+        perfil_atual = st.session_state.get("perfil_logado", "").lower()
+        pode_editar_lancamento = perfil_atual in ["master", "admin"] or tem_permissao("lancamentos:editar")
 
-        st.dataframe(df_exibicao.tail(10).iloc[::-1], use_container_width=True, hide_index=True)
+        sheet_lancamentos = conectar_gsheets().worksheet("Lancamentos_Diarios")
+
+        # Ordenar os mais recentes no topo para facilitar a edição
+        df_exibicao = df.iloc[::-1].copy()
+
+        for idx, row in df_exibicao.iterrows():
+            # A linha na planilha do Google Sheets é o índice original + 2 (Linha 1 é o cabeçalho)
+            linha_planilha = idx + 2
+
+            dt_lan = str(row.get('Data', ''))
+            prato_lan = str(row.get('ID_Prato', '-'))
+            resp_lan = str(row.get('Responsavel', 'Não informado'))
+            
+            p_ini_num = float(converter_para_numero(pd.Series([row.get('Prod_Inicial_KG', 0)]))[0])
+            repo_num = float(converter_para_numero(pd.Series([row.get('Reposicao_KG', 0)]))[0])
+            sobra_num = float(converter_para_numero(pd.Series([row.get('Sobra_Buffet_KG', 0)]))[0])
+            desc_num = float(converter_para_numero(pd.Series([row.get('Descarte_KG', 0)]))[0])
+            cli_num = int(converter_para_numero(pd.Series([row.get('Clientes_Atendidos', 0)]))[0])
+            obs_lan = str(row.get('Observacoes', ''))
+
+            # Expander individual para cada lançamento registrado
+            with st.expander(f"📅 {dt_lan} — 🍲 **{prato_lan}** ({resp_lan})"):
+                if not pode_editar_lancamento:
+                    st.write(f"**Prod. Inicial:** {p_ini_num:.3f} kg | **Reposição:** {repo_num:.3f} kg")
+                    st.write(f"**Sobra Buffet:** {sobra_num:.3f} kg | **Descarte:** {desc_num:.3f} kg")
+                    st.write(f"**Clientes:** {cli_num} | **Obs:** {obs_lan if obs_lan else '-'}")
+                else:
+                    # Formulário de edição por lançamento
+                    with st.form(key=f"form_edit_lanc_{linha_planilha}"):
+                        c_ed1, c_ed2 = st.columns(2)
+                        with c_ed1:
+                            e_dt = st.text_input("Data (DD/MM/AAAA)", value=dt_lan, key=f"dt_{linha_planilha}")
+                            e_prato = st.text_input("Prato / Item", value=prato_lan, key=f"prato_{linha_planilha}")
+                            e_p_ini = st.number_input("Prod. Inicial (kg)", value=p_ini_num, step=0.1, format="%.3f", key=f"p_ini_{linha_planilha}")
+                            e_repo = st.number_input("Reposição (kg)", value=repo_num, step=0.1, format="%.3f", key=f"repo_{linha_planilha}")
+                        
+                        with c_ed2:
+                            e_sobra = st.number_input("Sobra Buffet (kg)", value=sobra_num, step=0.1, format="%.3f", key=f"sobra_{linha_planilha}")
+                            e_desc = st.number_input("Descarte Total (kg)", value=desc_num, step=0.1, format="%.3f", key=f"desc_{linha_planilha}")
+                            e_cli = st.number_input("Clientes Atendidos", value=cli_num, step=1, key=f"cli_{linha_planilha}")
+                            e_obs = st.text_input("Observações", value=obs_lan, key=f"obs_{linha_planilha}")
+
+                        b_salvar, b_excluir = st.columns(2)
+                        with b_salvar:
+                            btn_salvar_l = st.form_submit_button("💾 SALVAR ALTERAÇÕES", use_container_width=True)
+                        with b_excluir:
+                            btn_excluir_l = st.form_submit_button("🗑️ EXCLUIR REGISTRO", use_container_width=True)
+
+                        if btn_salvar_l:
+                            try:
+                                # Atualiza linha na planilha na mesma ordem das colunas
+                                sheet_lancamentos.update_cell(linha_planilha, 1, e_dt.strip())
+                                sheet_lancamentos.update_cell(linha_planilha, 2, resp_lan)
+                                sheet_lancamentos.update_cell(linha_planilha, 3, e_prato.strip())
+                                sheet_lancamentos.update_cell(linha_planilha, 4, str(e_p_ini))
+                                sheet_lancamentos.update_cell(linha_planilha, 5, str(e_repo))
+                                sheet_lancamentos.update_cell(linha_planilha, 6, str(e_sobra))
+                                sheet_lancamentos.update_cell(linha_planilha, 7, str(e_desc))
+                                sheet_lancamentos.update_cell(linha_planilha, 8, str(e_cli))
+                                sheet_lancamentos.update_cell(linha_planilha, 9, e_obs.strip())
+
+                                st.cache_data.clear()
+                                st.success("🟢 Lançamento atualizado com sucesso!")
+                                st.rerun()
+                            except Exception as e:
+                                st.error(f"❌ Erro ao atualizar lançamento: {e}")
+
+                        if btn_excluir_l:
+                            try:
+                                sheet_lancamentos.delete_rows(linha_planilha)
+                                st.cache_data.clear()
+                                st.success("🗑️ Lançamento excluído com sucesso!")
+                                st.rerun()
+                            except Exception as e:
+                                st.error(f"❌ Erro ao excluir lançamento: {e}")
 
     else:
         st.info("Nenhum registro encontrado na planilha ainda.")
