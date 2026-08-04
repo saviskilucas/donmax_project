@@ -15,14 +15,16 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Captura clique de saída via Query Param do HTML
+# Captura clique de saída via Query Param do HTML sem criar loops
 if "logout" in st.query_params:
     st.session_state["usuario_logado"] = None
     st.session_state["perfil_logado"] = None
     st.session_state["permissoes_usuario"] = None
     st.session_state["aba_ativa"] = "inicio"
-    st.query_params.clear()
-    st.rerun()
+    try:
+        st.query_params.clear()
+    except Exception:
+        pass
 
 # Estados de sessão
 if "usuario_logado" not in st.session_state:
@@ -38,7 +40,7 @@ if not st.session_state["usuario_logado"]:
 aba = st.session_state["aba_ativa"]
 
 # =========================================================
-# 2. INJEÇÃO DE CSS GLOBAL (OCULTA "MADE WITH STREAMLIT")
+# 2. INJEÇÃO DE CSS GLOBAL (OCULTA FOTO DO GITHUB / STREAMLIT BADGE)
 # =========================================================
 st.markdown("""
     <style>
@@ -48,22 +50,26 @@ st.markdown("""
         color: #F8F9FA !important;
     }
 
-    /* OCULTAR CABEÇALHO, RODAPÉ E 'MADE WITH STREAMLIT' NO MOBILE E DESKTOP */
+    /* OCULTAR FOTO DO GITHUB, BADGES DO STREAMLIT E RODAPÉS NATIVOS */
     #MainMenu, 
     header, 
     footer, 
     [data-testid="stFooter"], 
+    [data-testid="stHeader"],
     .stDeployButton, 
     div[class*="viewerBadge"], 
     div[class*="styles_viewerBadge"], 
-    a[href*="streamlit.io"] {
+    div[class*="stStatusWidget"],
+    a[href*="streamlit.io"],
+    a[href*="github.com"] {
         display: none !important;
         visibility: hidden !important;
         opacity: 0 !important;
+        height: 0px !important;
         pointer-events: none !important;
     }
 
-    /* Espaçamento para o conteúdo rolar limpo atrás das barras */
+    /* Espaçamento do container principal */
     .block-container {
         padding-top: 3.8rem !important;
         padding-bottom: 9.5rem !important; 
@@ -127,7 +133,7 @@ st.markdown("""
     div[data-testid="stElementContainer"]:has(div.st-key-nav_bar_container),
     div:has(> div.st-key-nav_bar_container) {
         position: fixed !important;
-        bottom: 30px !important;
+        bottom: 20px !important;
         left: 50% !important;
         transform: translateX(-50%) !important;
         width: 360px !important;
@@ -282,12 +288,12 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # =========================================================
-# 3. BARRA SUPERIOR FIXA COM BOTÃO DENTRO DO HTML
+# 3. BARRA SUPERIOR FIXA
 # =========================================================
 if st.session_state["usuario_logado"]:
     btn_html = '<a href="?logout=true" target="_self" class="btn-header-action">Sair</a>'
 else:
-    btn_html = '<span onclick="window.location.reload();" style="cursor:pointer; font-size:1.2rem; color:#fff;" title="Recarregar"></span>'
+    btn_html = '<span onclick="window.location.reload();" style="cursor:pointer; font-size:1.2rem; color:#fff;" title="Recarregar">🔄</span>'
 
 st.markdown(f"""
     <div class="modern-header">
@@ -319,7 +325,7 @@ elif aba == "config" and st.session_state["usuario_logado"]:
     config.render()
 
 # =========================================================
-# 5. RODAPÉ FIXO (SÓ EXIBE SE ESTIVER LOGADO)
+# 5. RODAPÉ FIXO (CÁPSULA)
 # =========================================================
 if st.session_state["usuario_logado"]:
     nav_bar = st.container(key="nav_bar_container")
