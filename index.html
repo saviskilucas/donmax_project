@@ -2,22 +2,20 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <!-- viewport-fit=cover é a chave para o PWA entender o tamanho total da tela do celular -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Don Max - Buffet</title>
 
-    <!-- Configurações PWA -->
+    <!-- Metadados PWA -->
     <link rel="icon" type="image/png" href="logo.png">
     <link rel="apple-touch-icon" href="logo.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Don Max">
-    <meta name="application-name" content="Don Max">
-    <meta name="theme-color" content="#D32F2F">
+    <meta name="theme-color" content="#121212">
 
     <link rel="manifest" href="manifest.json">
 
     <style>
+        /* Trava rigorosa do fundo e da janela pai em Modo Escuro */
         * {
             box-sizing: border-box;
             margin: 0;
@@ -26,37 +24,43 @@
         }
 
         html, body {
-            width: 100%;
-            height: 100%;
+            width: 100vw !important;
+            height: 100vh !important;
+            height: 100dvh !important;
+            margin: 0 !important;
+            padding: 0 !important;
             overflow: hidden !important;
-            background-color: #D32F2F; /* Cor do cabeçalho para não piscar branco ao abrir o app */
-            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: #121212 !important; /* Cor idêntica ao fundo do app para eliminar contraste */
         }
 
-        /* Container ajustado para viewport do PWA instalado */
         .app-wrapper {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            /* Suporte para iPhone/Android com notch/barra inferior */
-            height: -webkit-fill-available;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            height: 100dvh !important;
             overflow: hidden !important;
+            background-color: #121212 !important;
         }
 
+        /* O iframe expande e corta qualquer resíduo da barra de status na camada externa */
         iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-            display: block;
+            width: 100% !important;
+            height: 100% !important;
+            border: none !important;
+            outline: none !important;
+            display: block !important;
+            background-color: #121212 !important;
         }
     </style>
 </head>
 <body>
 
     <div class="app-wrapper">
-        <iframe src="https://donmax.streamlit.app/?embed=true"></iframe>
+        <iframe src="https://donmax.streamlit.app/" allow="fullscreen"></iframe>
     </div>
 
 </body>
