@@ -40,21 +40,14 @@ if not st.session_state["usuario_logado"]:
 aba = st.session_state["aba_ativa"]
 
 # =========================================================
-# 2. INJEÇÃO DE CSS GLOBAL (OCULTA FOTO DO GITHUB / STREAMLIT BADGE)
+# 2. INJEÇÃO DE CSS GLOBAL
 # =========================================================
 st.markdown("""
     <style>
-    /* FORÇAR MODO ESCURO NA ESTRUTURA GLOBAL E REMOVER PADDINGS DO EMBED */
-    html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"], [data-testid="stMain"], .stApp {
+    /* MODO ESCURO FORÇADO EM TUDO */
+    html, body, [data-testid="stApp"], .stApp {
         background-color: #121212 !important;
         color: #F8F9FA !important;
-        margin: 0 !important;
-        padding: 0 !important;
-    }
-
-    /* REMOVE MARGENS E SPACING INTERNO DAS PÁGINAS EM EMBED */
-    div[data-testid="stAppViewContainer"] > section {
-        padding: 0 !important;
     }
 
     /* OCULTAR FOTO DO GITHUB, BADGES DO STREAMLIT E RODAPÉS NATIVOS */
@@ -140,7 +133,7 @@ st.markdown("""
     div[data-testid="stElementContainer"]:has(div.st-key-nav_bar_container),
     div:has(> div.st-key-nav_bar_container) {
         position: fixed !important;
-        bottom: 70px !important;
+        bottom: 45px !important;
         left: 50% !important;
         transform: translateX(-50%) !important;
         width: 360px !important;
@@ -153,7 +146,7 @@ st.markdown("""
         border-radius: 30px !important;
         box-shadow: 0px 8px 25px rgba(0, 0, 0, 0.8) !important;
         border: 2px solid #2D2D2D !important;
-        height: 90px !important;
+        height: 60px !important;
         padding: 4px !important;
         display: flex !important;
         align-items: center !important;
@@ -322,17 +315,17 @@ elif aba == "pesagem" and st.session_state["usuario_logado"]:
     if tem_permissao("pesagem:visualizar"):
         pesagem.render()
     else:
-        st.error("⛔ Seu perfil não tem permissão para acessar a tela de Pesagem.")
+        st.toast("⛔ Acesso bloqueado ao formulário.", icon="🔒")
 elif aba == "historico" and st.session_state["usuario_logado"]:
     if tem_permissao("dashboard:visualizar"):
         historico.render()
     else:
-        st.error("⛔ Seu perfil não tem permissão para acessar o Dashboard.")
+        st.toast("⛔ Acesso bloqueado ao painel.", icon="🔒")
 elif aba == "config" and st.session_state["usuario_logado"]:
     config.render()
 
 # =========================================================
-# 5. RODAPÉ FIXO (CÁPSULA)
+# 5. RODAPÉ FIXO (CÁPSULA) - AVISOS ELEGANTES SÓ VIA TOAST
 # =========================================================
 if st.session_state["usuario_logado"]:
     nav_bar = st.container(key="nav_bar_container")
@@ -350,7 +343,7 @@ if st.session_state["usuario_logado"]:
                     st.session_state["aba_ativa"] = "pesagem"
                     st.rerun()
                 else:
-                    st.warning("Acesso restrito ao formulário.")
+                    st.toast("⛔ Sem permissão para o Formulário.", icon="🔒")
         with c3:
             tipo = "primary" if aba == "historico" else "secondary"
             if st.button("Painel", key="btn_historico", type=tipo):
@@ -358,9 +351,12 @@ if st.session_state["usuario_logado"]:
                     st.session_state["aba_ativa"] = "historico"
                     st.rerun()
                 else:
-                    st.warning("Acesso restrito ao painel.")
+                    st.toast("⛔ Sem permissão para o Painel.", icon="🔒")
         with c4:
             tipo = "primary" if aba == "config" else "secondary"
             if st.button("⚙️", key="btn_config", type=tipo):
-                st.session_state["aba_ativa"] = "config"
-                st.rerun()
+                if tem_permissao("usuarios:gerenciar") or tem_permissao("pratos:gerenciar"):
+                    st.session_state["aba_ativa"] = "config"
+                    st.rerun()
+                else:
+                    st.toast("⛔ Sem permissão para as Configurações.", icon="🔒")
