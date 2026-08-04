@@ -2,6 +2,7 @@ import streamlit as st
 import gspread
 import smtplib
 import os
+import base64
 from email.mime.text import MIMEText
 from google.oauth2.service_account import Credentials
 from auth import buscar_perfis, conectar_gsheets
@@ -135,6 +136,18 @@ def enviar_email_recuperacao_admin(usuario_solicitante, usuario_encontrado):
 
 def render():
     if not st.session_state.get("usuario_logado"):
+        # Converte imagem local para Base64 para injeção HTML perfeita sem quebra
+        logo_html_element = '<div style="font-size: 2.8rem; margin-bottom: 5px;">🍽️</div>'
+        
+        logo_path = "logo.png"
+        if os.path.exists(logo_path):
+            try:
+                with open(logo_path, "rb") as image_file:
+                    encoded_string = base64.b64encode(image_file.read()).decode()
+                logo_html_element = f'<img src="data:image/png;base64,{encoded_string}" class="login-logo-img" alt="Don Max Logo">'
+            except Exception:
+                pass
+
         # CSS Exclusivo para a Tela de Login
         st.markdown("""
             <style>
@@ -143,17 +156,18 @@ def render():
                 border: 1px solid #2D2D2D;
                 border-top: 5px solid #B71C1C;
                 border-radius: 16px;
-                padding: 24px 20px 18px 20px;
+                padding: 28px 20px 20px 20px;
                 box-shadow: 0px 8px 24px rgba(0, 0, 0, 0.6);
                 margin-top: 10px;
                 margin-bottom: 20px;
                 text-align: center;
             }
-            .login-logo {
-                max-width: 110px;
-                height: auto;
+            .login-logo-img {
+                max-width: 120px;
+                max-height: 120px;
+                object-fit: contain;
                 margin-bottom: 12px;
-                border-radius: 12px;
+                filter: drop-shadow(0px 4px 8px rgba(0,0,0,0.5));
             }
             .login-title {
                 color: #FFFFFF;
@@ -194,28 +208,14 @@ def render():
         col_esq, col_centro, col_dir = st.columns([0.1, 0.8, 0.1])
         
         with col_centro:
-            # VERIFICA E EXIBE A LOGO.PNG
-            logo_path = "logo.png"
-            if os.path.exists(logo_path):
-                # Renderiza com st.image dentro do container
-                c_img1, c_img2, c_img3 = st.columns([0.3, 0.4, 0.3])
-                with c_img2:
-                    st.image(logo_path, use_container_width=True)
-                
-                st.markdown("""
-                    <div class="login-card" style="border-top: 3px solid #B71C1C; padding-top: 12px;">
-                        <div class="login-title">DON MAX BUFFET</div>
-                        <div class="login-subtitle">Gestão de Pesagens e Produção</div>
-                    </div>
-                """, unsafe_allow_html=True)
-            else:
-                st.markdown("""
-                    <div class="login-card">
-                        <div style="font-size: 2.8rem; margin-bottom: 5px;">🍽️</div>
-                        <div class="login-title">DON MAX BUFFET</div>
-                        <div class="login-subtitle">Gestão de Pesagens e Produção</div>
-                    </div>
-                """, unsafe_allow_html=True)
+            # CARD DE LOGIN COM A LOGO TRANSPARENTE EMBUTIDA
+            st.markdown(f"""
+                <div class="login-card">
+                    {logo_html_element}
+                    <div class="login-title">DON MAX BUFFET</div>
+                    <div class="login-subtitle">Gestão de Pesagens e Produção</div>
+                </div>
+            """, unsafe_allow_html=True)
 
             # FORMULÁRIO DE LOGIN
             with st.form("form_login_principal"):
