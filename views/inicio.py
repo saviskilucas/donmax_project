@@ -52,20 +52,133 @@ def enviar_email_recuperacao_admin(usuario_solicitante, usuario_encontrado):
         sender_password = st.secrets["email"]["sender_password"]
         admin_email = st.secrets["email"]["admin_email"]
 
-        assunto = f"🔑 Solicitação de Recuperação de Senha - {usuario_solicitante}"
-        corpo = f"""
-        Olá, Administrador!
-
-        Houve uma solicitação de recuperação de senha no aplicativo Don Max Buffet.
-
-        • Usuário Solicitado: {usuario_solicitante}
-        • Nome Cadastrado: {usuario_encontrado.get('nome_original', 'N/D')}
-        • Senha Atual: {usuario_encontrado.get('senha', 'N/D')}
-
-        Esta mensagem foi gerada automaticamente pelo sistema.
+        assunto = f"🔑 [Don Max] Solicitação de Senha - {usuario_solicitante}"
+        
+        # HTML do E-mail Estilizado
+        corpo_html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <style>
+                body {{
+                    font-family: 'Segoe UI', Arial, sans-serif;
+                    background-color: #121212;
+                    color: #E0E0E0;
+                    margin: 0;
+                    padding: 20px;
+                }}
+                .card {{
+                    max-width: 500px;
+                    margin: 0 auto;
+                    background-color: #1E1E1E;
+                    border-radius: 16px;
+                    overflow: hidden;
+                    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+                    border: 1px solid #2D2D2D;
+                }}
+                .header {{
+                    background-color: #B71C1C;
+                    color: #FFFFFF;
+                    padding: 24px 20px;
+                    text-align: center;
+                }}
+                .header h2 {{
+                    margin: 0;
+                    font-size: 1.25rem;
+                    font-weight: 800;
+                    letter-spacing: 0.5px;
+                }}
+                .content {{
+                    padding: 24px;
+                }}
+                .intro {{
+                    font-size: 0.95rem;
+                    color: #CCCCCC;
+                    margin-bottom: 20px;
+                    line-height: 1.4;
+                }}
+                .info-box {{
+                    background-color: #262626;
+                    border-left: 4px solid #FF5252;
+                    border-radius: 8px;
+                    padding: 16px;
+                    margin-bottom: 20px;
+                }}
+                .info-item {{
+                    margin-bottom: 10px;
+                    font-size: 0.9rem;
+                }}
+                .info-item:last-child {{
+                    margin-bottom: 0;
+                }}
+                .label {{
+                    color: #A0A0A0;
+                    font-size: 0.8rem;
+                    text-transform: uppercase;
+                    font-weight: 700;
+                    display: block;
+                    margin-bottom: 2px;
+                }}
+                .value {{
+                    color: #FFFFFF;
+                    font-size: 1rem;
+                    font-weight: 700;
+                }}
+                .badge-senha {{
+                    background-color: #B71C1C;
+                    color: #FFFFFF;
+                    padding: 4px 10px;
+                    border-radius: 6px;
+                    font-family: monospace;
+                    font-size: 1.05rem;
+                    letter-spacing: 1px;
+                }}
+                .footer {{
+                    text-align: center;
+                    padding: 16px;
+                    font-size: 0.75rem;
+                    color: #777777;
+                    border-top: 1px solid #2A2A2A;
+                }}
+            </style>
+        </head>
+        <body>
+            <div class="card">
+                <div class="header">
+                    <h2>DON MAX BUFFET</h2>
+                </div>
+                <div class="content">
+                    <div class="intro">
+                        Olá, <strong>Administrador</strong>!<br>
+                        Uma solicitação de recuperação de senha foi realizada no sistema.
+                    </div>
+                    
+                    <div class="info-box">
+                        <div class="info-item">
+                            <span class="label">Usuário Solicitado</span>
+                            <span class="value">{usuario_solicitante}</span>
+                        </div>
+                        <div class="info-item" style="margin-top: 12px;">
+                            <span class="label">Nome Cadastrado</span>
+                            <span class="value">{usuario_encontrado.get('nome_original', 'N/D')}</span>
+                        </div>
+                        <div class="info-item" style="margin-top: 12px;">
+                            <span class="label">Senha Atual</span>
+                            <span class="badge-senha">{usuario_encontrado.get('senha', 'N/D')}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="footer">
+                    Mensagem automática gerada pelo Painel de Controle Don Max.
+                </div>
+            </div>
+        </body>
+        </html>
         """
 
-        msg = MIMEText(corpo, "plain", "utf-8")
+        # Define a mensagem como HTML
+        msg = MIMEText(corpo_html, "html", "utf-8")
         msg["Subject"] = assunto
         msg["From"] = f"Don Max Buffet <{sender_email}>"
         msg["To"] = admin_email
