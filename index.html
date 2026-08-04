@@ -53,13 +53,13 @@
             background-color: #121212 !important;
         }
 
-        /* O IFRAME É APLIQUADO COM MARGEM NEGATIVA PARA CORTAR AS BORDAS DO EMBED DO STREAMLIT */
+        /* AJUSTE MILIMÉTRICO DE RECORTE ASSIMÉTRICO */
         iframe {
             position: absolute !important;
-            top: -4px !important;              /* Corta a borda branca do topo */
-            left: -4px !important;             /* Corta a borda branca da esquerda */
-            width: calc(100% + 8px) !important;/* Compensa a largura extra das laterais */
-            height: calc(100% + 60px) !important; /* Compensa o topo + esconde a barra inferior */
+            top: -2px !important;                 /* Corta o topo sem deslocar */
+            left: -2px !important;                /* Equilibra a margem esquerda */
+            width: calc(100% + 4px) !important;   /* Cobre exatamente as 2 bordas laterais */
+            height: calc(100% + 58px) !important; /* Mantém o rodapé nativo escondido */
             border: none !important;
             outline: none !important;
             margin: 0 !important;
