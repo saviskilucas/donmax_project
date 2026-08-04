@@ -163,8 +163,8 @@ def render():
                 text-align: center;
             }
             .login-logo-img {
-                max-width: 120px;
-                max-height: 120px;
+                max-width: 160px;
+                max-height: 160px;
                 object-fit: contain;
                 margin-bottom: 12px;
                 filter: drop-shadow(0px 4px 8px rgba(0,0,0,0.5));
@@ -212,8 +212,8 @@ def render():
             st.markdown(f"""
                 <div class="login-card">
                     {logo_html_element}
-                    <div class="login-title">DON MAX BUFFET</div>
-                    <div class="login-subtitle">Gestão de Pesagens e Produção</div>
+                    <div class="login-title">DON MAX RESTAURANTE</div>
+                    <div class="login-subtitle">Gestão de Buffet</div>
                 </div>
             """, unsafe_allow_html=True)
 
