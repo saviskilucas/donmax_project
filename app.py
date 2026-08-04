@@ -140,7 +140,7 @@ st.markdown("""
     div[data-testid="stElementContainer"]:has(div.st-key-nav_bar_container),
     div:has(> div.st-key-nav_bar_container) {
         position: fixed !important;
-        bottom: 40px !important;
+        bottom: 70px !important;
         left: 50% !important;
         transform: translateX(-50%) !important;
         width: 360px !important;
