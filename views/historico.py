@@ -61,7 +61,7 @@ def converter_para_numero(serie):
     ).fillna(0.0)
 
 # =========================================================
-# GERADOR DE GRÁFICOS PARA PDF (QUADRANTES & MODO CLARO)
+# GERADOR DE GRÁFICOS PARA PDF (MATPLOTLIB)
 # =========================================================
 def gerar_img_heatmap(df_matriz):
     if df_matriz.empty:
@@ -88,11 +88,13 @@ def gerar_img_heatmap(df_matriz):
         ])
 
     z_array = np.array(z_values)
-    altura = max(2.2, len(pratos) * 0.42)
+    altura = max(2.4, len(pratos) * 0.42)
 
     fig, ax = plt.subplots(figsize=(6.5, altura), facecolor='#FFFFFF')
     ax.set_facecolor('#FFFFFF')
 
+    # Heatmap para os pratos
+    z_pratos = z_array[:-1, :] if len(pratos) > 1 else z_array
     im = ax.imshow(z_array, cmap='Reds', aspect='auto', alpha=0.85)
 
     ax.set_xticks(np.arange(len(colunas)))
@@ -100,12 +102,20 @@ def gerar_img_heatmap(df_matriz):
     ax.set_xticklabels(colunas, color='#111111', fontsize=8.5, fontweight='bold')
     ax.set_yticklabels(pratos, color='#222222', fontsize=8.5)
 
-    max_val = z_array.max() if z_array.max() > 0 else 1
+    max_val = z_array[:-1].max() if len(pratos) > 1 and z_array[:-1].max() > 0 else 1
+
+    # Renderiza textos das células
     for i in range(len(pratos)):
+        is_total = (i == len(pratos) - 1) and (pratos[i] == 'TOTAL GERAL')
         for j in range(len(colunas)):
-            val_norm = z_array[i, j] / max_val
-            color_text = "#FFFFFF" if val_norm > 0.65 else "#111111"
-            ax.text(j, i, text_values[i][j], ha="center", va="center", color=color_text, fontsize=8, fontweight='bold')
+            if is_total:
+                # Linha de total com fundo escuro de destaque
+                ax.add_patch(plt.Rectangle((j - 0.5, i - 0.5), 1, 1, fill=True, color='#262626', ec='#111111', lw=1, zorder=3))
+                ax.text(j, i, text_values[i][j], ha="center", va="center", color='#FFFFFF', fontsize=8.5, fontweight='bold', zorder=4)
+            else:
+                val_norm = z_array[i, j] / max_val
+                color_text = "#FFFFFF" if val_norm > 0.65 else "#111111"
+                ax.text(j, i, text_values[i][j], ha="center", va="center", color=color_text, fontsize=8, fontweight='bold')
 
     ax.spines[:].set_visible(False)
     ax.tick_params(top=True, bottom=False, labeltop=True, labelbottom=False)
@@ -196,6 +206,29 @@ def gerar_img_linha(df_data):
     return buf
 
 # =========================================================
+# HELPER: CRIAR BANNER DE TÍTULO DE SEÇÃO COM FUNDO VERMELHO CLARO
+# =========================================================
+def criar_banner_titulo(texto):
+    style_title_banner = ParagraphStyle(
+        'TitleBanner',
+        fontName='Helvetica-Bold',
+        fontSize=10.5,
+        textColor=colors.HexColor('#B71C1C'),
+        alignment=0
+    )
+    
+    t_banner = Table([[Paragraph(f"<b>{texto.upper()}</b>", style_title_banner)]], colWidths=[540])
+    t_banner.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#FFEBEE')),
+        ('BORDER', (0,0), (-1,-1), 1, colors.HexColor('#FFCDD2')),
+        ('TOPPADDING', (0,0), (-1,-1), 6),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 6),
+        ('LEFTPADDING', (0,0), (-1,-1), 10),
+        ('RIGHTPADDING', (0,0), (-1,-1), 10),
+    ]))
+    return t_banner
+
+# =========================================================
 # GERADOR DE PDF EXECUTIVO
 # =========================================================
 def gerar_pdf_relatorio(df, tot_prod, tot_descarte, tot_sobra, tot_clientes, dt_inicio, dt_fim, prod_ini, reposicao, df_data, df_matriz):
@@ -213,15 +246,16 @@ def gerar_pdf_relatorio(df, tot_prod, tot_descarte, tot_sobra, tot_clientes, dt_
     styles = getSampleStyleSheet()
 
     style_header_app = ParagraphStyle('HeaderAppTitle', fontName='Helvetica-Bold', fontSize=14, textColor=colors.white, alignment=0)
-    style_sub = ParagraphStyle('DocSub', fontName='Helvetica', fontSize=8.5, textColor=colors.HexColor('#555555'), spaceAfter=10, spaceBefore=8)
-    style_sec_title = ParagraphStyle('SecTitle', fontName='Helvetica-Bold', fontSize=10.5, textColor=colors.HexColor('#B71C1C'), spaceAfter=4, spaceBefore=10)
-    style_card_title = ParagraphStyle('CardTitle', fontName='Helvetica-Bold', fontSize=7.5, textColor=colors.HexColor('#666666'), alignment=1)
-    style_card_val = ParagraphStyle('CardVal', fontName='Helvetica-Bold', fontSize=10.5, textColor=colors.HexColor('#111111'), alignment=1)
+    style_sub = ParagraphStyle('DocSub', fontName='Helvetica', fontSize=8.5, textColor=colors.HexColor('#555555'), spaceAfter=8, spaceBefore=6)
+    style_note = ParagraphStyle('DocNote', fontName='Helvetica-Oblique', fontSize=7.5, textColor=colors.HexColor('#666666'), spaceBefore=3, spaceAfter=8)
+    
+    style_card_title = ParagraphStyle('CardTitle', fontName='Helvetica-Bold', fontSize=7.5, textColor=colors.HexColor('#B71C1C'), alignment=1)
+    style_card_val = ParagraphStyle('CardVal', fontName='Helvetica-Bold', fontSize=11, textColor=colors.HexColor('#111111'), alignment=1)
 
     agora_brasilia = datetime.now(ZoneInfo("America/Sao_Paulo"))
     dt_emissao_str = agora_brasilia.strftime('%d/%m/%Y às %H:%M:%S')
 
-    # BARRA SUPERIOR VERMELHA
+    # BARRA SUPERIOR VERMELHA FIXA
     header_table_data = [[
         Paragraph("<b>DON MAX BUFFET</b>", style_header_app),
         Paragraph("<font color='#FFFFFF'><b>RELATÓRIO EXECUTIVO</b></font>", ParagraphStyle('HRight', fontName='Helvetica-Bold', fontSize=9, textColor=colors.white, alignment=2))
@@ -242,7 +276,10 @@ def gerar_pdf_relatorio(df, tot_prod, tot_descarte, tot_sobra, tot_clientes, dt_
     dt_str = f"Período Analisado: <b>{dt_inicio.strftime('%d/%m/%Y')}</b> até <b>{dt_fim.strftime('%d/%m/%Y')}</b> &nbsp;|&nbsp; Emitido em: {dt_emissao_str}"
     elements.append(Paragraph(dt_str, style_sub))
 
-    # CARDS DE INDICADORES
+    # 1. SEÇÃO DE INDICADORES CHAVE COM DESTAQUE
+    elements.append(criar_banner_titulo("INDICADORES CHAVE DO PERÍODO"))
+    elements.append(Spacer(1, 6))
+
     cards_data = [
         [
             Paragraph("PRODUÇÃO TOTAL", style_card_title),
@@ -260,41 +297,44 @@ def gerar_pdf_relatorio(df, tot_prod, tot_descarte, tot_sobra, tot_clientes, dt_
 
     t_cards = Table(cards_data, colWidths=[135, 135, 135, 135])
     t_cards.setStyle(TableStyle([
-        ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#F8F9FA')),
-        ('BORDER', (0,0), (-1,-1), 0.8, colors.HexColor('#E0E0E0')),
+        ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#FFF5F5')),
+        ('BORDER', (0,0), (-1,-1), 1, colors.HexColor('#FFCDD2')),
         ('ALIGN', (0,0), (-1,-1), 'CENTER'),
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-        ('TOPPADDING', (0,0), (-1,-1), 6),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 6),
+        ('TOPPADDING', (0,0), (-1,-1), 7),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 7),
     ]))
     elements.append(t_cards)
-    elements.append(Spacer(1, 8))
+    elements.append(Spacer(1, 10))
 
-    # MATRIZ DE DESEMPENHO NO PDF (COM LINHA DE TOTAL)
+    # 2. MATRIZ DE DESEMPENHO NO PDF
     if not df_matriz.empty:
-        elements.append(Paragraph("<b>Matriz de Desempenho por Produto</b>", style_sec_title))
+        elements.append(criar_banner_titulo("Matriz de Desempenho por Produto"))
+        elements.append(Spacer(1, 6))
         img_h = gerar_img_heatmap(df_matriz)
         if img_h:
             altura_h = max(160, len(df_matriz) * 28)
-            elements.append(Image(img_h, width=500, height=altura_h))
+            elements.append(Image(img_h, width=540, height=altura_h))
+            elements.append(Paragraph("* A linha TOTAL GERAL indica o Descarte Médio Ponderado Global (Descarte Total / Produção Total).", style_note))
 
-    # DISPOSIÇÃO EM QUADRANTES (GRÁFICOS LADO A LADO)
-    elements.append(Paragraph("<b>Análise Comparativa de Produção</b>", style_sec_title))
+    # 3. DISPOSIÇÃO EM QUADRANTES
+    elements.append(criar_banner_titulo("Análise Comparativa de Produção"))
+    elements.append(Spacer(1, 6))
     img_b = gerar_img_balanco(prod_ini, reposicao, tot_sobra, tot_descarte)
     img_r = gerar_img_rosca(tot_descarte, tot_sobra)
     
     quadros_table_data = [
         [
-            Paragraph("<b>Balanço da Cozinha</b>", ParagraphStyle('SubB', fontName='Helvetica-Bold', fontSize=9, textColor=colors.HexColor('#333333'))),
-            Paragraph("<b>Sobra vs Descarte</b>", ParagraphStyle('SubR', fontName='Helvetica-Bold', fontSize=9, textColor=colors.HexColor('#333333')))
+            Paragraph("<b>Balanço da Cozinha</b>", ParagraphStyle('SubB', fontName='Helvetica-Bold', fontSize=8.5, textColor=colors.HexColor('#333333'), alignment=1)),
+            Paragraph("<b>Sobra vs Descarte</b>", ParagraphStyle('SubR', fontName='Helvetica-Bold', fontSize=8.5, textColor=colors.HexColor('#333333'), alignment=1))
         ],
         [
-            Image(img_b, width=250, height=160),
-            Image(img_r, width=250, height=160)
+            Image(img_b, width=260, height=160),
+            Image(img_r, width=260, height=160)
         ]
     ]
     
-    t_quadros = Table(quadros_table_data, colWidths=[260, 260])
+    t_quadros = Table(quadros_table_data, colWidths=[270, 270])
     t_quadros.setStyle(TableStyle([
         ('ALIGN', (0,0), (-1,-1), 'CENTER'),
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
@@ -302,15 +342,19 @@ def gerar_pdf_relatorio(df, tot_prod, tot_descarte, tot_sobra, tot_clientes, dt_
         ('BOTTOMPADDING', (0,0), (-1,-1), 2),
     ]))
     elements.append(t_quadros)
+    elements.append(Spacer(1, 8))
 
-    # LINHA DO TEMPO
+    # 4. LINHA DO TEMPO
     if not df_data.empty:
-        elements.append(Paragraph("<b>Linha do Tempo de Descarte</b>", style_sec_title))
+        elements.append(criar_banner_titulo("Linha do Tempo de Descarte"))
+        elements.append(Spacer(1, 6))
         img_l = gerar_img_linha(df_data)
-        elements.append(Image(img_l, width=500, height=170))
+        elements.append(Image(img_l, width=540, height=170))
+        elements.append(Spacer(1, 8))
 
-    # TABELA DE DETALHAMENTO
-    elements.append(Paragraph("<b>Detalhamento de Lançamentos</b>", style_sec_title))
+    # 5. TABELA DE DETALHAMENTO
+    elements.append(criar_banner_titulo("Detalhamento de Lançamentos"))
+    elements.append(Spacer(1, 6))
 
     col_names_pdf = ['Data', 'Prato / Item', 'Prod. Ini', 'Reposição', 'Sobra Buf.', 'Descarte']
     table_data = [col_names_pdf]
@@ -326,7 +370,7 @@ def gerar_pdf_relatorio(df, tot_prod, tot_descarte, tot_sobra, tot_clientes, dt_
         ]
         table_data.append(linha)
 
-    t_table = Table(table_data, colWidths=[65, 165, 70, 70, 75, 75])
+    t_table = Table(table_data, colWidths=[65, 185, 70, 70, 75, 75])
     t_table.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#B71C1C')),
         ('TEXTCOLOR', (0,0), (-1,0), colors.white),
@@ -465,7 +509,7 @@ def render():
             df_data = df_temp_data.groupby(['Data_DT', 'Data'])['Descarte'].sum().reset_index()
             df_data = df_data.sort_values('Data_DT', ascending=True)
 
-        # MATRIZ DE DESEMPENHO COM LINHA DE TOTAIS GERAIS
+        # MATRIZ DE DESEMPENHO (ORDENADA COM TOTAL GERAL NA ÚLTIMA LINHA)
         df_matriz = pd.DataFrame()
         if 'ID_Prato' in df.columns:
             df_matriz = df.groupby('ID_Prato').agg({
@@ -476,7 +520,7 @@ def render():
             df_matriz['Perda_%'] = (df_matriz['Descarte_Calc'] / df_matriz['Prod_Total_Calc'] * 100).fillna(0)
             df_matriz = df_matriz.sort_values(by='Descarte_Calc', ascending=True)
 
-            # LINHA ADICIONAL DE TOTAL GERAL
+            # GARANTE QUE O TOTAL GERAL FIQUE FIXADO COMO ÚLTIMA LINHA
             pct_total_geral = (tot_descarte / tot_prod * 100) if tot_prod > 0 else 0.0
             linha_total = pd.DataFrame([{
                 'ID_Prato': 'TOTAL GERAL',
@@ -493,7 +537,7 @@ def render():
         }
 
         # INDICADORES DO PERÍODO
-        st.markdown("##### Indicadores")
+        st.markdown("##### INDICADORES CHAVE")
         
         c1, c2 = st.columns(2)
         with c1:
@@ -584,6 +628,7 @@ def render():
             )
 
             st.plotly_chart(fig_heatmap, use_container_width=True, config=config_plotly_mobile)
+            st.caption("ℹ️ *A linha TOTAL GERAL exibe o Descarte Médio Ponderado Global de toda a produção.*")
 
         # 2. DISPOSIÇÃO EM QUADRANTES NO PAINEL (LADO A LADO)
         col_g1, col_g2 = st.columns(2)
