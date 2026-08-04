@@ -37,7 +37,7 @@ def carregar_alimentos_planilha():
 # RENDERIZAÇÃO DA PÁGINA DE CONFIGURAÇÕES
 # =========================================================
 def render():
-    st.markdown("<div class='section-header'>⚙️ PAINEL DE CONFIGURAÇÕES</div>", unsafe_allow_html=True)
+    st.markdown("<div class='section-header'>⚙️ CONFIGURAÇÕES</div>", unsafe_allow_html=True)
 
     pode_gerenciar_usr = tem_permissao("usuarios:gerenciar")
     pode_gerenciar_pratos = tem_permissao("pratos:gerenciar")
@@ -46,7 +46,7 @@ def render():
         st.error("⛔ Você não tem permissão para acessar o menu de Configurações.")
         return
 
-    aba_usr, aba_pratos = st.tabs(["👥 Gerenciar Usuários", "🍲 Gerenciar Pratos"])
+    aba_usr, aba_pratos = st.tabs(["USUÁRIOS", "PRATOS"])
 
     # =========================================================
     # SEÇÃO 1: GESTÃO DE USUÁRIOS
