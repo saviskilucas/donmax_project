@@ -79,7 +79,7 @@ st.markdown("""
     /* Espaçamento do container principal */
     .block-container {
         padding-top: 3.8rem !important;
-        padding-bottom: 9.5rem !important; 
+        padding-bottom: 10.5rem !important; 
         padding-left: 0.8rem !important;
         padding-right: 0.8rem !important;
         max-width: 100% !important;
