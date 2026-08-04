@@ -12,6 +12,7 @@ import io
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+import numpy as np
 
 # ReportLab para geração do PDF
 from reportlab.lib.pagesizes import letter
@@ -62,8 +63,62 @@ def converter_para_numero(serie):
 # =========================================================
 # GERADOR DE GRÁFICOS PARA PDF (MATPLOTLIB)
 # =========================================================
+def gerar_img_heatmap(df_matriz):
+    if df_matriz.empty:
+        return None
+
+    pratos = df_matriz['ID_Prato'].tolist()
+    colunas = ['Produção Total', 'Sobra Buffet', 'Descarte Total', '% Perda/Prod.']
+    
+    # Matriz numerica para renderização
+    z_values = []
+    text_values = []
+
+    for _, row in df_matriz.iterrows():
+        p_tot = row['Prod_Total_Calc']
+        s_buf = row['Sobra_Buffet_Calc']
+        desc = row['Descarte_Calc']
+        pct = row['Perda_%']
+
+        z_values.append([p_tot, s_buf, desc, pct])
+        text_values.append([
+            f"{p_tot:.2f} kg",
+            f"{s_buf:.2f} kg",
+            f"{desc:.2f} kg",
+            f"{pct:.1f}%"
+        ])
+
+    z_array = np.array(z_values)
+    altura = max(2.5, len(pratos) * 0.45)
+
+    fig, ax = plt.subplots(figsize=(6.5, altura), facecolor='#1E1E1E')
+    ax.set_facecolor('#1E1E1E')
+
+    # Deseha o heatmap com colormap avermelhado
+    im = ax.imshow(z_array, cmap='YlOrRd', aspect='auto')
+
+    ax.set_xticks(np.arange(len(colunas)))
+    ax.set_yticks(np.arange(len(pratos)))
+    ax.set_xticklabels(colunas, color='#FFFFFF', fontsize=8, fontweight='bold')
+    ax.set_yticklabels(pratos, color='#FFFFFF', fontsize=8)
+
+    # Escreve o texto formatado dentro de cada célula
+    for i in range(len(pratos)):
+        for j in range(len(colunas)):
+            ax.text(j, i, text_values[i][j], ha="center", va="center", color="#FFFFFF", fontsize=7.5, fontweight='bold')
+
+    ax.spines[:].set_visible(False)
+    ax.tick_params(top=True, bottom=False, labeltop=True, labelbottom=False)
+
+    buf = io.BytesIO()
+    plt.tight_layout()
+    plt.savefig(buf, format='png', dpi=200, facecolor=fig.get_facecolor())
+    plt.close(fig)
+    buf.seek(0)
+    return buf
+
 def gerar_img_balanco(prod_ini, reposicao, tot_sobra, tot_descarte):
-    fig, ax = plt.subplots(figsize=(6, 3), facecolor='#1E1E1E')
+    fig, ax = plt.subplots(figsize=(6, 2.8), facecolor='#1E1E1E')
     ax.set_facecolor('#1E1E1E')
     
     categorias = ['Prod. Inicial', 'Reposição', 'Sobra Buffet', 'Descarte']
@@ -92,7 +147,7 @@ def gerar_img_balanco(prod_ini, reposicao, tot_sobra, tot_descarte):
     return buf
 
 def gerar_img_rosca(tot_descarte, tot_sobra):
-    fig, ax = plt.subplots(figsize=(6, 2.8), facecolor='#1E1E1E')
+    fig, ax = plt.subplots(figsize=(6, 2.6), facecolor='#1E1E1E')
     ax.set_facecolor('#1E1E1E')
     
     labels = ['Descarte Total', 'Sobra Buffet']
@@ -118,7 +173,7 @@ def gerar_img_rosca(tot_descarte, tot_sobra):
     return buf
 
 def gerar_img_linha(df_data):
-    fig, ax = plt.subplots(figsize=(6, 2.8), facecolor='#1E1E1E')
+    fig, ax = plt.subplots(figsize=(6, 2.6), facecolor='#1E1E1E')
     ax.set_facecolor('#1E1E1E')
     
     ax.plot(df_data['Data'], df_data['Descarte'], color='#FF5252', marker='o', linewidth=2, markersize=5)
@@ -141,7 +196,7 @@ def gerar_img_linha(df_data):
 # =========================================================
 # GERADOR DE PDF COMPLETO COM ESTILO E FUSO DE BRASÍLIA
 # =========================================================
-def gerar_pdf_relatorio(df, tot_prod, tot_descarte, tot_sobra, tot_clientes, dt_inicio, dt_fim, prod_ini, reposicao, df_data):
+def gerar_pdf_relatorio(df, tot_prod, tot_descarte, tot_sobra, tot_clientes, dt_inicio, dt_fim, prod_ini, reposicao, df_data, df_matriz):
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(
         buffer,
@@ -228,19 +283,29 @@ def gerar_pdf_relatorio(df, tot_prod, tot_descarte, tot_sobra, tot_clientes, dt_
     elements.append(t_cards)
     elements.append(Spacer(1, 10))
 
-    # ANEXANDO GRÁFICOS NO PDF
+    # 1. MATRIZ DE DESEMPENHO NO PDF
+    if not df_matriz.empty:
+        elements.append(Paragraph("<b>Matriz de Desempenho por Produto</b>", style_sec_title))
+        img_h = gerar_img_heatmap(df_matriz)
+        if img_h:
+            altura_h = max(180, len(df_matriz) * 30)
+            elements.append(Image(img_h, width=480, height=altura_h))
+
+    # 2. BALANÇO DA COZINHA
     elements.append(Paragraph("<b>Balanço da Cozinha</b>", style_sec_title))
     img_b = gerar_img_balanco(prod_ini, reposicao, tot_sobra, tot_descarte)
-    elements.append(Image(img_b, width=480, height=220))
+    elements.append(Image(img_b, width=480, height=210))
 
+    # 3. PROPORÇÃO SOBRA BUFFET VS DESCARTE
     elements.append(Paragraph("<b>Proporção Sobra Buffet vs Descarte</b>", style_sec_title))
     img_r = gerar_img_rosca(tot_descarte, tot_sobra)
-    elements.append(Image(img_r, width=480, height=210))
+    elements.append(Image(img_r, width=480, height=200))
 
+    # 4. LINHA DO TEMPO
     if not df_data.empty:
         elements.append(Paragraph("<b>Linha do Tempo de Descarte</b>", style_sec_title))
         img_l = gerar_img_linha(df_data)
-        elements.append(Image(img_l, width=480, height=210))
+        elements.append(Image(img_l, width=480, height=200))
 
     # TABELA DE LANÇAMENTOS
     elements.append(Paragraph("<b>Detalhamento de Lançamentos</b>", style_sec_title))
@@ -390,13 +455,23 @@ def render():
         tot_sobra_buffet = float(sobra_buffet.sum())
         tot_clientes = float(clientes.sum())
 
-        # PREPARA DATAFRAME DA LINHA DO TEMPO
+        # PREPARA DATAFRAMES
         df_data = pd.DataFrame()
         if 'Data' in df.columns:
             df_temp_data = pd.DataFrame({'Data': df['Data'], 'Descarte': descarte})
             df_temp_data['Data_DT'] = pd.to_datetime(df_temp_data['Data'], format='%d/%m/%Y', errors='coerce')
             df_data = df_temp_data.groupby(['Data_DT', 'Data'])['Descarte'].sum().reset_index()
             df_data = df_data.sort_values('Data_DT', ascending=True)
+
+        df_matriz = pd.DataFrame()
+        if 'ID_Prato' in df.columns:
+            df_matriz = df.groupby('ID_Prato').agg({
+                'Prod_Total_Calc': 'sum',
+                'Sobra_Buffet_Calc': 'sum',
+                'Descarte_Calc': 'sum'
+            }).reset_index()
+            df_matriz['Perda_%'] = (df_matriz['Descarte_Calc'] / df_matriz['Prod_Total_Calc'] * 100).fillna(0)
+            df_matriz = df_matriz.sort_values(by='Descarte_Calc', ascending=True)
 
         config_plotly_mobile = {
             'staticPlot': True,
@@ -443,17 +518,8 @@ def render():
         st.markdown("<br>", unsafe_allow_html=True)
 
         # 1. MATRIZ DE CALOR (HEATMAP) POR PRODUTO NO STREAMLIT
-        if 'ID_Prato' in df.columns:
+        if not df_matriz.empty:
             st.markdown("##### Matriz de Desempenho por Produto")
-
-            df_matriz = df.groupby('ID_Prato').agg({
-                'Prod_Total_Calc': 'sum',
-                'Sobra_Buffet_Calc': 'sum',
-                'Descarte_Calc': 'sum'
-            }).reset_index()
-
-            df_matriz['Perda_%'] = (df_matriz['Descarte_Calc'] / df_matriz['Prod_Total_Calc'] * 100).fillna(0)
-            df_matriz = df_matriz.sort_values(by='Descarte_Calc', ascending=True)
 
             pratos = df_matriz['ID_Prato'].tolist()
             colunas_heatmap = ['Produção Total', 'Sobra Buffet', 'Descarte Total', '% Perda/Prod.']
@@ -577,12 +643,11 @@ def render():
                 st.rerun()
 
         with col_hdr_right:
-            # GERA O PDF COMPLETO COM OS GRÁFICOS MATPLOTLIB E FUSO DE BRASÍLIA
             pdf_bytes = gerar_pdf_relatorio(
                 df, tot_prod, tot_descarte, tot_sobra_buffet, tot_clientes,
                 filtro_datas[0] if isinstance(filtro_datas, tuple) else data_min,
                 filtro_datas[1] if isinstance(filtro_datas, tuple) else data_max,
-                prod_ini, reposicao, df_data
+                prod_ini, reposicao, df_data, df_matriz
             )
             st.download_button(
                 label="📄 Baixar PDF",
