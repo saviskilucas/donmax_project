@@ -15,12 +15,19 @@ def buscar_usuarios_sem_cache():
             item_limpo = {}
             for k, v in reg.items():
                 chave = str(k).strip().lower().replace("á", "a").replace("ã", "a").replace("â", "a").replace("é", "e").replace("í", "i").replace("ó", "o").replace("ú", "u")
-                chave = chave.replace("-", "").replace(" ", "")
+                chave = chave.replace("-", "").replace(" ", "").replace("_", "")
                 item_limpo[chave] = str(v).strip()
             
             item_limpo["nome_original"] = str(reg.get("Nome", reg.get("nome", "Usuário"))).strip()
-            item_limpo["login_identificador"] = str(item_limpo.get("usuario", item_limpo.get("email", ""))).strip().lower()
-            item_limpo["id_perfil"] = str(item_limpo.get("idperfil", item_limpo.get("perfil", "operador_cozinha"))).strip().lower()
+            
+            # Identifica o login (usuario ou email)
+            usr_valor = item_limpo.get("usuario", item_limpo.get("email", ""))
+            item_limpo["login_identificador"] = str(usr_valor).strip().lower()
+            
+            # Identifica a coluna do ID_Perfil (idperfil, perfil, etc)
+            id_perf_valor = item_limpo.get("idperfil", item_limpo.get("perfil", "operador_cozinha"))
+            item_limpo["id_perfil"] = str(id_perf_valor).strip().lower()
+            
             item_limpo["ativo"] = str(item_limpo.get("ativo", "TRUE")).strip().upper() == "TRUE"
             
             usuarios_normalizados.append(item_limpo)
@@ -165,8 +172,8 @@ def render():
                         
                         if usuario_achado:
                             perfis = buscar_perfis()
-                            id_perf = usuario_achado.get("id_perfil", "operador_cozinha")
-                            dados_perfil = perfis.get(id_perf, {"nome": "Operador", "permissoes": []})
+                            id_perf = usuario_achado.get("id_perfil", "administrador")
+                            dados_perfil = perfis.get(id_perf, {"nome": "Administrador", "permissoes": ["ALL"]})
                             
                             st.session_state["usuario_logado"] = usuario_achado.get("nome_original")
                             st.session_state["id_usuario_logado"] = usr_digitado

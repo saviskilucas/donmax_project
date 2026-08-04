@@ -10,7 +10,7 @@ def conectar_gsheets():
 
 # DICIONÁRIO COMPLETO DE PERMISSÕES DO SISTEMA
 TODAS_PERMISSOES = {
-    "pesagem:visualizar": "Lançamentos - Accessar Formulário de Pesagem",
+    "pesagem:visualizar": "Lançamentos - Acessar Formulário de Pesagem",
     "pesagem:criar": "Lançamentos - Registrar Novas Pesagens",
     "pesagem:editar": "Lançamentos - Editar Lançamentos do Dia",
     "pesagem:excluir": "Lançamentos - Excluir Lançamentos do Dia",
@@ -29,11 +29,17 @@ def buscar_perfis():
         registros = sheet.get_all_records()
         perfis = {}
         for r in registros:
-            id_p = str(r.get("ID_Perfil", "")).strip().lower()
-            nome_p = str(r.get("Nome_Perfil", id_p)).strip()
-            perms_raw = str(r.get("Permissoes", "")).strip()
+            # Trata chaves da planilha independentemente de maiúsculas/minusculas ou underlines
+            item_limpo = {str(k).strip().lower().replace("_", "").replace(" ", ""): str(v).strip() for k, v in r.items()}
             
-            if perms_raw == "ALL":
+            id_p = item_limpo.get("idperfil", "").lower()
+            nome_p = item_limpo.get("nomeperfil", id_p)
+            perms_raw = item_limpo.get("permissoes", "")
+            
+            if not id_p:
+                continue
+
+            if perms_raw.upper() == "ALL":
                 lista_perms = ["ALL"]
             else:
                 lista_perms = [p.strip() for p in perms_raw.split(",") if p.strip()]
@@ -42,10 +48,14 @@ def buscar_perfis():
                 "nome": nome_p,
                 "permissoes": lista_perms
             }
+            
+        # Garantia de fallback para Administrador caso a planilha esteja vazia
+        if "administrador" not in perfis:
+            perfis["administrador"] = {"nome": "Admin", "permissoes": ["ALL"]}
+            
         return perfis
-    except Exception:
-        # Perfil fallback de emergência caso a aba Perfis ainda não tenha sido criada
-        return {"administrador": {"nome": "Administrador", "permissoes": ["ALL"]}}
+    except Exception as e:
+        return {"administrador": {"nome": "Admin", "permissoes": ["ALL"]}}
 
 def tem_permissao(chave_permissao):
     """Retorna True se o usuário logado tiver a permissão informada."""
