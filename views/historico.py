@@ -467,6 +467,7 @@ def render():
         
         if tem_permissao("dashboard:filtrar"):
             filtro_datas = st.date_input(
+                "",
                 value=(data_min, data_max),
                 min_value=data_min,
                 max_value=data_max,
