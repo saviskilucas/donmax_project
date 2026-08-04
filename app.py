@@ -38,7 +38,7 @@ if not st.session_state["usuario_logado"]:
 aba = st.session_state["aba_ativa"]
 
 # =========================================================
-# 2. INJEÇÃO DE CSS (MANTIDO O SEU DESIGN ORIGINAL)
+# 2. INJEÇÃO DE CSS GLOBAL (OCULTA "MADE WITH STREAMLIT")
 # =========================================================
 st.markdown("""
     <style>
@@ -48,6 +48,21 @@ st.markdown("""
         color: #F8F9FA !important;
     }
 
+    /* OCULTAR CABEÇALHO, RODAPÉ E 'MADE WITH STREAMLIT' NO MOBILE E DESKTOP */
+    #MainMenu, 
+    header, 
+    footer, 
+    [data-testid="stFooter"], 
+    .stDeployButton, 
+    div[class*="viewerBadge"], 
+    div[class*="styles_viewerBadge"], 
+    a[href*="streamlit.io"] {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+    }
+
     /* Espaçamento para o conteúdo rolar limpo atrás das barras */
     .block-container {
         padding-top: 3.8rem !important;
@@ -55,12 +70,6 @@ st.markdown("""
         padding-left: 0.8rem !important;
         padding-right: 0.8rem !important;
         max-width: 100% !important;
-    }
-
-    /* Ocultar topo e rodapé padrão do Streamlit */
-    #MainMenu, header, .stDeployButton, footer, [data-testid="stFooter"] {
-        display: none !important;
-        visibility: hidden !important;
     }
 
     /* BARRA SUPERIOR FIXA NO TOPO */
