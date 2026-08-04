@@ -14,12 +14,12 @@ def carregar_usuarios_planilha():
         st.error(f"Erro ao carregar lista de usuários: {e}")
         return []
 
-def carregar_pratos_planilha():
+def carregar_alimentos_planilha():
     try:
-        sheet = conectar_gsheets().worksheet("Pratos")
+        # Lê diretamente da aba "Alimentos"
+        sheet = conectar_gsheets().worksheet("Alimentos")
         registros = sheet.get_all_records()
         
-        # Se get_all_records falhar por falta de cabeçalho padrão, faz leitura bruta
         if not registros:
             valores = sheet.get_all_values()
             if len(valores) > 1:
@@ -31,7 +31,7 @@ def carregar_pratos_planilha():
             
         return registros
     except Exception as e:
-        st.error(f"Erro ao carregar lista de pratos: {e}")
+        st.error(f"Erro ao carregar aba Alimentos: {e}")
         return []
 
 # =========================================================
@@ -185,7 +185,7 @@ def render():
                                 st.error(f"❌ Erro ao cadastrar usuário: {e}")
 
     # =========================================================
-    # SEÇÃO 2: GESTÃO DE PRATOS / PRODUTOS (LEITURA FLEXÍVEL DE COLUNAS)
+    # SEÇÃO 2: GESTÃO DE ALIMENTOS (REFERÊNCIA: ABA "ALIMENTOS")
     # =========================================================
     with aba_pratos:
         if not pode_gerenciar_pratos:
@@ -194,26 +194,26 @@ def render():
             tab_listar_pratos, tab_criar_prato = st.tabs(["📋 Pratos Cadastrados", "➕ Novo Prato"])
 
             with tab_listar_pratos:
-                registros_pratos = carregar_pratos_planilha()
-                if not registros_pratos:
-                    st.info("Nenhum prato cadastrado na aba 'Pratos' da planilha.")
+                registros_alimentos = carregar_alimentos_planilha()
+                if not registros_alimentos:
+                    st.info("Nenhum prato cadastrado na aba 'Alimentos' da planilha.")
                 else:
-                    sheet_pratos = conectar_gsheets().worksheet("Pratos")
+                    sheet_alimentos = conectar_gsheets().worksheet("Alimentos")
 
-                    for index, reg in enumerate(registros_pratos):
+                    for index, reg in enumerate(registros_alimentos):
                         linha_planilha = index + 2
 
-                        # Busca flexível pelos nomes de coluna mais comuns
+                        # Puxa o nome diretamente da coluna "Prato"
                         nome_prato = str(
-                            reg.get("ID_Prato", reg.get("Prato", reg.get("prato", reg.get("Nome", ""))))
+                            reg.get("Prato", reg.get("prato", reg.get("ID_Prato", "")))
                         ).strip()
 
                         categoria_prato = str(
-                            reg.get("Categoria", reg.get("categoria", reg.get("Grupo", "Geral")))
+                            reg.get("Categoria", reg.get("categoria", "Geral"))
                         ).strip()
 
                         ativo_val = str(
-                            reg.get("Ativo", reg.get("ativo", reg.get("Status", "TRUE")))
+                            reg.get("Ativo", reg.get("ativo", "TRUE"))
                         ).strip().upper()
 
                         ativo_prato = ativo_val in ["TRUE", "VERDADEIRO", "1", "SIM", "S"]
@@ -224,14 +224,14 @@ def render():
                         status_emoji = "🟢 Ativo" if ativo_prato else "🔴 Inativo"
 
                         with st.expander(f"🍲 {nome_prato} — [{categoria_prato}] {status_emoji}"):
-                            with st.form(f"form_editar_prato_{index}"):
+                            with st.form(f"form_editar_alimento_{index}"):
                                 col_p1, col_p2 = st.columns(2)
                                 with col_p1:
-                                    novo_nome_prato = st.text_input("Nome do Prato", value=nome_prato, key=f"edit_prato_nome_{index}")
+                                    novo_nome_prato = st.text_input("Nome do Prato", value=nome_prato, key=f"edit_alimento_nome_{index}")
                                 with col_p2:
-                                    nova_cat_prato = st.text_input("Categoria", value=categoria_prato, key=f"edit_prato_cat_{index}")
+                                    nova_cat_prato = st.text_input("Categoria", value=categoria_prato, key=f"edit_alimento_cat_{index}")
                                 
-                                novo_status_prato = st.checkbox("Prato Ativo (Exibir no Formulário)", value=ativo_prato, key=f"edit_prato_ativo_{index}")
+                                novo_status_prato = st.checkbox("Prato Ativo (Exibir no Formulário)", value=ativo_prato, key=f"edit_alimento_ativo_{index}")
 
                                 col_btn_p1, col_btn_p2 = st.columns(2)
                                 with col_btn_p1:
@@ -241,9 +241,9 @@ def render():
 
                                 if btn_salvar_prato:
                                     try:
-                                        sheet_pratos.update_cell(linha_planilha, 1, novo_nome_prato.strip())
-                                        sheet_pratos.update_cell(linha_planilha, 2, nova_cat_prato.strip())
-                                        sheet_pratos.update_cell(linha_planilha, 3, "TRUE" if novo_status_prato else "FALSE")
+                                        sheet_alimentos.update_cell(linha_planilha, 1, novo_nome_prato.strip())
+                                        sheet_alimentos.update_cell(linha_planilha, 2, nova_cat_prato.strip())
+                                        sheet_alimentos.update_cell(linha_planilha, 3, "TRUE" if novo_status_prato else "FALSE")
 
                                         st.cache_data.clear()
                                         st.success(f"✅ Prato **{novo_nome_prato}** atualizado!")
@@ -253,7 +253,7 @@ def render():
 
                                 if btn_excluir_prato:
                                     try:
-                                        sheet_pratos.delete_rows(linha_planilha)
+                                        sheet_alimentos.delete_rows(linha_planilha)
                                         st.cache_data.clear()
                                         st.success(f"🗑️ Prato **{nome_prato}** removido!")
                                         st.rerun()
@@ -261,7 +261,7 @@ def render():
                                         st.error(f"❌ Erro ao excluir prato: {e}")
 
             with tab_criar_prato:
-                with st.form("form_novo_prato"):
+                with st.form("form_novo_alimento"):
                     col_np1, col_np2 = st.columns(2)
                     with col_np1:
                         nome_novo_prato = st.text_input("Nome do Prato", placeholder="ex: Strogonoff de Frango")
@@ -278,23 +278,23 @@ def render():
                             st.warning("⚠️ O nome do prato é obrigatório.")
                         else:
                             try:
-                                registros_pratos_atuais = carregar_pratos_planilha()
+                                registros_alimentos_atuais = carregar_alimentos_planilha()
                                 ja_existe = any(
                                     str(
-                                        r.get("ID_Prato", r.get("Prato", r.get("prato", r.get("Nome", ""))))
+                                        r.get("Prato", r.get("prato", r.get("ID_Prato", "")))
                                     ).strip().lower() == nome_limpo_prato.lower()
-                                    for r in registros_pratos_atuais
+                                    for r in registros_alimentos_atuais
                                 )
 
                                 if ja_existe:
                                     st.error(f"❌ O prato **{nome_limpo_prato}** já está cadastrado.")
                                 else:
-                                    sheet_pratos = conectar_gsheets().worksheet("Pratos")
+                                    sheet_alimentos = conectar_gsheets().worksheet("Alimentos")
                                     nova_linha = [nome_limpo_prato, cat_limpa_prato, "TRUE"]
-                                    sheet_pratos.append_row(nova_linha)
+                                    sheet_alimentos.append_row(nova_linha)
 
                                     st.cache_data.clear()
-                                    st.success(f"✅ Prato **{nome_limpo_prato}** cadastrado com sucesso!")
+                                    st.success(f"✅ Prato **{nome_limpo_prato}** cadastrado na aba Alimentos!")
                                     st.rerun()
                             except Exception as e:
-                                st.error(f"❌ Erro ao cadastrar prato na planilha: {e}")
+                                st.error(f"❌ Erro ao cadastrar na aba Alimentos: {e}")
