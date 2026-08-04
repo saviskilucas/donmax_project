@@ -1,5 +1,6 @@
 import streamlit as st
 import os
+from auth import tem_permissao
 from views import inicio, pesagem, historico, config
 
 # =========================================================
@@ -17,6 +18,8 @@ st.set_page_config(
 # Captura clique de saída via Query Param do HTML
 if "logout" in st.query_params:
     st.session_state["usuario_logado"] = None
+    st.session_state["perfil_logado"] = None
+    st.session_state["permissoes_usuario"] = None
     st.session_state["aba_ativa"] = "inicio"
     st.query_params.clear()
     st.rerun()
@@ -35,7 +38,7 @@ if not st.session_state["usuario_logado"]:
 aba = st.session_state["aba_ativa"]
 
 # =========================================================
-# 2. INJEÇÃO DE CSS
+# 2. INJEÇÃO DE CSS (MANTIDO O SEU DESIGN ORIGINAL)
 # =========================================================
 st.markdown("""
     <style>
@@ -289,14 +292,20 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # =========================================================
-# 4. ROTEAMENTO DE ABAS
+# 4. ROTEAMENTO DE ABAS COM TRAVA DE PERMISSÃO
 # =========================================================
 if aba == "inicio":
     inicio.render()
 elif aba == "pesagem" and st.session_state["usuario_logado"]:
-    pesagem.render()
+    if tem_permissao("pesagem:visualizar"):
+        pesagem.render()
+    else:
+        st.error("⛔ Seu perfil não tem permissão para acessar a tela de Pesagem.")
 elif aba == "historico" and st.session_state["usuario_logado"]:
-    historico.render()
+    if tem_permissao("dashboard:visualizar"):
+        historico.render()
+    else:
+        st.error("⛔ Seu perfil não tem permissão para acessar o Dashboard.")
 elif aba == "config" and st.session_state["usuario_logado"]:
     config.render()
 
@@ -315,13 +324,19 @@ if st.session_state["usuario_logado"]:
         with c2:
             tipo = "primary" if aba == "pesagem" else "secondary"
             if st.button("Formulário", key="btn_pesagem", type=tipo):
-                st.session_state["aba_ativa"] = "pesagem"
-                st.rerun()
+                if tem_permissao("pesagem:visualizar"):
+                    st.session_state["aba_ativa"] = "pesagem"
+                    st.rerun()
+                else:
+                    st.warning("Acesso restrito ao formulário.")
         with c3:
             tipo = "primary" if aba == "historico" else "secondary"
             if st.button("Painel", key="btn_historico", type=tipo):
-                st.session_state["aba_ativa"] = "historico"
-                st.rerun()
+                if tem_permissao("dashboard:visualizar"):
+                    st.session_state["aba_ativa"] = "historico"
+                    st.rerun()
+                else:
+                    st.warning("Acesso restrito ao painel.")
         with c4:
             tipo = "primary" if aba == "config" else "secondary"
             if st.button("⚙️", key="btn_config", type=tipo):

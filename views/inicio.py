@@ -3,12 +3,7 @@ import gspread
 import smtplib
 from email.mime.text import MIMEText
 from google.oauth2.service_account import Credentials
-
-@st.cache_resource
-def conectar_gsheets():
-    scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
-    credentials = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scope)
-    return gspread.authorize(credentials).open("Planilha Don Max")
+from auth import buscar_perfis, conectar_gsheets
 
 def buscar_usuarios_sem_cache():
     try:
@@ -19,18 +14,14 @@ def buscar_usuarios_sem_cache():
         for reg in registros:
             item_limpo = {}
             for k, v in reg.items():
-                # Remove acentos básicos, espaços e coloca em minúsculo para a chave
                 chave = str(k).strip().lower().replace("á", "a").replace("ã", "a").replace("â", "a").replace("é", "e").replace("í", "i").replace("ó", "o").replace("ú", "u")
                 chave = chave.replace("-", "").replace(" ", "")
                 item_limpo[chave] = str(v).strip()
             
-            # Mapeia nome original
-            nome_orig = str(reg.get("Nome", reg.get("nome", "Usuário"))).strip()
-            item_limpo["nome_original"] = nome_orig
-            
-            # Identifica a coluna do login (seja 'usuario', 'usuario', 'email', etc.)
-            usr_valor = item_limpo.get("usuario", item_limpo.get("email", ""))
-            item_limpo["login_identificador"] = str(usr_valor).strip().lower()
+            item_limpo["nome_original"] = str(reg.get("Nome", reg.get("nome", "Usuário"))).strip()
+            item_limpo["login_identificador"] = str(item_limpo.get("usuario", item_limpo.get("email", ""))).strip().lower()
+            item_limpo["id_perfil"] = str(item_limpo.get("idperfil", item_limpo.get("perfil", "operador_cozinha"))).strip().lower()
+            item_limpo["ativo"] = str(item_limpo.get("ativo", "TRUE")).strip().upper() == "TRUE"
             
             usuarios_normalizados.append(item_limpo)
             
@@ -41,8 +32,7 @@ def buscar_usuarios_sem_cache():
 
 def cadastrar_usuario(nome, usuario, senha):
     sheet = conectar_gsheets().worksheet("Usuarios")
-    # Escreve respeitando as colunas da planilha: Nome, Usuário, Senha
-    sheet.append_row([nome.strip(), usuario.strip().lower(), str(senha).strip()])
+    sheet.append_row([nome.strip(), usuario.strip().lower(), str(senha).strip(), "operador_cozinha", "TRUE"])
 
 def enviar_email_recuperacao_admin(usuario_solicitante, usuario_encontrado):
     try:
@@ -54,7 +44,6 @@ def enviar_email_recuperacao_admin(usuario_solicitante, usuario_encontrado):
 
         assunto = f"🔑 [Don Max] Solicitação de Senha - {usuario_solicitante}"
         
-        # HTML do E-mail Estilizado
         corpo_html = f"""
         <!DOCTYPE html>
         <html>
@@ -87,42 +76,18 @@ def enviar_email_recuperacao_admin(usuario_solicitante, usuario_encontrado):
                     margin: 0;
                     font-size: 1.25rem;
                     font-weight: 800;
-                    letter-spacing: 0.5px;
                 }}
                 .content {{
                     padding: 24px;
-                }}
-                .intro {{
-                    font-size: 0.95rem;
-                    color: #CCCCCC;
-                    margin-bottom: 20px;
-                    line-height: 1.4;
                 }}
                 .info-box {{
                     background-color: #262626;
                     border-left: 4px solid #FF5252;
                     border-radius: 8px;
                     padding: 16px;
-                    margin-bottom: 20px;
-                }}
-                .info-item {{
-                    margin-bottom: 10px;
-                    font-size: 0.9rem;
-                }}
-                .info-item:last-child {{
-                    margin-bottom: 0;
-                }}
-                .label {{
-                    color: #A0A0A0;
-                    font-size: 0.8rem;
-                    text-transform: uppercase;
-                    font-weight: 700;
-                    display: block;
-                    margin-bottom: 2px;
                 }}
                 .value {{
                     color: #FFFFFF;
-                    font-size: 1rem;
                     font-weight: 700;
                 }}
                 .badge-senha {{
@@ -131,15 +96,6 @@ def enviar_email_recuperacao_admin(usuario_solicitante, usuario_encontrado):
                     padding: 4px 10px;
                     border-radius: 6px;
                     font-family: monospace;
-                    font-size: 1.05rem;
-                    letter-spacing: 1px;
-                }}
-                .footer {{
-                    text-align: center;
-                    padding: 16px;
-                    font-size: 0.75rem;
-                    color: #777777;
-                    border-top: 1px solid #2A2A2A;
                 }}
             </style>
         </head>
@@ -149,35 +105,19 @@ def enviar_email_recuperacao_admin(usuario_solicitante, usuario_encontrado):
                     <h2>DON MAX BUFFET</h2>
                 </div>
                 <div class="content">
-                    <div class="intro">
-                        Olá, <strong>Administrador</strong>!<br>
-                        Uma solicitação de recuperação de senha foi realizada no sistema.
-                    </div>
-                    
+                    <p>Olá, <strong>Administrador</strong>!</p>
+                    <p>Uma solicitação de recuperação de senha foi realizada no sistema.</p>
                     <div class="info-box">
-                        <div class="info-item">
-                            <span class="label">Usuário Solicitado</span>
-                            <span class="value">{usuario_solicitante}</span>
-                        </div>
-                        <div class="info-item" style="margin-top: 12px;">
-                            <span class="label">Nome Cadastrado</span>
-                            <span class="value">{usuario_encontrado.get('nome_original', 'N/D')}</span>
-                        </div>
-                        <div class="info-item" style="margin-top: 12px;">
-                            <span class="label">Senha Atual</span>
-                            <span class="badge-senha">{usuario_encontrado.get('senha', 'N/D')}</span>
-                        </div>
+                        <p><strong>Usuário:</strong> <span class="value">{usuario_solicitante}</span></p>
+                        <p><strong>Nome:</strong> <span class="value">{usuario_encontrado.get('nome_original', 'N/D')}</span></p>
+                        <p><strong>Senha:</strong> <span class="badge-senha">{usuario_encontrado.get('senha', 'N/D')}</span></p>
                     </div>
-                </div>
-                <div class="footer">
-                    Mensagem automática gerada pelo Painel de Controle Don Max.
                 </div>
             </div>
         </body>
         </html>
         """
 
-        # Define a mensagem como HTML
         msg = MIMEText(corpo_html, "html", "utf-8")
         msg["Subject"] = assunto
         msg["From"] = f"Don Max Buffet <{sender_email}>"
@@ -194,14 +134,11 @@ def enviar_email_recuperacao_admin(usuario_solicitante, usuario_encontrado):
         return False
 
 def render():
-    if not st.session_state["usuario_logado"]:
+    if not st.session_state.get("usuario_logado"):
         st.markdown("<div class='section-header'>🔐 ACESSO AO SISTEMA</div>", unsafe_allow_html=True)
         
         tab_login, tab_cadastro, tab_esqueci = st.tabs(["🔐 Entrar", "📝 Criar Conta", "🔑 Esqueci a Senha"])
         
-        # ---------------------------------------------------------
-        # TAB 1: LOGIN (Aceita nome.sobrenome ou e-mail cadastrado)
-        # ---------------------------------------------------------
         with tab_login:
             with st.form("form_login"):
                 usuario_login = st.text_input("Usuário", placeholder="ex: nome.sobrenome")
@@ -216,24 +153,33 @@ def render():
                         st.warning("⚠️ Preencha usuário e senha para continuar.")
                     else:
                         usuarios = buscar_usuarios_sem_cache()
-                        usuario_encontrado = None
+                        usuario_achado = None
                         
                         for u in usuarios:
-                            if u.get("login_identificador", "") == usr_digitado and u.get("senha", "") == senha_digitada:
-                                usuario_encontrado = u.get("nome_original", "Usuário")
+                            if u.get("login_identificador") == usr_digitado and u.get("senha") == senha_digitada:
+                                if not u.get("ativo"):
+                                    st.error("❌ Conta de usuário desativada.")
+                                    return
+                                usuario_achado = u
                                 break
                         
-                        if usuario_encontrado:
-                            st.session_state["usuario_logado"] = usuario_encontrado
+                        if usuario_achado:
+                            perfis = buscar_perfis()
+                            id_perf = usuario_achado.get("id_perfil", "operador_cozinha")
+                            dados_perfil = perfis.get(id_perf, {"nome": "Operador", "permissoes": []})
+                            
+                            st.session_state["usuario_logado"] = usuario_achado.get("nome_original")
+                            st.session_state["id_usuario_logado"] = usr_digitado
+                            st.session_state["perfil_logado"] = id_perf
+                            st.session_state["nome_perfil_logado"] = dados_perfil.get("nome")
+                            st.session_state["permissoes_usuario"] = dados_perfil.get("permissoes", [])
+                            
                             st.session_state["aba_ativa"] = "pesagem"
-                            st.success(f"Bem-vindo(a), {usuario_encontrado}!")
+                            st.success(f"Bem-vindo(a), {usuario_achado.get('nome_original')}!")
                             st.rerun()
                         else:
                             st.error("❌ Usuário ou senha incorretos.")
 
-        # ---------------------------------------------------------
-        # TAB 2: CADASTRO COM NOME, USUÁRIO E SENHA
-        # ---------------------------------------------------------
         with tab_cadastro:
             with st.form("form_cadastro"):
                 nome_cad = st.text_input("Nome Completo", placeholder="Ex: João Silva")
@@ -250,7 +196,7 @@ def render():
                         st.warning("⚠️ Por favor, preencha todos os campos do cadastro.")
                     else:
                         usuarios = buscar_usuarios_sem_cache()
-                        ja_existe = any(u.get("login_identificador", "") == usr_digitado for u in usuarios)
+                        ja_existe = any(u.get("login_identificador") == usr_digitado for u in usuarios)
                         
                         if ja_existe:
                             st.error("⚠️ Este nome de usuário já está cadastrado.")
@@ -261,9 +207,6 @@ def render():
                             except Exception as e:
                                 st.error(f"❌ Erro ao salvar cadastro na planilha: {e}")
 
-        # ---------------------------------------------------------
-        # TAB 3: RECUPERAÇÃO ENVIANDO E-MAIL PARA O ADMIN
-        # ---------------------------------------------------------
         with tab_esqueci:
             with st.form("form_esqueci"):
                 usr_recup = st.text_input("Insira seu Usuário (ex: nome.sobrenome)", placeholder="nome.sobrenome")
@@ -275,22 +218,18 @@ def render():
                         st.warning("⚠️ Digite o usuário para buscar.")
                     else:
                         usuarios = buscar_usuarios_sem_cache()
-                        usuario_achado = None
-                        for u in usuarios:
-                            if u.get("login_identificador", "") == usr_target:
-                                usuario_achado = u
-                                break
+                        u_target = next((u for u in usuarios if u.get("login_identificador") == usr_target), None)
                         
-                        if usuario_achado:
-                            sucesso = enviar_email_recuperacao_admin(usr_target, usuario_achado)
+                        if u_target:
+                            sucesso = enviar_email_recuperacao_admin(usr_target, u_target)
                             if sucesso:
-                                st.success("📩 Solicitação enviada! A senha foi encaminhada ao e-mail do Administrador (saviskilucas@gmail.com). Entre em contato com ele para redefinir seu acesso.")
+                                st.success("📩 Solicitação enviada! A senha foi encaminhada ao e-mail do Administrador.")
                         else:
                             st.error("❌ Usuário não localizado na base do sistema.")
     else:
-        st.markdown(f"<div class='section-header'>🏠 PAINEL INICIAL</div>", unsafe_allow_html=True)
+        st.markdown("<div class='section-header'>🏠 PAINEL INICIAL</div>", unsafe_allow_html=True)
         st.subheader(f"Olá, {st.session_state['usuario_logado']}! 👋")
-        st.write("Sua sessão está ativa no **Sistema Don Max Buffet**.")
+        st.info(f"Perfil de Acesso: **{st.session_state.get('nome_perfil_logado', 'Usuário')}**")
         
         st.markdown("---")
         
@@ -306,6 +245,7 @@ def render():
 
         st.markdown("---")
         if st.button("🚪 Encerrar Sessão", use_container_width=True):
-            st.session_state["usuario_logado"] = None
+            for key in ["usuario_logado", "id_usuario_logado", "perfil_logado", "nome_perfil_logado", "permissoes_usuario"]:
+                st.session_state[key] = None
             st.session_state["aba_ativa"] = "inicio"
             st.rerun()

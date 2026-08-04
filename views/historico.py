@@ -20,6 +20,8 @@ from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 
+from auth import tem_permissao
+
 @st.cache_resource
 def conectar_gsheets():
     scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
@@ -93,8 +95,6 @@ def gerar_img_heatmap(df_matriz):
     fig, ax = plt.subplots(figsize=(6.5, altura), facecolor='#FFFFFF')
     ax.set_facecolor('#FFFFFF')
 
-    # Heatmap para os pratos
-    z_pratos = z_array[:-1, :] if len(pratos) > 1 else z_array
     im = ax.imshow(z_array, cmap='Reds', aspect='auto', alpha=0.85)
 
     ax.set_xticks(np.arange(len(colunas)))
@@ -104,12 +104,10 @@ def gerar_img_heatmap(df_matriz):
 
     max_val = z_array[:-1].max() if len(pratos) > 1 and z_array[:-1].max() > 0 else 1
 
-    # Renderiza textos das células
     for i in range(len(pratos)):
         is_total = (i == len(pratos) - 1) and (pratos[i] == 'TOTAL GERAL')
         for j in range(len(colunas)):
             if is_total:
-                # Linha de total com fundo escuro de destaque
                 ax.add_patch(plt.Rectangle((j - 0.5, i - 0.5), 1, 1, fill=True, color='#262626', ec='#111111', lw=1, zorder=3))
                 ax.text(j, i, text_values[i][j], ha="center", va="center", color='#FFFFFF', fontsize=8.5, fontweight='bold', zorder=4)
             else:
@@ -205,9 +203,6 @@ def gerar_img_linha(df_data):
     buf.seek(0)
     return buf
 
-# =========================================================
-# HELPER: CRIAR BANNER DE TÍTULO DE SEÇÃO COM FUNDO VERMELHO CLARO
-# =========================================================
 def criar_banner_titulo(texto):
     style_title_banner = ParagraphStyle(
         'TitleBanner',
@@ -255,7 +250,6 @@ def gerar_pdf_relatorio(df, tot_prod, tot_descarte, tot_sobra, tot_clientes, dt_
     agora_brasilia = datetime.now(ZoneInfo("America/Sao_Paulo"))
     dt_emissao_str = agora_brasilia.strftime('%d/%m/%Y às %H:%M:%S')
 
-    # BARRA SUPERIOR VERMELHA FIXA
     header_table_data = [[
         Paragraph("<b>DON MAX BUFFET</b>", style_header_app),
         Paragraph("<font color='#FFFFFF'><b>RELATÓRIO EXECUTIVO</b></font>", ParagraphStyle('HRight', fontName='Helvetica-Bold', fontSize=9, textColor=colors.white, alignment=2))
@@ -272,11 +266,9 @@ def gerar_pdf_relatorio(df, tot_prod, tot_descarte, tot_sobra, tot_clientes, dt_
     ]))
     elements.append(t_header)
 
-    # SUBTÍTULO
     dt_str = f"Período Analisado: <b>{dt_inicio.strftime('%d/%m/%Y')}</b> até <b>{dt_fim.strftime('%d/%m/%Y')}</b> &nbsp;|&nbsp; Emitido em: {dt_emissao_str}"
     elements.append(Paragraph(dt_str, style_sub))
 
-    # 1. SEÇÃO DE INDICADORES CHAVE COM DESTAQUE
     elements.append(criar_banner_titulo("INDICADORES CHAVE DO PERÍODO"))
     elements.append(Spacer(1, 6))
 
@@ -307,7 +299,6 @@ def gerar_pdf_relatorio(df, tot_prod, tot_descarte, tot_sobra, tot_clientes, dt_
     elements.append(t_cards)
     elements.append(Spacer(1, 10))
 
-    # 2. MATRIZ DE DESEMPENHO NO PDF
     if not df_matriz.empty:
         elements.append(criar_banner_titulo("Matriz de Desempenho por Produto"))
         elements.append(Spacer(1, 6))
@@ -317,7 +308,6 @@ def gerar_pdf_relatorio(df, tot_prod, tot_descarte, tot_sobra, tot_clientes, dt_
             elements.append(Image(img_h, width=540, height=altura_h))
             elements.append(Paragraph("* A linha TOTAL GERAL indica o Descarte Médio Ponderado Global (Descarte Total / Produção Total).", style_note))
 
-    # 3. DISPOSIÇÃO EM QUADRANTES
     elements.append(criar_banner_titulo("Análise Comparativa de Produção"))
     elements.append(Spacer(1, 6))
     img_b = gerar_img_balanco(prod_ini, reposicao, tot_sobra, tot_descarte)
@@ -344,7 +334,6 @@ def gerar_pdf_relatorio(df, tot_prod, tot_descarte, tot_sobra, tot_clientes, dt_
     elements.append(t_quadros)
     elements.append(Spacer(1, 8))
 
-    # 4. LINHA DO TEMPO
     if not df_data.empty:
         elements.append(criar_banner_titulo("Linha do Tempo de Descarte"))
         elements.append(Spacer(1, 6))
@@ -352,7 +341,6 @@ def gerar_pdf_relatorio(df, tot_prod, tot_descarte, tot_sobra, tot_clientes, dt_
         elements.append(Image(img_l, width=540, height=170))
         elements.append(Spacer(1, 8))
 
-    # 5. TABELA DE DETALHAMENTO
     elements.append(criar_banner_titulo("Detalhamento de Lançamentos"))
     elements.append(Spacer(1, 6))
 
@@ -390,13 +378,16 @@ def gerar_pdf_relatorio(df, tot_prod, tot_descarte, tot_sobra, tot_clientes, dt_
 
     elements.append(t_table)
 
-    # CONSTRÓI O DOCUMENTO
     doc.build(elements)
     buffer.seek(0)
     return buffer
 
 
 def render():
+    if not tem_permissao("dashboard:visualizar"):
+        st.error("⛔ Você não tem permissão para visualizar o Dashboard.")
+        return
+
     st.markdown("""
         <style>
         div[data-baseweb="input"] input {
@@ -464,18 +455,21 @@ def render():
         else:
             df['Data_DT'] = date.today()
 
-        # FILTRO DE DATA
         data_min = df['Data_DT'].min() if not df['Data_DT'].dropna().empty else date.today()
         data_max = df['Data_DT'].max() if not df['Data_DT'].dropna().empty else date.today()
 
         st.markdown("##### Filtrar por Período")
-        filtro_datas = st.date_input(
-            "Selecione o intervalo no calendário:",
-            value=(data_min, data_max),
-            min_value=data_min,
-            max_value=data_max,
-            format="DD/MM/YYYY"
-        )
+        
+        if tem_permissao("dashboard:filtrar"):
+            filtro_datas = st.date_input(
+                "Selecione o intervalo no calendário:",
+                value=(data_min, data_max),
+                min_value=data_min,
+                max_value=data_max,
+                format="DD/MM/YYYY"
+            )
+        else:
+            filtro_datas = (data_min, data_max)
 
         if isinstance(filtro_datas, tuple) and len(filtro_datas) == 2:
             dt_inicio, dt_fim = filtro_datas
@@ -485,7 +479,6 @@ def render():
             st.warning("⚠️ Nenhum registro encontrado para o período selecionado.")
             return
 
-        # CONVERSÃO DOS DADOS
         prod_ini = converter_para_numero(df['Prod_Inicial_KG']) if 'Prod_Inicial_KG' in df.columns else pd.Series([0]*len(df))
         reposicao = converter_para_numero(df['Reposicao_KG']) if 'Reposicao_KG' in df.columns else pd.Series([0]*len(df))
         sobra_buffet = converter_para_numero(df['Sobra_Buffet_KG']) if 'Sobra_Buffet_KG' in df.columns else pd.Series([0]*len(df))
@@ -501,7 +494,6 @@ def render():
         tot_sobra_buffet = float(sobra_buffet.sum())
         tot_clientes = float(clientes.sum())
 
-        # PREPARA DATAFRAMES
         df_data = pd.DataFrame()
         if 'Data' in df.columns:
             df_temp_data = pd.DataFrame({'Data': df['Data'], 'Descarte': descarte})
@@ -509,7 +501,6 @@ def render():
             df_data = df_temp_data.groupby(['Data_DT', 'Data'])['Descarte'].sum().reset_index()
             df_data = df_data.sort_values('Data_DT', ascending=True)
 
-        # MATRIZ DE DESEMPENHO (ORDENADA COM TOTAL GERAL NA ÚLTIMA LINHA)
         df_matriz = pd.DataFrame()
         if 'ID_Prato' in df.columns:
             df_matriz = df.groupby('ID_Prato').agg({
@@ -520,7 +511,6 @@ def render():
             df_matriz['Perda_%'] = (df_matriz['Descarte_Calc'] / df_matriz['Prod_Total_Calc'] * 100).fillna(0)
             df_matriz = df_matriz.sort_values(by='Descarte_Calc', ascending=True)
 
-            # GARANTE QUE O TOTAL GERAL FIQUE FIXADO COMO ÚLTIMA LINHA
             pct_total_geral = (tot_descarte / tot_prod * 100) if tot_prod > 0 else 0.0
             linha_total = pd.DataFrame([{
                 'ID_Prato': 'TOTAL GERAL',
@@ -536,7 +526,6 @@ def render():
             'displayModeBar': False
         }
 
-        # INDICADORES DO PERÍODO
         st.markdown("##### INDICADORES CHAVE")
         
         c1, c2 = st.columns(2)
@@ -575,8 +564,7 @@ def render():
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # 1. MATRIZ DE CALOR (HEATMAP) POR PRODUTO NO STREAMLIT
-        if not df_matriz.empty:
+        if tem_permissao("dashboard:matriz") and not df_matriz.empty:
             st.markdown("##### Matriz de Desempenho por Produto")
 
             pratos = df_matriz['ID_Prato'].tolist()
@@ -630,7 +618,6 @@ def render():
             st.plotly_chart(fig_heatmap, use_container_width=True, config=config_plotly_mobile)
             st.caption("ℹ️ *A linha TOTAL GERAL exibe o Descarte Médio Ponderado Global de toda a produção.*")
 
-        # 2. DISPOSIÇÃO EM QUADRANTES NO PAINEL (LADO A LADO)
         col_g1, col_g2 = st.columns(2)
 
         with col_g1:
@@ -680,7 +667,6 @@ def render():
                 )
                 st.plotly_chart(fig_pie, use_container_width=True, config=config_plotly_mobile)
 
-        # 3. LINHA DO TEMPO DE DESCARTE
         if not df_data.empty:
             st.markdown("##### Linha do Tempo de Descarte")
             fig_line = px.line(
@@ -697,7 +683,6 @@ def render():
             )
             st.plotly_chart(fig_line, use_container_width=True, config=config_plotly_mobile)
 
-        # BOTÕES SUPERIORES: ATUALIZAR E GERAR PDF
         col_hdr_left, col_hdr_right = st.columns([0.5, 0.5])
         with col_hdr_left:
             if st.button("🔄 Atualizar", use_container_width=True):
@@ -705,21 +690,21 @@ def render():
                 st.rerun()
 
         with col_hdr_right:
-            pdf_bytes = gerar_pdf_relatorio(
-                df, tot_prod, tot_descarte, tot_sobra_buffet, tot_clientes,
-                filtro_datas[0] if isinstance(filtro_datas, tuple) else data_min,
-                filtro_datas[1] if isinstance(filtro_datas, tuple) else data_max,
-                prod_ini, reposicao, df_data, df_matriz
-            )
-            st.download_button(
-                label="📄 Baixar PDF",
-                data=pdf_bytes,
-                file_name=f"Relatorio_DonMax_{datetime.now(ZoneInfo('America/Sao_Paulo')).strftime('%d%m%Y')}.pdf",
-                mime="application/pdf",
-                use_container_width=True
-            )
+            if tem_permissao("relatorios:exportar_pdf"):
+                pdf_bytes = gerar_pdf_relatorio(
+                    df, tot_prod, tot_descarte, tot_sobra_buffet, tot_clientes,
+                    filtro_datas[0] if isinstance(filtro_datas, tuple) else data_min,
+                    filtro_datas[1] if isinstance(filtro_datas, tuple) else data_max,
+                    prod_ini, reposicao, df_data, df_matriz
+                )
+                st.download_button(
+                    label="📄 Baixar PDF",
+                    data=pdf_bytes,
+                    file_name=f"Relatorio_DonMax_{datetime.now(ZoneInfo('America/Sao_Paulo')).strftime('%d%m%Y')}.pdf",
+                    mime="application/pdf",
+                    use_container_width=True
+                )
 
-        # TABELA DE REGISTROS
         st.markdown("---")
         st.markdown("##### Lançamentos")
         

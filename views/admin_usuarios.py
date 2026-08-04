@@ -25,27 +25,30 @@ def salvar_perfil(id_perfil, nome_perfil, lista_permissoes):
         sheet.append_row([id_perfil.lower(), nome_perfil, str_perms])
 
 def render():
-    st.markdown("<div class='section-header'>⚙️ CONFIGURAÇÕES E PERMISSÕES</div>", unsafe_allow_html=True)
-    
     if not tem_permissao("usuarios:gerenciar") and not tem_permissao("perfis:gerenciar"):
-        st.info("ℹ️ Seu perfil não possui permissão para alterar contas de acesso ou perfis.")
+        st.error("⛔ Você não tem permissão para acessar esta área do sistema.")
         return
 
-    tab_users, tab_perfis = st.tabs(["👤 Gerenciar Usuários", "🛡️ Matriz de Permissões"])
+    st.markdown("<div class='section-header'>⚙️ GESTÃO DE USUÁRIOS E PERMISSÕES</div>", unsafe_allow_html=True)
+    
+    tab_users, tab_perfis = st.tabs(["👤 Usuários Cadastrados", "🛡️ Matriz de Perfis & Permissões"])
 
     # ---------------------------------------------------------
-    # TAB 1: GERENCIAR USUÁRIOS
+    # TAB 1: CADASTRO E GERENCIAMENTO DE USUÁRIOS
     # ---------------------------------------------------------
     with tab_users:
         st.markdown("##### Novo Usuário")
         perfis_dict = buscar_perfis()
         opcoes_perfis = {k: v["nome"] for k, v in perfis_dict.items()}
 
-        with st.form("form_novo_usuario_cfg"):
-            nome = st.text_input("Nome Completo", placeholder="ex: João Silva")
-            usuario = st.text_input("Nome de Usuário", placeholder="ex: joao.silva")
-            senha = st.text_input("Senha", type="password")
-            id_perfil = st.selectbox("Perfil de Acesso", options=list(opcoes_perfis.keys()), format_func=lambda x: opcoes_perfis[x])
+        with st.form("form_novo_usuario"):
+            c1, c2 = st.columns(2)
+            with c1:
+                nome = st.text_input("Nome Completo", placeholder="ex: João Silva")
+                usuario = st.text_input("Nome de Usuário", placeholder="ex: joao.silva")
+            with c2:
+                senha = st.text_input("Senha", type="password")
+                id_perfil = st.selectbox("Perfil de Acesso", options=list(opcoes_perfis.keys()), format_func=lambda x: opcoes_perfis[x])
             
             if st.form_submit_button("CADASTRAR USUÁRIO"):
                 if nome and usuario and senha:
@@ -59,7 +62,7 @@ def render():
                     st.warning("⚠️ Preencha todos os campos.")
 
     # ---------------------------------------------------------
-    # TAB 2: MATRIZ DE PERMISSÕES
+    # TAB 2: MATRIZ DE PERMISSÕES PERSONALIZADA
     # ---------------------------------------------------------
     with tab_perfis:
         st.markdown("##### Configurar Permissões por Perfil")
@@ -98,7 +101,7 @@ def render():
         if st.button("💾 SALVAR CONFIGURAÇÕES DO PERFIL", use_container_width=True):
             if id_p_input and nome_p_input:
                 salvar_perfil(id_p_input, nome_p_input, novas_permissoes)
-                st.success("✅ Perfil salvo com sucesso!")
+                st.success("✅ Perfil e permissões salvos com sucesso!")
                 st.rerun()
             else:
                 st.warning("⚠️ Preencha o ID e o Nome do perfil.")
