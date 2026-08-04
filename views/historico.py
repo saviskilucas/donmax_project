@@ -507,7 +507,6 @@ def render():
             df_data = df_temp_data.groupby(['Data_DT', 'Data'])['Descarte'].sum().reset_index()
             df_data = df_data.sort_values('Data_DT', ascending=True)
 
-        # PREPARAÇÃO DO HEATMAP COM A LINHA TOTAL GERAL EMBAIXO
         df_matriz = pd.DataFrame()
         if 'ID_Prato' in df.columns:
             df_matriz = df.groupby('ID_Prato').agg({
@@ -736,55 +735,74 @@ def render():
                 )
 
         st.markdown("---")
-        st.markdown("##### 📝 Lançamentos Registrados")
+        st.markdown("##### 📊 Lançamentos Registrados")
+        
+        # =========================================================
+        # TABELA DE LANÇAMENTOS LIMPA E COMPACTA
+        # =========================================================
+        df_exibicao = df.copy()
+        
+        cols_remover = ['Data_DT', 'Prod_Ini_Calc', 'Reposicao_Calc', 'Prod_Total_Calc', 'Descarte_Calc', 'Sobra_Buffet_Calc']
+        for c in cols_remover:
+            if c in df_exibicao.columns:
+                df_exibicao.drop(columns=[c], inplace=True)
+
+        cols_peso = ['Prod_Inicial_KG', 'Reposicao_KG', 'Sobra_Buffet_KG', 'Descarte_KG']
+        for c in cols_peso:
+            if c in df_exibicao.columns:
+                df_exibicao[c] = converter_para_numero(df_exibicao[c]).apply(lambda x: f"{x:.3f} kg")
+
+        # Exibe a tabela original invertida (mais recentes no topo)
+        st.dataframe(df_exibicao.tail(10).iloc[::-1], use_container_width=True, hide_index=True)
 
         # =========================================================
-        # 4. TABELA E EDIÇÃO / EXCLUSÃO DE LANÇAMENTOS (ADMIN / MASTER)
+        # GERENCIADOR / GERENCIAMENTO DE LANÇAMENTOS (ADMIN E MASTER)
         # =========================================================
         perfil_atual = st.session_state.get("perfil_logado", "").lower()
         pode_editar_lancamento = perfil_atual in ["master", "admin"] or tem_permissao("lancamentos:editar")
 
-        sheet_lancamentos = conectar_gsheets().worksheet("Lancamentos_Diarios")
+        if pode_editar_lancamento:
+            with st.expander("🛠️ **Gerenciar Lançamentos (Editar / Excluir)**"):
+                st.caption("Selecione um lançamento cadastrado abaixo para editar os valores ou remover o registro do banco de dados:")
+                
+                sheet_lancamentos = conectar_gsheets().worksheet("Lancamentos_Diarios")
+                
+                # Monta opções amigáveis para o Selectbox
+                opcoes_lancamentos = {}
+                for idx, r in df.iterrows():
+                    linha_planilha = idx + 2
+                    dt = str(r.get('Data', ''))
+                    prato = str(r.get('ID_Prato', '-'))
+                    resp = str(r.get('Responsavel', ''))
+                    opcoes_lancamentos[f"Linha {linha_planilha} | {dt} - {prato} ({resp})"] = (linha_planilha, r)
 
-        # Ordenar os mais recentes no topo para facilitar a edição
-        df_exibicao = df.iloc[::-1].copy()
+                if opcoes_lancamentos:
+                    sel_label = st.selectbox("Selecione o Lançamento:", options=list(opcoes_lancamentos.keys()))
+                    linha_sel, reg_sel = opcoes_lancamentos[sel_label]
 
-        for idx, row in df_exibicao.iterrows():
-            # A linha na planilha do Google Sheets é o índice original + 2 (Linha 1 é o cabeçalho)
-            linha_planilha = idx + 2
+                    dt_lan = str(reg_sel.get('Data', ''))
+                    prato_lan = str(reg_sel.get('ID_Prato', '-'))
+                    resp_lan = str(reg_sel.get('Responsavel', ''))
+                    p_ini_num = float(converter_para_numero(pd.Series([reg_sel.get('Prod_Inicial_KG', 0)]))[0])
+                    repo_num = float(converter_para_numero(pd.Series([reg_sel.get('Reposicao_KG', 0)]))[0])
+                    sobra_num = float(converter_para_numero(pd.Series([reg_sel.get('Sobra_Buffet_KG', 0)]))[0])
+                    desc_num = float(converter_para_numero(pd.Series([reg_sel.get('Descarte_KG', 0)]))[0])
+                    cli_num = int(converter_para_numero(pd.Series([reg_sel.get('Clientes_Atendidos', 0)]))[0])
+                    obs_lan = str(reg_sel.get('Observacoes', ''))
 
-            dt_lan = str(row.get('Data', ''))
-            prato_lan = str(row.get('ID_Prato', '-'))
-            resp_lan = str(row.get('Responsavel', 'Não informado'))
-            
-            p_ini_num = float(converter_para_numero(pd.Series([row.get('Prod_Inicial_KG', 0)]))[0])
-            repo_num = float(converter_para_numero(pd.Series([row.get('Reposicao_KG', 0)]))[0])
-            sobra_num = float(converter_para_numero(pd.Series([row.get('Sobra_Buffet_KG', 0)]))[0])
-            desc_num = float(converter_para_numero(pd.Series([row.get('Descarte_KG', 0)]))[0])
-            cli_num = int(converter_para_numero(pd.Series([row.get('Clientes_Atendidos', 0)]))[0])
-            obs_lan = str(row.get('Observacoes', ''))
-
-            # Expander individual para cada lançamento registrado
-            with st.expander(f"📅 {dt_lan} — 🍲 **{prato_lan}** ({resp_lan})"):
-                if not pode_editar_lancamento:
-                    st.write(f"**Prod. Inicial:** {p_ini_num:.3f} kg | **Reposição:** {repo_num:.3f} kg")
-                    st.write(f"**Sobra Buffet:** {sobra_num:.3f} kg | **Descarte:** {desc_num:.3f} kg")
-                    st.write(f"**Clientes:** {cli_num} | **Obs:** {obs_lan if obs_lan else '-'}")
-                else:
-                    # Formulário de edição por lançamento
-                    with st.form(key=f"form_edit_lanc_{linha_planilha}"):
+                    with st.form(key=f"form_editar_selecionado_{linha_sel}"):
                         c_ed1, c_ed2 = st.columns(2)
                         with c_ed1:
-                            e_dt = st.text_input("Data (DD/MM/AAAA)", value=dt_lan, key=f"dt_{linha_planilha}")
-                            e_prato = st.text_input("Prato / Item", value=prato_lan, key=f"prato_{linha_planilha}")
-                            e_p_ini = st.number_input("Prod. Inicial (kg)", value=p_ini_num, step=0.1, format="%.3f", key=f"p_ini_{linha_planilha}")
-                            e_repo = st.number_input("Reposição (kg)", value=repo_num, step=0.1, format="%.3f", key=f"repo_{linha_planilha}")
+                            e_dt = st.text_input("Data (DD/MM/AAAA)", value=dt_lan)
+                            e_prato = st.text_input("Prato / Item", value=prato_lan)
+                            e_p_ini = st.number_input("Prod. Inicial (kg)", value=p_ini_num, step=0.1, format="%.3f")
+                            e_repo = st.number_input("Reposição (kg)", value=repo_num, step=0.1, format="%.3f")
                         
                         with c_ed2:
-                            e_sobra = st.number_input("Sobra Buffet (kg)", value=sobra_num, step=0.1, format="%.3f", key=f"sobra_{linha_planilha}")
-                            e_desc = st.number_input("Descarte Total (kg)", value=desc_num, step=0.1, format="%.3f", key=f"desc_{linha_planilha}")
-                            e_cli = st.number_input("Clientes Atendidos", value=cli_num, step=1, key=f"cli_{linha_planilha}")
-                            e_obs = st.text_input("Observações", value=obs_lan, key=f"obs_{linha_planilha}")
+                            e_sobra = st.number_input("Sobra Buffet (kg)", value=sobra_num, step=0.1, format="%.3f")
+                            e_desc = st.number_input("Descarte Total (kg)", value=desc_num, step=0.1, format="%.3f")
+                            e_cli = st.number_input("Clientes Atendidos", value=cli_num, step=1)
+                            e_obs = st.text_input("Observações", value=obs_lan)
 
                         b_salvar, b_excluir = st.columns(2)
                         with b_salvar:
@@ -794,16 +812,15 @@ def render():
 
                         if btn_salvar_l:
                             try:
-                                # Atualiza linha na planilha na mesma ordem das colunas
-                                sheet_lancamentos.update_cell(linha_planilha, 1, e_dt.strip())
-                                sheet_lancamentos.update_cell(linha_planilha, 2, resp_lan)
-                                sheet_lancamentos.update_cell(linha_planilha, 3, e_prato.strip())
-                                sheet_lancamentos.update_cell(linha_planilha, 4, str(e_p_ini))
-                                sheet_lancamentos.update_cell(linha_planilha, 5, str(e_repo))
-                                sheet_lancamentos.update_cell(linha_planilha, 6, str(e_sobra))
-                                sheet_lancamentos.update_cell(linha_planilha, 7, str(e_desc))
-                                sheet_lancamentos.update_cell(linha_planilha, 8, str(e_cli))
-                                sheet_lancamentos.update_cell(linha_planilha, 9, e_obs.strip())
+                                sheet_lancamentos.update_cell(linha_sel, 1, e_dt.strip())
+                                sheet_lancamentos.update_cell(linha_sel, 2, resp_lan)
+                                sheet_lancamentos.update_cell(linha_sel, 3, e_prato.strip())
+                                sheet_lancamentos.update_cell(linha_sel, 4, str(e_p_ini))
+                                sheet_lancamentos.update_cell(linha_sel, 5, str(e_repo))
+                                sheet_lancamentos.update_cell(linha_sel, 6, str(e_sobra))
+                                sheet_lancamentos.update_cell(linha_sel, 7, str(e_desc))
+                                sheet_lancamentos.update_cell(linha_sel, 8, str(e_cli))
+                                sheet_lancamentos.update_cell(linha_sel, 9, e_obs.strip())
 
                                 st.cache_data.clear()
                                 st.success("🟢 Lançamento atualizado com sucesso!")
@@ -813,7 +830,7 @@ def render():
 
                         if btn_excluir_l:
                             try:
-                                sheet_lancamentos.delete_rows(linha_planilha)
+                                sheet_lancamentos.delete_rows(linha_sel)
                                 st.cache_data.clear()
                                 st.success("🗑️ Lançamento excluído com sucesso!")
                                 st.rerun()
