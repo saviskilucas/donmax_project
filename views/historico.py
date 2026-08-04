@@ -271,7 +271,7 @@ def gerar_pdf_relatorio(df, tot_prod, tot_descarte, tot_sobra, tot_clientes, dt_
     dt_str = f"Período Analisado: <b>{dt_inicio.strftime('%d/%m/%Y')}</b> até <b>{dt_fim.strftime('%d/%m/%Y')}</b> &nbsp;|&nbsp; Emitido em: {dt_emissao_str}"
     elements.append(Paragraph(dt_str, style_sub))
 
-    elements.append(criar_banner_titulo("INDICADORES CHAVE DO PERÍODO"))
+    elements.append(criar_banner_titulo("INDICADORES"))
     elements.append(Spacer(1, 6))
 
     cards_data = [
@@ -467,7 +467,6 @@ def render():
         
         if tem_permissao("dashboard:filtrar"):
             filtro_datas = st.date_input(
-                "Selecione o intervalo no calendário:",
                 value=(data_min, data_max),
                 min_value=data_min,
                 max_value=data_max,
@@ -755,14 +754,14 @@ def render():
                             font-size: 0.9rem;
                             cursor: pointer;
                             text-align: center;">
-                            📄 Abrir PDF em Nova Aba
+                            📄 Gerar PDF
                         </button>
                     </a>
                     ''',
                     unsafe_allow_html=True
                 )
         st.markdown("---")
-        st.markdown("##### 📊 Lançamentos Registrados")
+        st.markdown("##### Lançamentos")
         
         # =========================================================
         # TABELA DE LANÇAMENTOS COM COLUNA ID VISÍVEL
@@ -792,7 +791,7 @@ def render():
         pode_editar_lancamento = perfil_atual in ["master", "admin"] or tem_permissao("lancamentos:editar")
 
         if pode_editar_lancamento:
-            with st.expander("🛠️ **Gerenciar Lançamentos (Editar / Excluir)**"):
+            with st.expander("**Gerenciar Lançamentos (Editar / Excluir)**"):
                 st.caption("Selecione abaixo o **ID** do lançamento que você deseja alterar ou remover:")
                 
                 sheet_lancamentos = conectar_gsheets().worksheet("Lancamentos_Diarios")
