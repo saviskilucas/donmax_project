@@ -5,24 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Don Max - Buffet</title>
 
-    <!-- Metadados PWA -->
     <link rel="icon" type="image/png" href="logo.png">
     <link rel="apple-touch-icon" href="logo.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#121212">
 
-    <link rel="manifest" href="manifest.json">
-
     <style>
-        /* Trava rigorosa do fundo e da janela pai em Modo Escuro */
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            -webkit-tap-highlight-color: transparent;
         }
-
         html, body {
             width: 100vw !important;
             height: 100vh !important;
@@ -30,23 +24,21 @@
             margin: 0 !important;
             padding: 0 !important;
             overflow: hidden !important;
-            background-color: #121212 !important; /* Cor idêntica ao fundo do app para eliminar contraste */
+            background-color: #121212 !important;
         }
 
         .app-wrapper {
             position: fixed !important;
             top: 0 !important;
             left: 0 !important;
-            right: 0 !important;
-            bottom: 0 !important;
             width: 100vw !important;
-            height: 100vh !important;
-            height: 100dvh !important;
+            /* Aumenta a altura para forçar a barra do Streamlit para fora do limite visível */
+            height: calc(100vh + 50px) !important;
+            height: calc(100dvh + 50px) !important;
             overflow: hidden !important;
             background-color: #121212 !important;
         }
 
-        /* O iframe expande e corta qualquer resíduo da barra de status na camada externa */
         iframe {
             width: 100% !important;
             height: 100% !important;
@@ -60,7 +52,7 @@
 <body>
 
     <div class="app-wrapper">
-        <iframe src="https://donmax.streamlit.app/" allow="fullscreen"></iframe>
+        <iframe src="https://donmax.streamlit.app/?embed=true"></iframe>
     </div>
 
 </body>
