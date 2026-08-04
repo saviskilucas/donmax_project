@@ -50,12 +50,12 @@ def buscar_perfis():
                 "permissoes": lista_perms
             }
             
-        if "administrador" not in perfis:
-            perfis["administrador"] = {"nome": "Admin", "permissoes": ["ALL"]}
+        if "master" not in perfis:
+            perfis["master"] = {"nome": "Master", "permissoes": ["ALL"]}
             
         return perfis
     except Exception:
-        return {"administrador": {"nome": "Admin", "permissoes": ["ALL"]}}
+        return {"master": {"nome": "Master", "permissoes": ["ALL"]}}
 
 def tem_permissao(chave_permissao):
     """Retorna True se o usuário logado tiver a permissão informada."""

@@ -19,15 +19,11 @@ def buscar_usuarios_sem_cache():
                 item_limpo[chave] = str(v).strip()
             
             item_limpo["nome_original"] = str(reg.get("Nome", reg.get("nome", "Usuário"))).strip()
-            
-            # Identifica o login (usuario ou email)
             usr_valor = item_limpo.get("usuario", item_limpo.get("email", ""))
             item_limpo["login_identificador"] = str(usr_valor).strip().lower()
             
-            # Identifica a coluna do ID_Perfil (idperfil, perfil, etc)
-            id_perf_valor = item_limpo.get("idperfil", item_limpo.get("perfil", "operador_cozinha"))
+            id_perf_valor = item_limpo.get("idperfil", item_limpo.get("perfil", "cozinha"))
             item_limpo["id_perfil"] = str(id_perf_valor).strip().lower()
-            
             item_limpo["ativo"] = str(item_limpo.get("ativo", "TRUE")).strip().upper() == "TRUE"
             
             usuarios_normalizados.append(item_limpo)
@@ -36,10 +32,6 @@ def buscar_usuarios_sem_cache():
     except Exception as e:
         st.error(f"Erro ao acessar a aba 'Usuarios' na planilha: {e}")
         return []
-
-def cadastrar_usuario(nome, usuario, senha):
-    sheet = conectar_gsheets().worksheet("Usuarios")
-    sheet.append_row([nome.strip(), usuario.strip().lower(), str(senha).strip(), "operador_cozinha", "TRUE"])
 
 def enviar_email_recuperacao_admin(usuario_solicitante, usuario_encontrado):
     try:
@@ -144,7 +136,8 @@ def render():
     if not st.session_state.get("usuario_logado"):
         st.markdown("<div class='section-header'>🔐 ACESSO AO SISTEMA</div>", unsafe_allow_html=True)
         
-        tab_login, tab_cadastro, tab_esqueci = st.tabs(["🔐 Entrar", "📝 Criar Conta", "🔑 Esqueci a Senha"])
+        # APENAS DUAS ABAS: ENTRAR E ESQUECI A SENHA
+        tab_login, tab_esqueci = st.tabs(["🔐 Entrar", "🔑 Esqueci a Senha"])
         
         with tab_login:
             with st.form("form_login"):
@@ -165,15 +158,15 @@ def render():
                         for u in usuarios:
                             if u.get("login_identificador") == usr_digitado and u.get("senha") == senha_digitada:
                                 if not u.get("ativo"):
-                                    st.error("❌ Conta de usuário desativada.")
+                                    st.error("❌ Conta de usuário desativada. Entre em contato com o Administrador.")
                                     return
                                 usuario_achado = u
                                 break
                         
                         if usuario_achado:
                             perfis = buscar_perfis()
-                            id_perf = usuario_achado.get("id_perfil", "administrador")
-                            dados_perfil = perfis.get(id_perf, {"nome": "Administrador", "permissoes": ["ALL"]})
+                            id_perf = usuario_achado.get("id_perfil", "master")
+                            dados_perfil = perfis.get(id_perf, {"nome": "Usuário", "permissoes": []})
                             
                             st.session_state["usuario_logado"] = usuario_achado.get("nome_original")
                             st.session_state["id_usuario_logado"] = usr_digitado
@@ -186,33 +179,6 @@ def render():
                             st.rerun()
                         else:
                             st.error("❌ Usuário ou senha incorretos.")
-
-        with tab_cadastro:
-            with st.form("form_cadastro"):
-                nome_cad = st.text_input("Nome Completo", placeholder="Ex: João Silva")
-                usuario_cad = st.text_input("Nome de Usuário", placeholder="Ex: joao.silva")
-                senha_cad = st.text_input("Senha de Acesso", type="password", placeholder="••••••••")
-                btn_cadastrar = st.form_submit_button("CRIAR MINHA CONTA")
-                
-                if btn_cadastrar:
-                    nome_digitado = nome_cad.strip()
-                    usr_digitado = usuario_cad.strip().lower().replace(" ", "")
-                    senha_digitada = senha_cad.strip()
-                    
-                    if not nome_digitado or not usr_digitado or not senha_digitada:
-                        st.warning("⚠️ Por favor, preencha todos os campos do cadastro.")
-                    else:
-                        usuarios = buscar_usuarios_sem_cache()
-                        ja_existe = any(u.get("login_identificador") == usr_digitado for u in usuarios)
-                        
-                        if ja_existe:
-                            st.error("⚠️ Este nome de usuário já está cadastrado.")
-                        else:
-                            try:
-                                cadastrar_usuario(nome_digitado, usr_digitado, senha_digitada)
-                                st.success("✅ Conta criada com sucesso! Você já pode entrar na aba 'Entrar'.")
-                            except Exception as e:
-                                st.error(f"❌ Erro ao salvar cadastro na planilha: {e}")
 
         with tab_esqueci:
             with st.form("form_esqueci"):
