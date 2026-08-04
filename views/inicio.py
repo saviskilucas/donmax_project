@@ -1,6 +1,7 @@
 import streamlit as st
 import gspread
 import smtplib
+import os
 from email.mime.text import MIMEText
 from google.oauth2.service_account import Credentials
 from auth import buscar_perfis, conectar_gsheets
@@ -134,7 +135,7 @@ def enviar_email_recuperacao_admin(usuario_solicitante, usuario_encontrado):
 
 def render():
     if not st.session_state.get("usuario_logado"):
-        # CSS Exclusivo para deixar a Tela de Login estilizada
+        # CSS Exclusivo para a Tela de Login
         st.markdown("""
             <style>
             .login-card {
@@ -142,18 +143,17 @@ def render():
                 border: 1px solid #2D2D2D;
                 border-top: 5px solid #B71C1C;
                 border-radius: 16px;
-                padding: 28px 20px 20px 20px;
+                padding: 24px 20px 18px 20px;
                 box-shadow: 0px 8px 24px rgba(0, 0, 0, 0.6);
                 margin-top: 10px;
                 margin-bottom: 20px;
-            }
-            .login-header {
                 text-align: center;
-                margin-bottom: 20px;
             }
-            .login-icon {
-                font-size: 2.8rem;
-                margin-bottom: 5px;
+            .login-logo {
+                max-width: 110px;
+                height: auto;
+                margin-bottom: 12px;
+                border-radius: 12px;
             }
             .login-title {
                 color: #FFFFFF;
@@ -167,7 +167,6 @@ def render():
                 font-size: 0.85rem;
                 margin-top: 4px;
             }
-            /* Customização do botão de login do Streamlit */
             div[data-testid="stForm"] {
                 border: none !important;
                 padding: 0 !important;
@@ -192,20 +191,31 @@ def render():
             </style>
         """, unsafe_allow_html=True)
 
-        # Container Principal Centralizado
         col_esq, col_centro, col_dir = st.columns([0.1, 0.8, 0.1])
         
         with col_centro:
-            # BANNER / LOGO
-            st.markdown("""
-                <div class="login-card">
-                    <div class="login-header">
-                        <div class="login-icon">🍽️</div>
+            # VERIFICA E EXIBE A LOGO.PNG
+            logo_path = "logo.png"
+            if os.path.exists(logo_path):
+                # Renderiza com st.image dentro do container
+                c_img1, c_img2, c_img3 = st.columns([0.3, 0.4, 0.3])
+                with c_img2:
+                    st.image(logo_path, use_container_width=True)
+                
+                st.markdown("""
+                    <div class="login-card" style="border-top: 3px solid #B71C1C; padding-top: 12px;">
                         <div class="login-title">DON MAX BUFFET</div>
                         <div class="login-subtitle">Gestão de Pesagens e Produção</div>
                     </div>
-                </div>
-            """, unsafe_allow_html=True)
+                """, unsafe_allow_html=True)
+            else:
+                st.markdown("""
+                    <div class="login-card">
+                        <div style="font-size: 2.8rem; margin-bottom: 5px;">🍽️</div>
+                        <div class="login-title">DON MAX BUFFET</div>
+                        <div class="login-subtitle">Gestão de Pesagens e Produção</div>
+                    </div>
+                """, unsafe_allow_html=True)
 
             # FORMULÁRIO DE LOGIN
             with st.form("form_login_principal"):
@@ -248,7 +258,6 @@ def render():
                         else:
                             st.error("❌ Usuário ou senha incorretos.")
 
-            # ÁREA DE RECUPERAÇÃO DE SENHA EXPANSÍVEL
             st.markdown("<br>", unsafe_allow_html=True)
             with st.expander("🔑 Esqueceu sua senha?"):
                 with st.form("form_esqueci_senha_exp"):
@@ -271,7 +280,6 @@ def render():
                                 st.error("❌ Usuário não localizado.")
 
     else:
-        # TELA QUANDO O USUÁRIO JÁ ESTÁ LOGADO
         st.markdown("<div class='section-header'>🏠 PAINEL INICIAL</div>", unsafe_allow_html=True)
         st.subheader(f"Olá, {st.session_state['usuario_logado']}! 👋")
         st.info(f"Perfil de Acesso: **{st.session_state.get('nome_perfil_logado', 'Usuário')}**")
