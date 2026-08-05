@@ -8,18 +8,6 @@ from datetime import datetime, date
 from zoneinfo import ZoneInfo
 import io
 
-# Visualização para PDF em Modo Claro (Impresso)
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-import numpy as np
-
-# ReportLab para geração do PDF
-from reportlab.lib.pagesizes import letter
-from reportlab.lib import colors
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-
 from auth import tem_permissao
 
 @st.cache_resource
@@ -28,10 +16,12 @@ def conectar_gsheets():
     credentials = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scope)
     return gspread.authorize(credentials).open("Planilha Don Max")
 
-@st.cache_data(ttl=30)
+# CACHE DE ALTA VELOCIDADE PARA TROCA INSTANTÂNEA DE TELAS
+@st.cache_data(ttl=300, show_spinner=False)
 def carregar_dados_painel():
     try:
-        sheet = conectar_gsheets().worksheet("Lancamentos_Diarios")
+        doc = conectar_gsheets()
+        sheet = doc.worksheet("Lancamentos_Diarios")
         registros = sheet.get_all_records()
         
         if not registros:
@@ -66,6 +56,11 @@ def converter_para_numero(serie):
 # GERADOR DE GRÁFICOS PARA PDF (MATPLOTLIB)
 # =========================================================
 def gerar_img_heatmap(df_matriz):
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    import numpy as np
+
     if df_matriz.empty:
         return None
 
@@ -128,6 +123,10 @@ def gerar_img_heatmap(df_matriz):
     return buf
 
 def gerar_img_balanco(prod_ini, reposicao, tot_sobra, tot_descarte):
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+
     fig, ax = plt.subplots(figsize=(3.2, 2.2), facecolor='#FFFFFF')
     ax.set_facecolor('#FFFFFF')
     
@@ -157,6 +156,10 @@ def gerar_img_balanco(prod_ini, reposicao, tot_sobra, tot_descarte):
     return buf
 
 def gerar_img_rosca(tot_descarte, tot_sobra):
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+
     fig, ax = plt.subplots(figsize=(3.2, 2.2), facecolor='#FFFFFF')
     ax.set_facecolor('#FFFFFF')
     
@@ -185,6 +188,10 @@ def gerar_img_rosca(tot_descarte, tot_sobra):
     return buf
 
 def gerar_img_linha(df_data):
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+
     fig, ax = plt.subplots(figsize=(6.5, 2.2), facecolor='#FFFFFF')
     ax.set_facecolor('#FFFFFF')
     
@@ -206,6 +213,10 @@ def gerar_img_linha(df_data):
     return buf
 
 def criar_banner_titulo(texto):
+    from reportlab.lib import colors
+    from reportlab.platypus import Paragraph, Table, TableStyle
+    from reportlab.lib.styles import ParagraphStyle
+
     style_title_banner = ParagraphStyle(
         'TitleBanner',
         fontName='Helvetica-Bold',
@@ -226,9 +237,14 @@ def criar_banner_titulo(texto):
     return t_banner
 
 # =========================================================
-# GERADOR DE PDF EXECUTIVO
+# GERADOR DE PDF EXECUTIVO (LAZY LOADING DE REPORTLAB)
 # =========================================================
 def gerar_pdf_relatorio(df, tot_prod, tot_descarte, tot_sobra, tot_clientes, dt_inicio, dt_fim, prod_ini, reposicao, df_data, df_matriz):
+    from reportlab.lib.pagesizes import letter
+    from reportlab.lib import colors
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(
         buffer,
@@ -271,7 +287,7 @@ def gerar_pdf_relatorio(df, tot_prod, tot_descarte, tot_sobra, tot_clientes, dt_
     dt_str = f"Período Analisado: <b>{dt_inicio.strftime('%d/%m/%Y')}</b> até <b>{dt_fim.strftime('%d/%m/%Y')}</b> &nbsp;|&nbsp; Emitido em: {dt_emissao_str}"
     elements.append(Paragraph(dt_str, style_sub))
 
-    elements.append(criar_banner_titulo("INDICADORES"))
+    elements.append(criar_banner_titulo("INDICADORES CHAVE DO PERÍODO"))
     elements.append(Spacer(1, 6))
 
     cards_data = [
@@ -451,17 +467,28 @@ def render():
     
     if dados:
         df = pd.DataFrame(dados)
-        
-        # Cria ID sequencial de controle baseado na posição da planilha (Linha)
+
+        cols_texto = ['ID_Prato', 'Responsavel', 'Data', 'Observacoes']
+        for col_t in cols_texto:
+            if col_t in df.columns:
+                df[col_t] = df[col_t].astype(str).fillna('-')
+
         df['ID'] = range(1, len(df) + 1)
 
         if 'Data' in df.columns:
-            df['Data_DT'] = pd.to_datetime(df['Data'], format='%d/%m/%Y', errors='coerce').dt.date
+            s_datas = pd.to_datetime(df['Data'], format='%d/%m/%Y', errors='coerce').dt.date
+            df['Data_DT'] = s_datas
         else:
             df['Data_DT'] = date.today()
 
-        data_min = df['Data_DT'].min() if not df['Data_DT'].dropna().empty else date.today()
-        data_max = df['Data_DT'].max() if not df['Data_DT'].dropna().empty else date.today()
+        datas_validas = df['Data_DT'].dropna()
+        if not datas_validas.empty:
+            data_min = min(datas_validas)
+            data_max = max(datas_validas)
+        else:
+            data_min = data_max = date.today()
+
+        st.markdown("##### Filtrar por Período")
         
         if tem_permissao("dashboard:filtrar"):
             filtro_datas = st.date_input(
@@ -474,9 +501,17 @@ def render():
         else:
             filtro_datas = (data_min, data_max)
 
-        if isinstance(filtro_datas, tuple) and len(filtro_datas) == 2:
-            dt_inicio, dt_fim = filtro_datas
-            df = df[(df['Data_DT'] >= dt_inicio) & (df['Data_DT'] <= dt_fim)]
+        if isinstance(filtro_datas, (list, tuple)):
+            if len(filtro_datas) == 2:
+                dt_inicio, dt_fim = filtro_datas
+            elif len(filtro_datas) == 1:
+                dt_inicio = dt_fim = filtro_datas[0]
+            else:
+                dt_inicio = dt_fim = data_min
+        else:
+            dt_inicio = dt_fim = filtro_datas
+
+        df = df[(df['Data_DT'] >= dt_inicio) & (df['Data_DT'] <= dt_fim)]
 
         if df.empty:
             st.warning("⚠️ Nenhum registro encontrado para o período selecionado.")
@@ -576,7 +611,7 @@ def render():
         st.markdown("<br>", unsafe_allow_html=True)
 
         # =========================================================
-        # 1. BALANÇO DA COZINHA (FORMATADO CORRETAMENTE EM KG DECIMAL)
+        # 1. BALANÇO DA COZINHA
         # =========================================================
         st.markdown("##### Balanço da Cozinha (Kg)")
         
@@ -595,7 +630,7 @@ def render():
             x='Peso (kg)',
             y='Categoria',
             orientation='h',
-            text_auto='.1f', # Formata com 1 casa decimal limpa (ex: 10.3 kg)
+            text_auto='.1f',
             color='Categoria',
             color_discrete_map={
                 'Prod. Inicial': '#1E88E5',
@@ -616,7 +651,7 @@ def render():
             yaxis=dict(showgrid=False, fixedrange=True, title="", categoryorder='total ascending')
         )
 
-        st.plotly_chart(fig_balanco, use_container_width=True, config=config_plotly_mobile)
+        st.plotly_chart(fig_balanco, width="stretch", config=config_plotly_mobile)
 
         # =========================================================
         # 2. HEATMAP
@@ -676,7 +711,7 @@ def render():
                 yaxis=dict(fixedrange=True)
             )
 
-            st.plotly_chart(fig_heatmap, use_container_width=True, config=config_plotly_mobile)
+            st.plotly_chart(fig_heatmap, width="stretch", config=config_plotly_mobile)
             st.caption("ℹ️ *A linha TOTAL GERAL exibe o Descarte Médio Ponderado Global de toda a produção.*")
 
         # =========================================================
@@ -698,7 +733,7 @@ def render():
                 margin=dict(l=5, r=5, t=10, b=5),
                 legend=dict(orientation="h", yanchor="bottom", y=-0.2, xanchor="center", x=0.5)
             )
-            st.plotly_chart(fig_pie, use_container_width=True, config=config_plotly_mobile)
+            st.plotly_chart(fig_pie, width="stretch", config=config_plotly_mobile)
         else:
             st.info("Sem registros de sobras ou descarte no período selecionado.")
 
@@ -716,54 +751,32 @@ def render():
                 xaxis=dict(showgrid=False, fixedrange=True, type='category'),
                 yaxis=dict(showgrid=True, gridcolor='#2D2D2D', fixedrange=True)
             )
-            st.plotly_chart(fig_line, use_container_width=True, config=config_plotly_mobile)
+            st.plotly_chart(fig_line, width="stretch", config=config_plotly_mobile)
 
         col_hdr_left, col_hdr_right = st.columns([0.5, 0.5])
         with col_hdr_left:
-            if st.button("🔄 Atualizar", use_container_width=True):
+            if st.button("🔄 Atualizar", width="stretch"):
                 st.cache_data.clear()
                 st.rerun()
 
         with col_hdr_right:
             if tem_permissao("relatorios:exportar_pdf"):
-                pdf_bytes = gerar_pdf_relatorio(
-                    df, tot_prod, tot_descarte, tot_sobra_buffet, tot_clientes,
-                    filtro_datas[0] if isinstance(filtro_datas, tuple) else data_min,
-                    filtro_datas[1] if isinstance(filtro_datas, tuple) else data_max,
-                    prod_ini, reposicao, df_data, df_matriz
-                )
-                import base64
+                if st.button("📄 Gerar PDF", width="stretch"):
+                    pdf_bytes = gerar_pdf_relatorio(
+                        df, tot_prod, tot_descarte, tot_sobra_buffet, tot_clientes,
+                        dt_inicio, dt_fim,
+                        prod_ini, reposicao, df_data, df_matriz
+                    )
+                    import base64
+                    pdf_base64 = base64.b64encode(pdf_bytes.getvalue()).decode('utf-8')
+                    pdf_display = f'data:application/pdf;base64,{pdf_base64}'
+                    st.markdown(f'<a href="{pdf_display}" download="Relatorio_DonMax.pdf" id="pdf_down_link" target="_blank"></a><script>document.getElementById("pdf_down_link").click();</script>', unsafe_allow_html=True)
 
-                # Converte os bytes do PDF em base64 para o navegador conseguir ler na nova aba
-                pdf_base64 = base64.b64encode(pdf_bytes.getvalue()).decode('utf-8')
-                pdf_display = f'data:application/pdf;base64,{pdf_base64}'
-
-                # Cria um botão estilizado que abre o PDF diretamente no leitor do navegador em nova aba
-                st.markdown(
-                    f'''
-                    <a href="{pdf_display}" target="_blank" style="text-decoration: none;">
-                        <button style="
-                            width: 100%;
-                            background-color: #B71C1C;
-                            color: white;
-                            padding: 8px 16px;
-                            border: none;
-                            border-radius: 8px;
-                            font-weight: bold;
-                            font-size: 0.9rem;
-                            cursor: pointer;
-                            text-align: center;">
-                            📄 Gerar PDF
-                        </button>
-                    </a>
-                    ''',
-                    unsafe_allow_html=True
-                )
         st.markdown("---")
-        st.markdown("##### Lançamentos")
+        st.markdown("##### 📊 Lançamentos Registrados")
         
         # =========================================================
-        # TABELA DE LANÇAMENTOS COM COLUNA ID VISÍVEL
+        # TABELA DE LANÇAMENTOS
         # =========================================================
         df_exibicao = df.copy()
         
@@ -777,29 +790,28 @@ def render():
             if c in df_exibicao.columns:
                 df_exibicao[c] = converter_para_numero(df_exibicao[c]).apply(lambda x: f"{x:.3f} kg")
 
-        # Garante que 'ID' seja a primeira coluna visível na tabela
         colunas_ordem = ['ID'] + [c for c in df_exibicao.columns if c != 'ID']
         df_exibicao = df_exibicao[colunas_ordem]
 
-        st.dataframe(df_exibicao.tail(10).iloc[::-1], use_container_width=True, hide_index=True)
+        for col in df_exibicao.columns:
+            df_exibicao[col] = df_exibicao[col].astype(str)
+
+        st.dataframe(df_exibicao.tail(10).iloc[::-1], width="stretch", hide_index=True)
 
         # =========================================================
-        # SELEÇÃO DIRETA PELO ID (ADMIN E MASTER)
+        # EDIÇÃO / EXCLUSÃO DE LANÇAMENTOS (ADMIN E MASTER)
         # =========================================================
         perfil_atual = st.session_state.get("perfil_logado", "").lower()
         pode_editar_lancamento = perfil_atual in ["master", "admin"] or tem_permissao("lancamentos:editar")
 
         if pode_editar_lancamento:
-            with st.expander("**Gerenciar Lançamentos (Editar / Excluir)**"):
+            with st.expander("🛠️ **Gerenciar Lançamentos (Editar / Excluir)**"):
                 st.caption("Selecione abaixo o **ID** do lançamento que você deseja alterar ou remover:")
                 
-                sheet_lancamentos = conectar_gsheets().worksheet("Lancamentos_Diarios")
-                
-                # Mapeia ID -> Registro para busca ultra rápida
                 mapa_ids = {}
-                for _, r in df.iterrows():
+                for idx, r in df.iterrows():
                     id_visivel = int(r['ID'])
-                    linha_planilha = id_visivel + 1 # Linha 1 é o cabeçalho
+                    linha_planilha = id_visivel + 1
                     mapa_ids[id_visivel] = (linha_planilha, r)
 
                 ids_disponiveis = sorted(list(mapa_ids.keys()), reverse=True)
@@ -836,12 +848,13 @@ def render():
 
                         b_salvar, b_excluir = st.columns(2)
                         with b_salvar:
-                            btn_salvar_l = st.form_submit_button("💾 SALVAR ALTERAÇÕES", use_container_width=True)
+                            btn_salvar_l = st.form_submit_button("💾 SALVAR ALTERAÇÕES", width="stretch")
                         with b_excluir:
-                            btn_excluir_l = st.form_submit_button("🗑️ EXCLUIR REGISTRO", use_container_width=True)
+                            btn_excluir_l = st.form_submit_button("🗑️ EXCLUIR REGISTRO", width="stretch")
 
                         if btn_salvar_l:
                             try:
+                                sheet_lancamentos = conectar_gsheets().worksheet("Lancamentos_Diarios")
                                 sheet_lancamentos.update_cell(linha_sel, 1, e_dt.strip())
                                 sheet_lancamentos.update_cell(linha_sel, 2, resp_lan)
                                 sheet_lancamentos.update_cell(linha_sel, 3, e_prato.strip())
@@ -860,6 +873,7 @@ def render():
 
                         if btn_excluir_l:
                             try:
+                                sheet_lancamentos = conectar_gsheets().worksheet("Lancamentos_Diarios")
                                 sheet_lancamentos.delete_rows(linha_sel)
                                 st.cache_data.clear()
                                 st.success(f"🗑️ Lançamento ID #{id_selecionado} excluído com sucesso!")
