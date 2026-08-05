@@ -15,7 +15,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Captura clique de saída via Query Param
+# Captura clique de saída via Query Param do HTML sem criar loops
 if "logout" in st.query_params:
     st.session_state["usuario_logado"] = None
     st.session_state["perfil_logado"] = None
@@ -26,44 +26,42 @@ if "logout" in st.query_params:
     except Exception:
         pass
 
+# Estados de sessão
 if "usuario_logado" not in st.session_state:
     st.session_state["usuario_logado"] = None
 
 if "aba_ativa" not in st.session_state:
     st.session_state["aba_ativa"] = "inicio"
 
+# Se NÃO estiver logado, trava na aba inicial
 if not st.session_state["usuario_logado"]:
     st.session_state["aba_ativa"] = "inicio"
 
-aba_ativa = st.session_state["aba_ativa"]
+aba = st.session_state["aba_ativa"]
 
 # =========================================================
-# 2. INJEÇÃO DE CSS GLOBAL (COM MASCARAMENTO DE TRANSIÇÃO)
+# 2. INJEÇÃO DE CSS GLOBAL
 # =========================================================
 st.markdown("""
     <style>
-    /* MODO ESCURO FORÇADO */
+    /* MODO ESCURO FORÇADO EM TUDO */
     html, body, [data-testid="stApp"], .stApp {
         background-color: #121212 !important;
         color: #F8F9FA !important;
     }
 
-    /* PREVINE O "EFEITO QUEBRADO" / ESCADINHA NA TROCA DE MENUS */
-    .stApp [data-testid="stMainBlockContainer"] {
-        animation: fadeIn 0.15s ease-in-out;
-    }
-
-    @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
-    }
-
-    /* OCULTAR ELEMENTOS NATIVOS DO STREAMLIT */
-    #MainMenu, header, footer, 
-    [data-testid="stFooter"], [data-testid="stHeader"],
-    .stDeployButton, div[class*="viewerBadge"], 
-    div[class*="styles_viewerBadge"], div[class*="stStatusWidget"],
-    a[href*="streamlit.io"], a[href*="github.com"] {
+    /* OCULTAR FOTO DO GITHUB, BADGES DO STREAMLIT E RODAPÉS NATIVOS */
+    #MainMenu, 
+    header, 
+    footer, 
+    [data-testid="stFooter"], 
+    [data-testid="stHeader"],
+    .stDeployButton, 
+    div[class*="viewerBadge"], 
+    div[class*="styles_viewerBadge"], 
+    div[class*="stStatusWidget"],
+    a[href*="streamlit.io"],
+    a[href*="github.com"] {
         display: none !important;
         visibility: hidden !important;
         opacity: 0 !important;
@@ -71,6 +69,7 @@ st.markdown("""
         pointer-events: none !important;
     }
 
+    /* Espaçamento do container principal */
     .block-container {
         padding-top: 3.8rem !important;
         padding-bottom: 10.5rem !important; 
@@ -107,6 +106,7 @@ st.markdown("""
         gap: 10px;
     }
 
+    /* ESTILO DO BOTÃO DE SAIR DENTRO DO CABEÇALHO */
     .btn-header-action {
         background-color: rgba(255, 255, 255, 0.2);
         color: #FFFFFF !important;
@@ -204,6 +204,22 @@ st.markdown("""
         transition: all 0.2s ease-in-out !important;
     }
 
+    div.st-key-nav_bar_container button *,
+    div.st-key-nav_bar_container button div,
+    div.st-key-nav_bar_container button p,
+    div.st-key-nav_bar_container button [data-testid="stMarkdownContainer"] {
+        margin: 0 auto !important;
+        padding: 0 !important;
+        text-align: center !important;
+        width: 100% !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-size: 0.85rem !important;
+        font-weight: 700 !important;
+        line-height: 1 !important;
+    }
+
     div.st-key-nav_bar_container button[kind="secondary"] {
         background-color: transparent !important;
         color: #E0E0E0 !important;
@@ -214,6 +230,10 @@ st.markdown("""
         background-color: #FFFFFF !important;
         color: #B71C1C !important;
         cursor: pointer !important;
+    }
+
+    div.st-key-nav_bar_container button[kind="secondary"]:hover * {
+        color: #B71C1C !important;
     }
 
     div.st-key-nav_bar_container button[kind="primary"],
@@ -287,61 +307,57 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # =========================================================
-# 4. RENDERIZAÇÃO ISOLADA
+# 4. ROTEAMENTO DE ABAS
 # =========================================================
-if aba_ativa == "inicio":
+if aba == "inicio":
     inicio.render()
-elif aba_ativa == "pesagem" and st.session_state["usuario_logado"]:
+elif aba == "pesagem" and st.session_state["usuario_logado"]:
     if tem_permissao("pesagem:visualizar"):
         pesagem.render()
     else:
         st.toast("⛔ Acesso bloqueado ao formulário.", icon="🔒")
-elif aba_ativa == "historico" and st.session_state["usuario_logado"]:
+elif aba == "historico" and st.session_state["usuario_logado"]:
     if tem_permissao("dashboard:visualizar"):
         historico.render()
     else:
         st.toast("⛔ Acesso bloqueado ao painel.", icon="🔒")
-elif aba_ativa == "config" and st.session_state["usuario_logado"]:
+elif aba == "config" and st.session_state["usuario_logado"]:
     if tem_permissao("usuarios:gerenciar") or tem_permissao("pratos:gerenciar"):
         config.render()
 
 # =========================================================
-# 5. RODAPÉ FIXO (CÁPSULA)
+# 5. RODAPÉ FIXO (CÁPSULA) - AVISOS ELEGANTES SÓ VIA TOAST
 # =========================================================
 if st.session_state["usuario_logado"]:
     nav_bar = st.container(key="nav_bar_container")
     with nav_bar:
         c1, c2, c3, c4 = st.columns(4)
-        
         with c1:
-            if st.button("Início", key="btn_inicio", type="primary" if aba_ativa == "inicio" else "secondary"):
-                if st.session_state["aba_ativa"] != "inicio":
-                    st.session_state["aba_ativa"] = "inicio"
-                    st.rerun()
-
+            tipo = "primary" if aba == "inicio" else "secondary"
+            if st.button("Início", key="btn_inicio", type=tipo):
+                st.session_state["aba_ativa"] = "inicio"
+                st.rerun()
         with c2:
-            if st.button("Formulário", key="btn_pesagem", type="primary" if aba_ativa == "pesagem" else "secondary"):
+            tipo = "primary" if aba == "pesagem" else "secondary"
+            if st.button("Formulário", key="btn_pesagem", type=tipo):
                 if tem_permissao("pesagem:visualizar"):
-                    if st.session_state["aba_ativa"] != "pesagem":
-                        st.session_state["aba_ativa"] = "pesagem"
-                        st.rerun()
+                    st.session_state["aba_ativa"] = "pesagem"
+                    st.rerun()
                 else:
                     st.toast("⛔ Sem permissão para o Formulário.", icon="🔒")
-
         with c3:
-            if st.button("Painel", key="btn_historico", type="primary" if aba_ativa == "historico" else "secondary"):
+            tipo = "primary" if aba == "historico" else "secondary"
+            if st.button("Painel", key="btn_historico", type=tipo):
                 if tem_permissao("dashboard:visualizar"):
-                    if st.session_state["aba_ativa"] != "historico":
-                        st.session_state["aba_ativa"] = "historico"
-                        st.rerun()
+                    st.session_state["aba_ativa"] = "historico"
+                    st.rerun()
                 else:
                     st.toast("⛔ Sem permissão para o Painel.", icon="🔒")
-
         with c4:
-            if st.button("⚙️", key="btn_config", type="primary" if aba_ativa == "config" else "secondary"):
+            tipo = "primary" if aba == "config" else "secondary"
+            if st.button("⚙️", key="btn_config", type=tipo):
                 if tem_permissao("usuarios:gerenciar") or tem_permissao("pratos:gerenciar"):
-                    if st.session_state["aba_ativa"] != "config":
-                        st.session_state["aba_ativa"] = "config"
-                        st.rerun()
+                    st.session_state["aba_ativa"] = "config"
+                    st.rerun()
                 else:
                     st.toast("⛔ Sem permissão para as Configurações.", icon="🔒")

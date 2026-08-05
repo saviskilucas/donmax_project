@@ -7,7 +7,11 @@ from email.mime.text import MIMEText
 from google.oauth2.service_account import Credentials
 from auth import buscar_perfis, conectar_gsheets
 
-def buscar_usuarios_sem_cache():
+# =========================================================
+# CONSULTA DE USUÁRIOS COM CACHE DE ALTA VELOCIDADE
+# =========================================================
+@st.cache_data(ttl=300, show_spinner=False)
+def buscar_usuarios_cache():
     try:
         sheet = conectar_gsheets().worksheet("Usuarios")
         registros = sheet.get_all_records()
@@ -27,6 +31,7 @@ def buscar_usuarios_sem_cache():
             id_perf_valor = item_limpo.get("idperfil", item_limpo.get("perfil", "cozinha"))
             item_limpo["id_perfil"] = str(id_perf_valor).strip().lower()
             item_limpo["ativo"] = str(item_limpo.get("ativo", "TRUE")).strip().upper() == "TRUE"
+            item_limpo["senha"] = str(item_limpo.get("senha", "")).strip()
             
             usuarios_normalizados.append(item_limpo)
             
@@ -221,7 +226,7 @@ def render():
             with st.form("form_login_principal"):
                 usuario_login = st.text_input("Usuário", placeholder="ex: nome.sobrenome")
                 senha_login = st.text_input("Senha", type="password", placeholder="••••••••")
-                btn_login = st.form_submit_button("ENTRAR NO SISTEMA", use_container_width=True)
+                btn_login = st.form_submit_button("ENTRAR NO SISTEMA", width="stretch")
                 
                 if btn_login:
                     usr_digitado = usuario_login.strip().lower()
@@ -230,7 +235,7 @@ def render():
                     if not usr_digitado or not senha_digitada:
                         st.warning("⚠️ Preencha usuário e senha.")
                     else:
-                        usuarios = buscar_usuarios_sem_cache()
+                        usuarios = buscar_usuarios_cache()
                         usuario_achado = None
                         
                         for u in usuarios:
@@ -262,14 +267,14 @@ def render():
             with st.expander("🔑 Esqueceu sua senha?"):
                 with st.form("form_esqueci_senha_exp"):
                     usr_recup = st.text_input("Insira seu usuário cadastrado", placeholder="ex: nome.sobrenome")
-                    btn_recuperar = st.form_submit_button("SOLICITAR SENHA AO ADMIN", use_container_width=True)
+                    btn_recuperar = st.form_submit_button("SOLICITAR SENHA AO ADMIN", width="stretch")
                     
                     if btn_recuperar:
                         usr_target = usr_recup.strip().lower()
                         if not usr_target:
                             st.warning("⚠️ Digite o usuário.")
                         else:
-                            usuarios = buscar_usuarios_sem_cache()
+                            usuarios = buscar_usuarios_cache()
                             u_target = next((u for u in usuarios if u.get("login_identificador") == usr_target), None)
                             
                             if u_target:
@@ -288,16 +293,16 @@ def render():
         
         col_a, col_b = st.columns(2)
         with col_a:
-            if st.button("📝 Novo Lançamento", use_container_width=True):
+            if st.button("📝 Novo Lançamento", width="stretch"):
                 st.session_state["aba_ativa"] = "pesagem"
                 st.rerun()
         with col_b:
-            if st.button("📊 Consultar Painel", use_container_width=True):
+            if st.button("📊 Consultar Painel", width="stretch"):
                 st.session_state["aba_ativa"] = "historico"
                 st.rerun()
 
         st.markdown("---")
-        if st.button("🚪 Encerrar Sessão", use_container_width=True):
+        if st.button("🚪 Encerrar Sessão", width="stretch"):
             for key in ["usuario_logado", "id_usuario_logado", "perfil_logado", "nome_perfil_logado", "permissoes_usuario"]:
                 st.session_state[key] = None
             st.session_state["aba_ativa"] = "inicio"
