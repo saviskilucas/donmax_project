@@ -38,7 +38,7 @@ if not st.session_state["usuario_logado"]:
 aba_ativa = st.session_state["aba_ativa"]
 
 # =========================================================
-# 2. INJEÇÃO DE CSS GLOBAL
+# 2. INJEÇÃO DE CSS GLOBAL (COM MASCARAMENTO DE TRANSIÇÃO)
 # =========================================================
 st.markdown("""
     <style>
@@ -46,6 +46,16 @@ st.markdown("""
     html, body, [data-testid="stApp"], .stApp {
         background-color: #121212 !important;
         color: #F8F9FA !important;
+    }
+
+    /* PREVINE O "EFEITO QUEBRADO" / ESCADINHA NA TROCA DE MENUS */
+    .stApp [data-testid="stMainBlockContainer"] {
+        animation: fadeIn 0.15s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
     }
 
     /* OCULTAR ELEMENTOS NATIVOS DO STREAMLIT */
@@ -194,22 +204,6 @@ st.markdown("""
         transition: all 0.2s ease-in-out !important;
     }
 
-    div.st-key-nav_bar_container button *,
-    div.st-key-nav_bar_container button div,
-    div.st-key-nav_bar_container button p,
-    div.st-key-nav_bar_container button [data-testid="stMarkdownContainer"] {
-        margin: 0 auto !important;
-        padding: 0 !important;
-        text-align: center !important;
-        width: 100% !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        font-size: 0.85rem !important;
-        font-weight: 700 !important;
-        line-height: 1 !important;
-    }
-
     div.st-key-nav_bar_container button[kind="secondary"] {
         background-color: transparent !important;
         color: #E0E0E0 !important;
@@ -220,10 +214,6 @@ st.markdown("""
         background-color: #FFFFFF !important;
         color: #B71C1C !important;
         cursor: pointer !important;
-    }
-
-    div.st-key-nav_bar_container button[kind="secondary"]:hover * {
-        color: #B71C1C !important;
     }
 
     div.st-key-nav_bar_container button[kind="primary"],
@@ -297,7 +287,7 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # =========================================================
-# 4. RENDERIZAÇÃO EXCLUSIVA (SÓ CARREGA O MENU SELECIONADO)
+# 4. RENDERIZAÇÃO ISOLADA
 # =========================================================
 if aba_ativa == "inicio":
     inicio.render()
@@ -316,7 +306,7 @@ elif aba_ativa == "config" and st.session_state["usuario_logado"]:
         config.render()
 
 # =========================================================
-# 5. RODAPÉ FIXO (CÁPSULA) - ROTEAMENTO SEPARADO
+# 5. RODAPÉ FIXO (CÁPSULA)
 # =========================================================
 if st.session_state["usuario_logado"]:
     nav_bar = st.container(key="nav_bar_container")
