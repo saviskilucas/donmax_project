@@ -4,8 +4,9 @@ from google.oauth2.service_account import Credentials
 from auth import buscar_perfis, conectar_gsheets, tem_permissao
 
 # =========================================================
-# FUNÇÕES DE AUXÍLIO - GSHEETS
+# FUNÇÕES DE AUXÍLIO - GSHEETS COM CACHE DE ALTA PERFORMANCE
 # =========================================================
+@st.cache_data(ttl=300, show_spinner=False)
 def carregar_usuarios_planilha():
     try:
         sheet = conectar_gsheets().worksheet("Usuarios")
@@ -14,6 +15,7 @@ def carregar_usuarios_planilha():
         st.error(f"Erro ao carregar lista de usuários: {e}")
         return []
 
+@st.cache_data(ttl=300, show_spinner=False)
 def carregar_alimentos_planilha():
     try:
         sheet = conectar_gsheets().worksheet("Alimentos")
@@ -67,8 +69,6 @@ def render():
                 if not registros_usr:
                     st.info("Nenhum usuário cadastrado até o momento.")
                 else:
-                    sheet_usr = conectar_gsheets().worksheet("Usuarios")
-
                     for index, reg in enumerate(registros_usr):
                         linha_planilha = index + 2
                         
@@ -113,6 +113,7 @@ def render():
 
                                     if btn_salvar:
                                         try:
+                                            sheet_usr = conectar_gsheets().worksheet("Usuarios")
                                             sheet_usr.update_cell(linha_planilha, 1, novo_nome.strip())
                                             sheet_usr.update_cell(linha_planilha, 2, usr_login)
                                             sheet_usr.update_cell(linha_planilha, 3, nova_senha.strip())
@@ -130,6 +131,7 @@ def render():
                                             st.error("❌ Você não pode excluir a sua própria conta ativa.")
                                         else:
                                             try:
+                                                sheet_usr = conectar_gsheets().worksheet("Usuarios")
                                                 sheet_usr.delete_rows(linha_planilha)
                                                 st.cache_data.clear()
                                                 st.success(f"🗑️ Usuário **{usr_login}** excluído com sucesso!")
@@ -180,7 +182,6 @@ def render():
                                     sheet_usr.append_row(nova_linha)
 
                                     st.cache_data.clear()
-                                    # ALERTA VERDE DESTACADO DE SUCESSO
                                     st.success(f"🟢 **SISTEMA:** Usuário **{usr_limpo}** cadastrado com sucesso!")
                                     st.balloons()
                                     st.rerun()
@@ -188,7 +189,7 @@ def render():
                                 st.error(f"❌ Erro ao cadastrar usuário: {e}")
 
     # =========================================================
-    # SEÇÃO 2: GESTÃO DE PRATOS (ABA "ALIMENTOS") - SEM CATEGORIA
+    # SEÇÃO 2: GESTÃO DE PRATOS (ABA "ALIMENTOS")
     # =========================================================
     with aba_pratos:
         if not pode_gerenciar_pratos:
@@ -202,8 +203,6 @@ def render():
                 if not registros_alimentos:
                     st.info("Nenhum prato encontrado na aba 'Alimentos'.")
                 else:
-                    sheet_alimentos = conectar_gsheets().worksheet("Alimentos")
-
                     for index, reg in enumerate(registros_alimentos):
                         linha_planilha = index + 2
 
@@ -235,6 +234,7 @@ def render():
 
                                 if btn_salvar_prato:
                                     try:
+                                        sheet_alimentos = conectar_gsheets().worksheet("Alimentos")
                                         sheet_alimentos.update_cell(linha_planilha, 1, novo_nome_prato.strip())
                                         sheet_alimentos.update_cell(linha_planilha, 2, "TRUE" if novo_status_prato else "FALSE")
 
@@ -246,6 +246,7 @@ def render():
 
                                 if btn_excluir_prato:
                                     try:
+                                        sheet_alimentos = conectar_gsheets().worksheet("Alimentos")
                                         sheet_alimentos.delete_rows(linha_planilha)
                                         st.cache_data.clear()
                                         st.success(f"🗑️ Prato **{nome_prato}** removido!")
@@ -278,12 +279,10 @@ def render():
                                     st.error(f"❌ O prato **{nome_limpo_prato}** já está cadastrado.")
                                 else:
                                     sheet_alimentos = conectar_gsheets().worksheet("Alimentos")
-                                    # Grava apenas [Nome do Prato, Ativo]
                                     nova_linha = [nome_limpo_prato, "TRUE"]
                                     sheet_alimentos.append_row(nova_linha)
 
                                     st.cache_data.clear()
-                                    # ALERTA VERDE DESTACADO DE SUCESSO
                                     st.success(f"🟢 **SISTEMA:** Prato **{nome_limpo_prato}** cadastrado com sucesso na aba Alimentos!")
                                     st.balloons()
                                     st.rerun()
