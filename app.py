@@ -40,7 +40,7 @@ if not st.session_state["usuario_logado"]:
 aba = st.session_state["aba_ativa"]
 
 # =========================================================
-# 2. INJEÇÃO DE CSS GLOBAL
+# 2. INJEÇÃO DE CSS GLOBAL E PROTEÇÃO DE TRANSIÇÃO VISUAL
 # =========================================================
 st.markdown("""
     <style>
@@ -76,6 +76,12 @@ st.markdown("""
         padding-left: 0.8rem !important;
         padding-right: 0.8rem !important;
         max-width: 100% !important;
+        animation: fadeInPage 0.12s ease-in-out !important;
+    }
+
+    @keyframes fadeInPage {
+        0% { opacity: 0; }
+        100% { opacity: 1; }
     }
 
     /* BARRA SUPERIOR FIXA NO TOPO */
@@ -129,7 +135,7 @@ st.markdown("""
         color: #B71C1C !important;
     }
 
-    /* CÁPSULA TRAVADA NO RODAPÉ */
+    /* CÁPSULA TRAVADA NO RODAPÉ - FIXA E INAMOVÍVEL */
     div[data-testid="stElementContainer"]:has(div.st-key-nav_bar_container),
     div:has(> div.st-key-nav_bar_container) {
         position: fixed !important;
@@ -139,6 +145,8 @@ st.markdown("""
         width: 360px !important;
         max-width: 95vw !important;
         z-index: 99999999 !important;
+        visibility: visible !important;
+        opacity: 1 !important;
     }
 
     div.st-key-nav_bar_container div[data-testid="stHorizontalBlock"] {
@@ -307,7 +315,7 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # =========================================================
-# 4. ROTEAMENTO DE ABAS
+# 4. ROTEAMENTO DE ABAS EXCLUSIVAS
 # =========================================================
 if aba == "inicio":
     inicio.render()
@@ -326,7 +334,7 @@ elif aba == "config" and st.session_state["usuario_logado"]:
         config.render()
 
 # =========================================================
-# 5. RODAPÉ FIXO (CÁPSULA) - AVISOS ELEGANTES SÓ VIA TOAST
+# 5. RODAPÉ FIXO (CÁPSULA) PERMANENTE
 # =========================================================
 if st.session_state["usuario_logado"]:
     nav_bar = st.container(key="nav_bar_container")
@@ -335,29 +343,33 @@ if st.session_state["usuario_logado"]:
         with c1:
             tipo = "primary" if aba == "inicio" else "secondary"
             if st.button("Início", key="btn_inicio", type=tipo):
-                st.session_state["aba_ativa"] = "inicio"
-                st.rerun()
+                if st.session_state["aba_ativa"] != "inicio":
+                    st.session_state["aba_ativa"] = "inicio"
+                    st.rerun()
         with c2:
             tipo = "primary" if aba == "pesagem" else "secondary"
             if st.button("Formulário", key="btn_pesagem", type=tipo):
                 if tem_permissao("pesagem:visualizar"):
-                    st.session_state["aba_ativa"] = "pesagem"
-                    st.rerun()
+                    if st.session_state["aba_ativa"] != "pesagem":
+                        st.session_state["aba_ativa"] = "pesagem"
+                        st.rerun()
                 else:
                     st.toast("⛔ Sem permissão para o Formulário.", icon="🔒")
         with c3:
             tipo = "primary" if aba == "historico" else "secondary"
             if st.button("Painel", key="btn_historico", type=tipo):
                 if tem_permissao("dashboard:visualizar"):
-                    st.session_state["aba_ativa"] = "historico"
-                    st.rerun()
+                    if st.session_state["aba_ativa"] != "historico":
+                        st.session_state["aba_ativa"] = "historico"
+                        st.rerun()
                 else:
                     st.toast("⛔ Sem permissão para o Painel.", icon="🔒")
         with c4:
             tipo = "primary" if aba == "config" else "secondary"
             if st.button("⚙️", key="btn_config", type=tipo):
                 if tem_permissao("usuarios:gerenciar") or tem_permissao("pratos:gerenciar"):
-                    st.session_state["aba_ativa"] = "config"
-                    st.rerun()
+                    if st.session_state["aba_ativa"] != "config":
+                        st.session_state["aba_ativa"] = "config"
+                        st.rerun()
                 else:
                     st.toast("⛔ Sem permissão para as Configurações.", icon="🔒")
