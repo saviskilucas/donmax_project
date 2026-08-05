@@ -15,7 +15,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Captura clique de saída via Query Param
+# Logout via Query Param
 if "logout" in st.query_params:
     st.session_state["usuario_logado"] = None
     st.session_state["perfil_logado"] = None
@@ -26,60 +26,51 @@ if "logout" in st.query_params:
     except Exception:
         pass
 
-# Estados de sessão
 if "usuario_logado" not in st.session_state:
     st.session_state["usuario_logado"] = None
 
 if "aba_ativa" not in st.session_state:
     st.session_state["aba_ativa"] = "inicio"
 
-# Se NÃO estiver logado, trava na aba inicial
 if not st.session_state["usuario_logado"]:
     st.session_state["aba_ativa"] = "inicio"
 
-aba = st.session_state["aba_ativa"]
+aba_ativa = st.session_state["aba_ativa"]
 
 # =========================================================
-# 2. INJEÇÃO DE CSS GLOBAL (SISTEMA VISUAL PRESERVADO)
+# 2. INJEÇÃO DE CSS GLOBAL E NAVEGAÇÃO INSTANTÂNEA
 # =========================================================
-st.markdown("""
+st.markdown(f"""
     <style>
-    /* MODO ESCURO FORÇADO EM TUDO */
-    html, body, [data-testid="stApp"], .stApp {
+    /* MODO ESCURO FORÇADO */
+    html, body, [data-testid="stApp"], .stApp {{
         background-color: #121212 !important;
         color: #F8F9FA !important;
-    }
+    }}
 
-    /* OCULTAR FOTO DO GITHUB, BADGES DO STREAMLIT E RODAPÉS NATIVOS */
-    #MainMenu, 
-    header, 
-    footer, 
-    [data-testid="stFooter"], 
-    [data-testid="stHeader"],
-    .stDeployButton, 
-    div[class*="viewerBadge"], 
-    div[class*="styles_viewerBadge"], 
-    div[class*="stStatusWidget"],
-    a[href*="streamlit.io"],
-    a[href*="github.com"] {
+    /* OCULTAR ELEMENTOS NATIVOS */
+    #MainMenu, header, footer, 
+    [data-testid="stFooter"], [data-testid="stHeader"],
+    .stDeployButton, div[class*="viewerBadge"], 
+    div[class*="styles_viewerBadge"], div[class*="stStatusWidget"],
+    a[href*="streamlit.io"], a[href*="github.com"] {{
         display: none !important;
         visibility: hidden !important;
         opacity: 0 !important;
         height: 0px !important;
         pointer-events: none !important;
-    }
+    }}
 
-    /* Espaçamento do container principal */
-    .block-container {
+    .block-container {{
         padding-top: 3.8rem !important;
         padding-bottom: 10.5rem !important; 
         padding-left: 0.8rem !important;
         padding-right: 0.8rem !important;
         max-width: 100% !important;
-    }
+    }}
 
-    /* BARRA SUPERIOR FIXA NO TOPO */
-    .modern-header {
+    /* BARRA SUPERIOR FIXA */
+    .modern-header {{
         position: fixed !important;
         top: 0 !important;
         left: 0 !important;
@@ -96,17 +87,17 @@ st.markdown("""
         box-shadow: 0px 4px 14px rgba(0, 0, 0, 0.6) !important;
         border-radius: 0 0 16px 16px !important;
         box-sizing: border-box !important;
-    }
+    }}
 
-    .modern-header-title {
+    .modern-header-title {{
         font-size: 1.15rem;
         font-weight: 800;
         display: flex;
         align-items: center;
         gap: 10px;
-    }
+    }}
 
-    .btn-header-action {
+    .btn-header-action {{
         background-color: rgba(255, 255, 255, 0.2);
         color: #FFFFFF !important;
         border: 1px solid rgba(255, 255, 255, 0.4);
@@ -121,16 +112,16 @@ st.markdown("""
         align-items: center;
         justify-content: center;
         transition: all 0.2s ease;
-    }
+    }}
 
-    .btn-header-action:hover {
+    .btn-header-action:hover {{
         background-color: #FFFFFF;
         color: #B71C1C !important;
-    }
+    }}
 
     /* CÁPSULA TRAVADA NO RODAPÉ */
     div[data-testid="stElementContainer"]:has(div.st-key-nav_bar_container),
-    div:has(> div.st-key-nav_bar_container) {
+    div:has(> div.st-key-nav_bar_container) {{
         position: fixed !important;
         bottom: 70px !important;
         left: 50% !important;
@@ -138,9 +129,9 @@ st.markdown("""
         width: 360px !important;
         max-width: 95vw !important;
         z-index: 99999999 !important;
-    }
+    }}
 
-    div.st-key-nav_bar_container div[data-testid="stHorizontalBlock"] {
+    div.st-key-nav_bar_container div[data-testid="stHorizontalBlock"] {{
         background-color: #B71C1C !important;
         border-radius: 30px !important;
         box-shadow: 0px 8px 25px rgba(0, 0, 0, 0.8) !important;
@@ -151,10 +142,10 @@ st.markdown("""
         align-items: center !important;
         justify-content: space-between !important;
         gap: 0 !important;
-    }
+    }}
 
     div.st-key-nav_bar_container div[data-testid="stColumn"],
-    div.st-key-nav_bar_container div[data-testid="stHorizontalBlock"] > div {
+    div.st-key-nav_bar_container div[data-testid="stHorizontalBlock"] > div {{
         flex: 1 1 0% !important;
         width: 100% !important;
         min-width: 0 !important;
@@ -164,10 +155,10 @@ st.markdown("""
         justify-content: center !important;
         align-items: center !important;
         position: relative !important;
-    }
+    }}
 
     div.st-key-nav_bar_container div[data-testid="stColumn"]:not(:last-child)::after,
-    div.st-key-nav_bar_container div[data-testid="stHorizontalBlock"] > div:not(:last-child)::after {
+    div.st-key-nav_bar_container div[data-testid="stHorizontalBlock"] > div:not(:last-child)::after {{
         content: "" !important;
         position: absolute !important;
         right: 0 !important;
@@ -176,19 +167,19 @@ st.markdown("""
         width: 1px !important;
         background-color: rgba(255, 255, 255, 0.2) !important;
         pointer-events: none !important;
-    }
+    }}
 
     div.st-key-nav_bar_container div[data-testid="stElementContainer"],
-    div.st-key-nav_bar_container div[data-testid="stButton"] {
+    div.st-key-nav_bar_container div[data-testid="stButton"] {{
         width: 100% !important;
         margin: 0 !important;
         padding: 0 !important;
         display: flex !important;
         justify-content: center !important;
         align-items: center !important;
-    }
+    }}
 
-    div.st-key-nav_bar_container button {
+    div.st-key-nav_bar_container button {{
         width: 90% !important;
         height: 44px !important;
         font-size: 0.85rem !important;
@@ -201,12 +192,12 @@ st.markdown("""
         align-items: center !important;
         justify-content: center !important;
         transition: all 0.2s ease-in-out !important;
-    }
+    }}
 
     div.st-key-nav_bar_container button *,
     div.st-key-nav_bar_container button div,
     div.st-key-nav_bar_container button p,
-    div.st-key-nav_bar_container button [data-testid="stMarkdownContainer"] {
+    div.st-key-nav_bar_container button [data-testid="stMarkdownContainer"] {{
         margin: 0 auto !important;
         padding: 0 !important;
         text-align: center !important;
@@ -217,59 +208,59 @@ st.markdown("""
         font-size: 0.85rem !important;
         font-weight: 700 !important;
         line-height: 1 !important;
-    }
+    }}
 
-    div.st-key-nav_bar_container button[kind="secondary"] {
+    div.st-key-nav_bar_container button[kind="secondary"] {{
         background-color: transparent !important;
         color: #E0E0E0 !important;
         box-shadow: none !important;
-    }
+    }}
 
-    div.st-key-nav_bar_container button[kind="secondary"]:hover {
+    div.st-key-nav_bar_container button[kind="secondary"]:hover {{
         background-color: #FFFFFF !important;
         color: #B71C1C !important;
         cursor: pointer !important;
-    }
+    }}
 
-    div.st-key-nav_bar_container button[kind="secondary"]:hover * {
+    div.st-key-nav_bar_container button[kind="secondary"]:hover * {{
         color: #B71C1C !important;
-    }
+    }}
 
     div.st-key-nav_bar_container button[kind="primary"],
     div.st-key-nav_bar_container button[kind="primary"]:hover,
-    div.st-key-nav_bar_container button[kind="primary"]:focus {
+    div.st-key-nav_bar_container button[kind="primary"]:focus {{
         background-color: #FFFFFF !important;
         color: #B71C1C !important;
         box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.4) !important;
-    }
+    }}
 
     div.st-key-nav_bar_container button[kind="primary"] *,
-    div.st-key-nav_bar_container button[kind="primary"] p {
+    div.st-key-nav_bar_container button[kind="primary"] p {{
         color: #B71C1C !important;
         font-weight: 800 !important;
-    }
+    }}
 
-    label {
+    label {{
         font-size: 0.95rem !important;
         font-weight: 700 !important;
         color: #E0E0E0 !important;
         margin-bottom: 0.2rem !important;
-    }
+    }}
 
-    div[data-baseweb="input"] input, div[data-baseweb="select"], textarea {
+    div[data-baseweb="input"] input, div[data-baseweb="select"], textarea {{
         font-size: 1.05rem !important;
         background-color: #1E1E1E !important;
         color: #FFFFFF !important;
         border: 1px solid #333333 !important;
         border-radius: 10px !important;
-    }
+    }}
 
-    div[data-baseweb="select"] * {
+    div[data-baseweb="select"] * {{
         color: #FFFFFF !important;
         background-color: #1E1E1E !important;
-    }
+    }}
 
-    .section-header {
+    .section-header {{
         font-size: 0.95rem;
         font-weight: 800;
         color: #FF5252;
@@ -278,11 +269,17 @@ st.markdown("""
         margin-top: 15px;
         margin-bottom: 12px;
         text-transform: uppercase;
-    }
+    }}
 
-    [data-testid="stMetricValue"] {
+    [data-testid="stMetricValue"] {{
         color: #FF5252 !important;
-    }
+    }}
+
+    /* CONTROLES DE EXIBIÇÃO INSTANTÂNEA DOS CONTAINERS */
+    div.st-key-view_inicio {{ display: {"block" if aba_ativa == "inicio" else "none"} !important; }}
+    div.st-key-view_pesagem {{ display: {"block" if aba_ativa == "pesagem" else "none"} !important; }}
+    div.st-key-view_historico {{ display: {"block" if aba_ativa == "historico" else "none"} !important; }}
+    div.st-key-view_config {{ display: {"block" if aba_ativa == "config" else "none"} !important; }}
     </style>
 """, unsafe_allow_html=True)
 
@@ -306,25 +303,30 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # =========================================================
-# 4. ROTEAMENTO DE ABAS INSTANTÂNEO
+# 4. CARREGAMENTO PARALELO DE CONTAINERS (MEMÓRIA ESTÁTICA)
 # =========================================================
-if aba == "inicio":
+c_inicio = st.container(key="view_inicio")
+with c_inicio:
     inicio.render()
-elif aba == "pesagem" and st.session_state["usuario_logado"]:
-    if tem_permissao("pesagem:visualizar"):
-        pesagem.render()
-    else:
-        st.toast("⛔ Acesso bloqueado ao formulário.", icon="🔒")
-elif aba == "historico" and st.session_state["usuario_logado"]:
-    if tem_permissao("dashboard:visualizar"):
-        historico.render()
-    else:
-        st.toast("⛔ Acesso bloqueado ao painel.", icon="🔒")
-elif aba == "config" and st.session_state["usuario_logado"]:
-    config.render()
+
+if st.session_state["usuario_logado"]:
+    c_pesagem = st.container(key="view_pesagem")
+    with c_pesagem:
+        if tem_permissao("pesagem:visualizar"):
+            pesagem.render()
+
+    c_historico = st.container(key="view_historico")
+    with c_historico:
+        if tem_permissao("dashboard:visualizar"):
+            historico.render()
+
+    c_config = st.container(key="view_config")
+    with c_config:
+        if tem_permissao("usuarios:gerenciar") or tem_permissao("pratos:gerenciar"):
+            config.render()
 
 # =========================================================
-# 5. RODAPÉ FIXO (CÁPSULA) - TROCA DIRETA SEM DELAY
+# 5. RODAPÉ FIXO (CÁPSULA DE ALTERNÂNCIA INSTANTÂNEA)
 # =========================================================
 if st.session_state["usuario_logado"]:
     nav_bar = st.container(key="nav_bar_container")
@@ -332,13 +334,13 @@ if st.session_state["usuario_logado"]:
         c1, c2, c3, c4 = st.columns(4)
         
         with c1:
-            if st.button("Início", key="btn_inicio", type="primary" if aba == "inicio" else "secondary"):
+            if st.button("Início", key="btn_inicio", type="primary" if aba_ativa == "inicio" else "secondary"):
                 if st.session_state["aba_ativa"] != "inicio":
                     st.session_state["aba_ativa"] = "inicio"
                     st.rerun()
 
         with c2:
-            if st.button("Formulário", key="btn_pesagem", type="primary" if aba == "pesagem" else "secondary"):
+            if st.button("Formulário", key="btn_pesagem", type="primary" if aba_ativa == "pesagem" else "secondary"):
                 if tem_permissao("pesagem:visualizar"):
                     if st.session_state["aba_ativa"] != "pesagem":
                         st.session_state["aba_ativa"] = "pesagem"
@@ -347,7 +349,7 @@ if st.session_state["usuario_logado"]:
                     st.toast("⛔ Sem permissão para o Formulário.", icon="🔒")
 
         with c3:
-            if st.button("Painel", key="btn_historico", type="primary" if aba == "historico" else "secondary"):
+            if st.button("Painel", key="btn_historico", type="primary" if aba_ativa == "historico" else "secondary"):
                 if tem_permissao("dashboard:visualizar"):
                     if st.session_state["aba_ativa"] != "historico":
                         st.session_state["aba_ativa"] = "historico"
@@ -356,7 +358,7 @@ if st.session_state["usuario_logado"]:
                     st.toast("⛔ Sem permissão para o Painel.", icon="🔒")
 
         with c4:
-            if st.button("⚙️", key="btn_config", type="primary" if aba == "config" else "secondary"):
+            if st.button("⚙️", key="btn_config", type="primary" if aba_ativa == "config" else "secondary"):
                 if tem_permissao("usuarios:gerenciar") or tem_permissao("pratos:gerenciar"):
                     if st.session_state["aba_ativa"] != "config":
                         st.session_state["aba_ativa"] = "config"
