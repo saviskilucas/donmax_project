@@ -1,9 +1,7 @@
 streamlit>=1.35.0
-starlette<0.37.0
 pandas
 plotly
 gspread
 google-auth
 reportlab
 matplotlib
-numpy
