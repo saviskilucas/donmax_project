@@ -40,7 +40,7 @@ if not st.session_state["usuario_logado"]:
 aba = st.session_state["aba_ativa"]
 
 # =========================================================
-# 2. INJEÇÃO DE CSS GLOBAL E BLINDAGEM DO MENU FIXO
+# 2. INJEÇÃO DE CSS GLOBAL (ESTRUTURA ORIGINAL PRESERVADA)
 # =========================================================
 st.markdown("""
     <style>
@@ -129,10 +129,9 @@ st.markdown("""
         color: #B71C1C !important;
     }
 
-    /* CÁPSULA TRAVADA NO RODAPÉ - FIXA, PERMANENTE E PROTEGIDA CONTRA PISCADA */
+    /* CÁPSULA TRAVADA NO RODAPÉ */
     div[data-testid="stElementContainer"]:has(div.st-key-nav_bar_container),
-    div:has(> div.st-key-nav_bar_container),
-    .st-key-nav_bar_container {
+    div:has(> div.st-key-nav_bar_container) {
         position: fixed !important;
         bottom: 70px !important;
         left: 50% !important;
@@ -140,9 +139,6 @@ st.markdown("""
         width: 360px !important;
         max-width: 95vw !important;
         z-index: 99999999 !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-        display: block !important;
     }
 
     div.st-key-nav_bar_container div[data-testid="stHorizontalBlock"] {
@@ -208,6 +204,22 @@ st.markdown("""
         transition: all 0.2s ease-in-out !important;
     }
 
+    div.st-key-nav_bar_container button *,
+    div.st-key-nav_bar_container button div,
+    div.st-key-nav_bar_container button p,
+    div.st-key-nav_bar_container button [data-testid="stMarkdownContainer"] {
+        margin: 0 auto !important;
+        padding: 0 !important;
+        text-align: center !important;
+        width: 100% !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-size: 0.85rem !important;
+        font-weight: 700 !important;
+        line-height: 1 !important;
+    }
+
     div.st-key-nav_bar_container button[kind="secondary"] {
         background-color: transparent !important;
         color: #E0E0E0 !important;
@@ -218,6 +230,10 @@ st.markdown("""
         background-color: #FFFFFF !important;
         color: #B71C1C !important;
         cursor: pointer !important;
+    }
+
+    div.st-key-nav_bar_container button[kind="secondary"]:hover * {
+        color: #B71C1C !important;
     }
 
     div.st-key-nav_bar_container button[kind="primary"],
@@ -291,49 +307,49 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # =========================================================
-# 4. RODAPÉ FIXO DE DECLARAÇÃO ANTECIPADA (PERMANENTE NA TELA)
+# 4. RODAPÉ FIXO (CÁPSULA) - RENDERIZADO ANTES DO CONTEÚDO
+#    (Evita que o menu desapareça durante a montagem do Painel)
 # =========================================================
-def renderizar_menu_fixo():
-    if st.session_state["usuario_logado"]:
-        nav_bar = st.container(key="nav_bar_container")
-        with nav_bar:
-            c1, c2, c3, c4 = st.columns(4)
-            with c1:
-                tipo = "primary" if aba == "inicio" else "secondary"
-                if st.button("Início", key="btn_inicio", type=tipo):
-                    if st.session_state["aba_ativa"] != "inicio":
-                        st.session_state["aba_ativa"] = "inicio"
+if st.session_state["usuario_logado"]:
+    nav_bar = st.container(key="nav_bar_container")
+    with nav_bar:
+        c1, c2, c3, c4 = st.columns(4)
+        with c1:
+            tipo = "primary" if aba == "inicio" else "secondary"
+            if st.button("Início", key="btn_inicio", type=tipo):
+                if st.session_state["aba_ativa"] != "inicio":
+                    st.session_state["aba_ativa"] = "inicio"
+                    st.rerun()
+        with c2:
+            tipo = "primary" if aba == "pesagem" else "secondary"
+            if st.button("Formulário", key="btn_pesagem", type=tipo):
+                if tem_permissao("pesagem:visualizar"):
+                    if st.session_state["aba_ativa"] != "pesagem":
+                        st.session_state["aba_ativa"] = "pesagem"
                         st.rerun()
-            with c2:
-                tipo = "primary" if aba == "pesagem" else "secondary"
-                if st.button("Formulário", key="btn_pesagem", type=tipo):
-                    if tem_permissao("pesagem:visualizar"):
-                        if st.session_state["aba_ativa"] != "pesagem":
-                            st.session_state["aba_ativa"] = "pesagem"
-                            st.rerun()
-                    else:
-                        st.toast("⛔ Sem permissão para o Formulário.", icon="🔒")
-            with c3:
-                tipo = "primary" if aba == "historico" else "secondary"
-                if st.button("Painel", key="btn_historico", type=tipo):
-                    if tem_permissao("dashboard:visualizar"):
-                        if st.session_state["aba_ativa"] != "historico":
-                            st.session_state["aba_ativa"] = "historico"
-                            st.rerun()
-                    else:
-                        st.toast("⛔ Sem permissão para o Painel.", icon="🔒")
-            with c4:
-                tipo = "primary" if aba == "config" else "secondary"
-                if st.button("⚙️", key="btn_config", type=tipo):
-                    if tem_permissao("usuarios:gerenciar") or tem_permissao("pratos:gerenciar"):
-                        if st.session_state["aba_ativa"] != "config":
-                            st.session_state["aba_ativa"] = "config"
-                            st.rerun()
-                    else:
-                        st.toast("⛔ Sem permissão para as Configurações.", icon="🔒")
+                else:
+                    st.toast("⛔ Sem permissão para o Formulário.", icon="🔒")
+        with c3:
+            tipo = "primary" if aba == "historico" else "secondary"
+            if st.button("Painel", key="btn_historico", type=tipo):
+                if tem_permissao("dashboard:visualizar"):
+                    if st.session_state["aba_ativa"] != "historico":
+                        st.session_state["aba_ativa"] = "historico"
+                        st.rerun()
+                else:
+                    st.toast("⛔ Sem permissão para o Painel.", icon="🔒")
+        with c4:
+            tipo = "primary" if aba == "config" else "secondary"
+            if st.button("⚙️", key="btn_config", type=tipo):
+                if tem_permissao("usuarios:gerenciar") or tem_permissao("pratos:gerenciar"):
+                    if st.session_state["aba_ativa"] != "config":
+                        st.session_state["aba_ativa"] = "config"
+                        st.rerun()
+                else:
+                    st.toast("⛔ Sem permissão para as Configurações.", icon="🔒")
 
 # =========================================================
-# 5. ROTEAMENTO DE ABAS
+# 5. ROTEAMENTO DE ABAS DENTRO DO CONTEÚDO PRINCIPAL
 # =========================================================
 if aba == "inicio":
     inicio.render()
@@ -350,6 +366,3 @@ elif aba == "historico" and st.session_state["usuario_logado"]:
 elif aba == "config" and st.session_state["usuario_logado"]:
     if tem_permissao("usuarios:gerenciar") or tem_permissao("pratos:gerenciar"):
         config.render()
-
-# Garante renderização contínua e sem piscadas no DOM
-renderizar_menu_fixo()
