@@ -1,5 +1,6 @@
+[client]
+toolbarMode = "minimal"  # ou "viewer", esconde as opções de dev e badges
+showErrorDetails = false
+
 [theme]
 base = "dark"
-
-[server]
-headless = true
