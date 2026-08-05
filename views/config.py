@@ -63,81 +63,83 @@ def render():
 
             tab_listar_usr, tab_criar_usr = st.tabs(["📋 Usuários Cadastrados", "➕ Novo Usuário"])
 
-            # TAB: LISTAR E EDITAR
+            # TAB: LISTAR E EDITAR (RENDERIZAÇÃO EM CONTAINER ÚNICO)
             with tab_listar_usr:
                 registros_usr = carregar_usuarios_planilha()
                 if not registros_usr:
                     st.info("Nenhum usuário cadastrado até o momento.")
                 else:
-                    for index, reg in enumerate(registros_usr):
-                        linha_planilha = index + 2
-                        
-                        usr_login = str(reg.get("Usuario", reg.get("usuario", reg.get("Email", "")))).strip().lower()
-                        nome_usr = str(reg.get("Nome", reg.get("nome", usr_login))).strip()
-                        id_perfil_usr = str(reg.get("ID_Perfil", reg.get("idperfil", reg.get("perfil", "cozinha")))).strip().lower()
-                        ativo_usr = str(reg.get("Ativo", reg.get("ativo", "TRUE"))).strip().upper() == "TRUE"
-                        senha_usr = str(reg.get("Senha", reg.get("senha", ""))).strip()
+                    container_usr = st.container()
+                    with container_usr:
+                        for index, reg in enumerate(registros_usr):
+                            linha_planilha = index + 2
+                            
+                            usr_login = str(reg.get("Usuario", reg.get("usuario", reg.get("Email", "")))).strip().lower()
+                            nome_usr = str(reg.get("Nome", reg.get("nome", usr_login))).strip()
+                            id_perfil_usr = str(reg.get("ID_Perfil", reg.get("idperfil", reg.get("perfil", "cozinha")))).strip().lower()
+                            ativo_usr = str(reg.get("Ativo", reg.get("ativo", "TRUE"))).strip().upper() == "TRUE"
+                            senha_usr = str(reg.get("Senha", reg.get("senha", ""))).strip()
 
-                        nome_perfil_display = perfis_disponiveis.get(id_perfil_usr, {}).get("nome", id_perfil_usr.capitalize())
-                        status_emoji = "🟢 Ativo" if ativo_usr else "🔴 Inativo"
+                            nome_perfil_display = perfis_disponiveis.get(id_perfil_usr, {}).get("nome", id_perfil_usr.capitalize())
+                            status_emoji = "🟢 Ativo" if ativo_usr else "🔴 Inativo"
 
-                        with st.expander(f"👤 {nome_usr} ({usr_login}) — [{nome_perfil_display}] {status_emoji}"):
-                            pode_editar = True
-                            if perfil_usuario_atual != "master" and id_perfil_usr in ["master", "admin"]:
-                                pode_editar = False
+                            with st.expander(f"👤 {nome_usr} ({usr_login}) — [{nome_perfil_display}] {status_emoji}"):
+                                pode_editar = True
+                                if perfil_usuario_atual != "master" and id_perfil_usr in ["master", "admin"]:
+                                    pode_editar = False
 
-                            if not pode_editar:
-                                st.warning("🔒 Você não tem hierarquia para alterar este usuário.")
-                            else:
-                                with st.form(f"form_editar_usr_{index}"):
-                                    col_f1, col_f2 = st.columns(2)
-                                    with col_f1:
-                                        novo_nome = st.text_input("Nome", value=nome_usr, key=f"edit_nome_{index}")
-                                        nova_senha = st.text_input("Senha", value=senha_usr, type="password", key=f"edit_senha_{index}")
-                                    with col_f2:
-                                        index_perf = lista_id_perfis.index(id_perfil_usr) if id_perfil_usr in lista_id_perfis else 0
-                                        novo_id_perfil = st.selectbox(
-                                            "Perfil de Acesso",
-                                            options=lista_id_perfis,
-                                            format_func=lambda x: perfis_disponiveis.get(x, {}).get("nome", x),
-                                            index=index_perf,
-                                            key=f"edit_perf_{index}"
-                                        )
-                                        novo_status = st.checkbox("Conta Ativa", value=ativo_usr, key=f"edit_ativo_{index}")
+                                if not pode_editar:
+                                    st.warning("🔒 Você não tem hierarquia para alterar este usuário.")
+                                else:
+                                    with st.form(f"form_editar_usr_{index}"):
+                                        col_f1, col_f2 = st.columns(2)
+                                        with col_f1:
+                                            novo_nome = st.text_input("Nome", value=nome_usr, key=f"edit_nome_{index}")
+                                            nova_senha = st.text_input("Senha", value=senha_usr, type="password", key=f"edit_senha_{index}")
+                                        with col_f2:
+                                            index_perf = lista_id_perfis.index(id_perfil_usr) if id_perfil_usr in lista_id_perfis else 0
+                                            novo_id_perfil = st.selectbox(
+                                                "Perfil de Acesso",
+                                                options=lista_id_perfis,
+                                                format_func=lambda x: perfis_disponiveis.get(x, {}).get("nome", x),
+                                                index=index_perf,
+                                                key=f"edit_perf_{index}"
+                                            )
+                                            novo_status = st.checkbox("Conta Ativa", value=ativo_usr, key=f"edit_ativo_{index}")
 
-                                    col_btn1, col_btn2 = st.columns(2)
-                                    with col_btn1:
-                                        btn_salvar = st.form_submit_button("💾 SALVAR", use_container_width=True)
-                                    with col_btn2:
-                                        btn_excluir = st.form_submit_button("🗑️ EXCLUIR", use_container_width=True)
+                                        col_btn1, col_btn2 = st.columns(2)
+                                        with col_btn1:
+                                            btn_salvar = st.form_submit_button("💾 SALVAR", use_container_width=True)
+                                        with col_btn2:
+                                            btn_excluir = st.form_submit_button("🗑️ EXCLUIR", use_container_width=True)
 
-                                    if btn_salvar:
-                                        try:
-                                            sheet_usr = conectar_gsheets().worksheet("Usuarios")
-                                            sheet_usr.update_cell(linha_planilha, 1, novo_nome.strip())
-                                            sheet_usr.update_cell(linha_planilha, 2, usr_login)
-                                            sheet_usr.update_cell(linha_planilha, 3, nova_senha.strip())
-                                            sheet_usr.update_cell(linha_planilha, 4, novo_id_perfil)
-                                            sheet_usr.update_cell(linha_planilha, 5, "TRUE" if novo_status else "FALSE")
-
-                                            st.cache_data.clear()
-                                            st.success(f"✅ Usuário **{usr_login}** atualizado com sucesso!")
-                                            st.rerun()
-                                        except Exception as e:
-                                            st.error(f"❌ Erro ao atualizar: {e}")
-
-                                    if btn_excluir:
-                                        if usr_login == st.session_state.get("id_usuario_logado"):
-                                            st.error("❌ Você não pode excluir a sua própria conta ativa.")
-                                        else:
+                                        if btn_salvar:
                                             try:
                                                 sheet_usr = conectar_gsheets().worksheet("Usuarios")
-                                                sheet_usr.delete_rows(linha_planilha)
+                                                sheet_usr.update_cell(linha_planilha, 1, novo_nome.strip())
+                                                sheet_usr.update_cell(linha_planilha, 2, usr_login)
+                                                sheet_usr.update_cell(linha_planilha, 3, nova_senha.strip())
+                                                sheet_usr.update_cell(linha_planilha, 4, novo_id_perfil)
+                                                sheet_usr.update_cell(linha_planilha, 5, "TRUE" if novo_status else "FALSE")
+
                                                 st.cache_data.clear()
-                                                st.success(f"🗑️ Usuário **{usr_login}** excluído com sucesso!")
+                                                st.success(f"✅ Usuário **{usr_login}** atualizado com sucesso!")
                                                 st.rerun()
                                             except Exception as e:
-                                                st.error(f"❌ Erro ao excluir: {e}")
+                                                st.error(f"❌ Erro ao atualizar: {e}")
+
+                                        if btn_excluir:
+                                            if usr_login == st.session_state.get("id_usuario_logado"):
+                                                st.error("❌ Você não pode excluir a sua própria conta ativa.")
+                                            else:
+                                                try:
+                                                    sheet_usr = conectar_gsheets().worksheet("Usuarios")
+                                                    sheet_usr.delete_rows(linha_planilha)
+                                                    st.cache_data.clear()
+                                                    st.success(f"🗑️ Usuário **{usr_login}** excluído com sucesso!")
+                                                    st.rerun()
+                                                except Exception as e:
+                                                    st.error(f"❌ Erro ao excluir: {e}")
 
             # TAB: CRIAR USUÁRIO
             with tab_criar_usr:
@@ -197,62 +199,64 @@ def render():
         else:
             tab_listar_pratos, tab_criar_prato = st.tabs(["📋 Pratos Cadastrados", "➕ Novo Prato"])
 
-            # TAB: LISTAR E EDITAR PRATOS
+            # TAB: LISTAR E EDITAR PRATOS (RENDERIZAÇÃO EM CONTAINER ÚNICO)
             with tab_listar_pratos:
                 registros_alimentos = carregar_alimentos_planilha()
                 if not registros_alimentos:
                     st.info("Nenhum prato encontrado na aba 'Alimentos'.")
                 else:
-                    for index, reg in enumerate(registros_alimentos):
-                        linha_planilha = index + 2
+                    container_pratos = st.container()
+                    with container_pratos:
+                        for index, reg in enumerate(registros_alimentos):
+                            linha_planilha = index + 2
 
-                        nome_prato = str(
-                            reg.get("Prato", reg.get("prato", reg.get("ID_Prato", "")))
-                        ).strip()
+                            nome_prato = str(
+                                reg.get("Prato", reg.get("prato", reg.get("ID_Prato", "")))
+                            ).strip()
 
-                        ativo_val = str(
-                            reg.get("Ativo", reg.get("ativo", "TRUE"))
-                        ).strip().upper()
+                            ativo_val = str(
+                                reg.get("Ativo", reg.get("ativo", "TRUE"))
+                            ).strip().upper()
 
-                        ativo_prato = ativo_val in ["TRUE", "VERDADEIRO", "1", "SIM", "S"]
+                            ativo_prato = ativo_val in ["TRUE", "VERDADEIRO", "1", "SIM", "S"]
 
-                        if not nome_prato:
-                            continue
+                            if not nome_prato:
+                                continue
 
-                        status_emoji = "🟢 Ativo" if ativo_prato else "🔴 Inativo"
+                            status_emoji = "🟢 Ativo" if ativo_prato else "🔴 Inativo"
 
-                        with st.expander(f"🍲 {nome_prato} — {status_emoji}"):
-                            with st.form(f"form_editar_alimento_{index}"):
-                                novo_nome_prato = st.text_input("Nome do Prato", value=nome_prato, key=f"edit_alimento_nome_{index}")
-                                novo_status_prato = st.checkbox("Prato Ativo (Exibir no Formulário)", value=ativo_prato, key=f"edit_alimento_ativo_{index}")
+                            with st.expander(f"🍲 {nome_prato} — {status_emoji}"):
+                                with st.form(f"form_editar_alimento_{index}"):
+                                    novo_nome_prato = st.text_input("Nome do Prato", value=nome_prato, key=f"edit_alimento_nome_{index}")
+                                    novo_status_prato = st.checkbox("Prato Ativo (Exibir no Formulário)", value=ativo_prato, key=f"edit_alimento_ativo_{index}")
 
-                                col_btn_p1, col_btn_p2 = st.columns(2)
-                                with col_btn_p1:
-                                    btn_salvar_prato = st.form_submit_button("💾 SALVAR", use_container_width=True)
-                                with col_btn_p2:
-                                    btn_excluir_prato = st.form_submit_button("🗑️ EXCLUIR", use_container_width=True)
+                                    col_btn_p1, col_btn_p2 = st.columns(2)
+                                    with col_btn_p1:
+                                        btn_salvar_prato = st.form_submit_button("💾 SALVAR", use_container_width=True)
+                                    with col_btn_p2:
+                                        btn_excluir_prato = st.form_submit_button("🗑️ EXCLUIR", use_container_width=True)
 
-                                if btn_salvar_prato:
-                                    try:
-                                        sheet_alimentos = conectar_gsheets().worksheet("Alimentos")
-                                        sheet_alimentos.update_cell(linha_planilha, 1, novo_nome_prato.strip())
-                                        sheet_alimentos.update_cell(linha_planilha, 2, "TRUE" if novo_status_prato else "FALSE")
+                                    if btn_salvar_prato:
+                                        try:
+                                            sheet_alimentos = conectar_gsheets().worksheet("Alimentos")
+                                            sheet_alimentos.update_cell(linha_planilha, 1, novo_nome_prato.strip())
+                                            sheet_alimentos.update_cell(linha_planilha, 2, "TRUE" if novo_status_prato else "FALSE")
 
-                                        st.cache_data.clear()
-                                        st.success(f"✅ Prato **{novo_nome_prato}** atualizado!")
-                                        st.rerun()
-                                    except Exception as e:
-                                        st.error(f"❌ Erro ao atualizar prato: {e}")
+                                            st.cache_data.clear()
+                                            st.success(f"✅ Prato **{novo_nome_prato}** atualizado!")
+                                            st.rerun()
+                                        except Exception as e:
+                                            st.error(f"❌ Erro ao atualizar prato: {e}")
 
-                                if btn_excluir_prato:
-                                    try:
-                                        sheet_alimentos = conectar_gsheets().worksheet("Alimentos")
-                                        sheet_alimentos.delete_rows(linha_planilha)
-                                        st.cache_data.clear()
-                                        st.success(f"🗑️ Prato **{nome_prato}** removido!")
-                                        st.rerun()
-                                    except Exception as e:
-                                        st.error(f"❌ Erro ao excluir prato: {e}")
+                                    if btn_excluir_prato:
+                                        try:
+                                            sheet_alimentos = conectar_gsheets().worksheet("Alimentos")
+                                            sheet_alimentos.delete_rows(linha_planilha)
+                                            st.cache_data.clear()
+                                            st.success(f"🗑️ Prato **{nome_prato}** removido!")
+                                            st.rerun()
+                                        except Exception as e:
+                                            st.error(f"❌ Erro ao excluir prato: {e}")
 
             # TAB: CRIAR PRATO
             with tab_criar_prato:
