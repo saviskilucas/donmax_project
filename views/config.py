@@ -38,7 +38,7 @@ def carregar_alimentos_planilha():
 # =========================================================
 def render():
     # 1. Desenha a estrutura da tela IMEDIATAMENTE no navegador
-    st.markdown("<div class='section-header'>⚙️ CONFIGURAÇÕES</div>", unsafe_allow_html=True)
+    st.markdown("<div class='section-header'>CONFIGURAÇÕES</div>", unsafe_allow_html=True)
 
     pode_gerenciar_usr = tem_permissao("usuarios:gerenciar")
     pode_gerenciar_pratos = tem_permissao("pratos:gerenciar")

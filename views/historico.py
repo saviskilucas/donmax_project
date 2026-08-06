@@ -653,7 +653,7 @@ def render():
             'displayModeBar': False
         }
 
-        st.markdown("##### INDICADORES CHAVE")
+        st.markdown("##### Indicadores")
         
         c1, c2 = st.columns(2)
         with c1:
@@ -873,7 +873,6 @@ def render():
             )
 
             st.plotly_chart(fig_heatmap, width="stretch", config=config_plotly_mobile)
-            st.caption("ℹ️ *A linha TOTAL GERAL exibe o Descarte Médio Ponderado Global de toda a produção.*")
 
         # =========================================================
         # 3. SOBRA VS DESCARTE
@@ -963,7 +962,7 @@ def render():
                     st.error(f"Erro ao gerar PDF: {err}")
 
         st.markdown("---")
-        st.markdown("##### 📊 Lançamentos Registrados")
+        st.markdown("##### Lançamentos Registrados")
         
         # =========================================================
         # TABELA DE LANÇAMENTOS
@@ -1069,7 +1068,7 @@ def render():
 
                     idx_prato = lista_pratos_opt.index(prato_lan) if prato_lan in lista_pratos_opt else 0
 
-                    st.info(f"📍 **Lançamento ID #{id_selecionado}:** {dt_lan_str} — {prato_lan} ({resp_lan})")
+                    st.info(f"**Lançamento ID #{id_selecionado}:** {dt_lan_str} — {prato_lan} ({resp_lan})")
 
                     with st.form(key=f"form_editar_id_{id_selecionado}"):
                         c_ed1, c_ed2 = st.columns(2)
@@ -1087,9 +1086,9 @@ def render():
 
                         b_salvar, b_excluir = st.columns(2)
                         with b_salvar:
-                            btn_salvar_l = st.form_submit_button("💾 SALVAR ALTERAÇÕES", width="stretch")
+                            btn_salvar_l = st.form_submit_button("💾 SALVAR", width="stretch")
                         with b_excluir:
-                            btn_excluir_l = st.form_submit_button("🗑️ EXCLUIR REGISTRO", width="stretch")
+                            btn_excluir_l = st.form_submit_button("🗑️ EXCLUIR", width="stretch")
 
                         if btn_salvar_l:
                             try:

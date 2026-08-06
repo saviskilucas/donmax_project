@@ -285,7 +285,7 @@ def render():
                                 st.error("❌ Usuário não localizado.")
 
     else:
-        st.markdown("<div class='section-header'>🏠 PAINEL INICIAL</div>", unsafe_allow_html=True)
+        st.markdown("<div class='section-header'>PAINEL INICIAL</div>", unsafe_allow_html=True)
         st.subheader(f"Olá, {st.session_state['usuario_logado']}! 👋")
         st.info(f"Perfil de Acesso: **{st.session_state.get('nome_perfil_logado', 'Usuário')}**")
         
@@ -293,16 +293,16 @@ def render():
         
         col_a, col_b = st.columns(2)
         with col_a:
-            if st.button("📝 Novo Lançamento", width="stretch"):
+            if st.button("NOVO LANÇAMENTO", width="stretch"):
                 st.session_state["aba_ativa"] = "pesagem"
                 st.rerun()
         with col_b:
-            if st.button("📊 Consultar Painel", width="stretch"):
+            if st.button("CONSULTAR PAINEL", width="stretch"):
                 st.session_state["aba_ativa"] = "historico"
                 st.rerun()
 
         st.markdown("---")
-        if st.button("🚪 Encerrar Sessão", width="stretch"):
+        if st.button("ENCERRAR SESSÃO", width="stretch"):
             for key in ["usuario_logado", "id_usuario_logado", "perfil_logado", "nome_perfil_logado", "permissoes_usuario"]:
                 st.session_state[key] = None
             st.session_state["aba_ativa"] = "inicio"
