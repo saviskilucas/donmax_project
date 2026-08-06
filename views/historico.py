@@ -557,25 +557,42 @@ def render():
         st.markdown("##### Filtrar por Período")
         
         if tem_permissao("dashboard:filtrar"):
-            filtro_datas = st.date_input(
-                "Selecione o intervalo no calendário:",
-                value=(data_min, data_max),
-                min_value=data_min,
-                max_value=data_max,
-                format="DD/MM/YYYY"
-            )
-        else:
-            filtro_datas = (data_min, data_max)
+            from streamlit_calendar import calendar
 
-        if isinstance(filtro_datas, (list, tuple)):
-            if len(filtro_datas) == 2:
-                dt_inicio, dt_fim = filtro_datas
-            elif len(filtro_datas) == 1:
-                dt_inicio = dt_fim = filtro_datas[0]
+            # Configurações visuais do calendário na tela
+            calendar_options = {
+                "editable": False,
+                "selectable": True,
+                "headerToolbar": {
+                    "left": "prev,next today",
+                    "center": "title",
+                    "right": ""
+                },
+                "initialView": "dayGridMonth",
+                "locale": "pt-br"
+            }
+
+            st.caption("👈 Toque nas datas para definir o período:")
+            state = calendar(
+                options=calendar_options,
+                custom_css="""
+                .fc-toolbar-title { font-size: 1rem !important; color: #FFFFFF !important; }
+                .fc-button-primary { background-color: #B71C1C !important; border-color: #B71C1C !important; }
+                .fc-daygrid-day-number { color: #E0E0E0 !important; }
+                """,
+                key="cal_filtro"
+            )
+
+            # Captura a seleção feita pelo usuário diretamente no calendário visual
+            if state.get("select"):
+                str_i = state["select"]["start"].split("T")[0]
+                str_f = state["select"]["end"].split("T")[0]
+                dt_inicio = datetime.strptime(str_i, "%Y-%m-%d").date()
+                dt_fim = datetime.strptime(str_f, "%Y-%m-%d").date()
             else:
-                dt_inicio = dt_fim = data_min
+                dt_inicio, dt_fim = data_min, data_max
         else:
-            dt_inicio = dt_fim = filtro_datas
+            dt_inicio, dt_fim = data_min, data_max
 
         df = df[(df['Data_DT'] >= dt_inicio) & (df['Data_DT'] <= dt_fim)]
 
