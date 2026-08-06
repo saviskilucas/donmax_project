@@ -65,13 +65,19 @@ def gerar_img_heatmap(df_matriz):
         return None
 
     try:
-        pratos = df_matriz['ID_Prato'].astype(str).tolist()
+        # Separa os pratos normais da linha TOTAL GERAL para não distorcer a escala
+        df_pratos = df_matriz[df_matriz['ID_Prato'] != 'TOTAL GERAL'].copy()
+        df_total = df_matriz[df_matriz['ID_Prato'] == 'TOTAL GERAL'].copy()
+        
+        df_exibicao = pd.concat([df_pratos, df_total], ignore_index=True)
+
+        pratos = df_exibicao['ID_Prato'].astype(str).tolist()
         colunas = ['Produção Ini.', 'Reposição', 'Sobra Buffet', 'Descarte Total', '% Perda']
         
         z_values = []
         text_values = []
 
-        for _, row in df_matriz.iterrows():
+        for _, row in df_exibicao.iterrows():
             p_ini = float(row.get('Prod_Ini_Calc', 0.0))
             repo = float(row.get('Reposicao_Calc', 0.0))
             s_buf = float(row.get('Sobra_Buffet_Calc', 0.0))
@@ -93,25 +99,29 @@ def gerar_img_heatmap(df_matriz):
         fig, ax = plt.subplots(figsize=(6.5, altura), facecolor='#FFFFFF')
         ax.set_facecolor('#FFFFFF')
 
-        im = ax.imshow(z_array, cmap='Reds', aspect='auto', alpha=0.85)
+        # O Heatmap calcula o tom usando apenas a intensidade dos pratos normais
+        z_pratos_only = z_array[:-1] if len(df_total) > 0 and len(pratos) > 1 else z_array
+        max_val = z_pratos_only.max() if z_pratos_only.size > 0 and z_pratos_only.max() > 0 else 1.0
+
+        # Escala YlOrRd em fundo claro
+        im = ax.imshow(z_array, cmap='YlOrRd', aspect='auto', alpha=0.85, vmin=0, vmax=max_val)
 
         ax.set_xticks(np.arange(len(colunas)))
         ax.set_yticks(np.arange(len(pratos)))
         ax.set_xticklabels(colunas, color='#111111', fontsize=8, fontweight='bold')
         ax.set_yticklabels(pratos, color='#222222', fontsize=8)
 
-        # Evita divisão por zero se todos os valores forem zerados
-        max_val = z_array[:-1].max() if len(pratos) > 1 and z_array[:-1].max() > 0 else 1.0
-
         for i in range(len(pratos)):
             is_total = (i == len(pratos) - 1) and (pratos[i] == 'TOTAL GERAL')
             for j in range(len(colunas)):
                 if is_total:
+                    # Linha de Total com destaque escuro e texto branco no PDF
                     ax.add_patch(plt.Rectangle((j - 0.5, i - 0.5), 1, 1, fill=True, color='#262626', ec='#111111', lw=1, zorder=3))
                     ax.text(j, i, text_values[i][j], ha="center", va="center", color='#FFFFFF', fontsize=8, fontweight='bold', zorder=4)
                 else:
                     val_norm = z_array[i, j] / max_val if max_val > 0 else 0
-                    color_text = "#FFFFFF" if val_norm > 0.65 else "#111111"
+                    # Define contraste automático da fonte para o modo claro
+                    color_text = "#FFFFFF" if val_norm > 0.7 else "#111111"
                     ax.text(j, i, text_values[i][j], ha="center", va="center", color=color_text, fontsize=7.5, fontweight='bold')
 
         ax.spines[:].set_visible(False)
@@ -660,12 +670,16 @@ def render():
         st.plotly_chart(fig_balanco, width="stretch", config=config_plotly_mobile)
 
         # =========================================================
-        # 2. HEATMAP
+        # 2. HEATMAP (DASHBOARD - MODO ESCURO)
         # =========================================================
         if tem_permissao("dashboard:matriz") and not df_matriz.empty:
             st.markdown("##### Matriz de Desempenho por Produto")
 
-            df_matriz_plot = df_matriz.iloc[::-1].copy()
+            # Separa pratos normais e Total Geral
+            df_pratos = df_matriz[df_matriz['ID_Prato'] != 'TOTAL GERAL'].iloc[::-1].copy()
+            df_total = df_matriz[df_matriz['ID_Prato'] == 'TOTAL GERAL'].copy()
+
+            df_matriz_plot = pd.concat([df_total, df_pratos], ignore_index=True)
 
             pratos = df_matriz_plot['ID_Prato'].tolist()
             colunas_heatmap = ['Prod. Inicial', 'Reposição', 'Sobra Buffet', 'Descarte Total', '% Perda']
@@ -674,11 +688,11 @@ def render():
             text_values = []
 
             for _, row in df_matriz_plot.iterrows():
-                p_ini = row['Prod_Ini_Calc']
-                repo = row['Reposicao_Calc']
-                s_buf = row['Sobra_Buffet_Calc']
-                desc = row['Descarte_Calc']
-                pct = row['Perda_%']
+                p_ini = float(row.get('Prod_Ini_Calc', 0.0))
+                repo = float(row.get('Reposicao_Calc', 0.0))
+                s_buf = float(row.get('Sobra_Buffet_Calc', 0.0))
+                desc = float(row.get('Descarte_Calc', 0.0))
+                pct = float(row.get('Perda_%', 0.0))
 
                 z_values.append([p_ini, repo, s_buf, desc, pct])
                 text_values.append([
@@ -697,10 +711,10 @@ def render():
                 texttemplate="%{text}",
                 textfont={"size": 10, "color": "#FFFFFF"},
                 colorscale=[
-                    [0.0, '#1E1E1E'],
-                    [0.3, '#37474F'],
-                    [0.6, '#D84315'],
-                    [1.0, '#B71C1C']
+                    [0.0, '#1E1E1E'],   # Neutro Escuro
+                    [0.2, '#3E2723'],   # Marrom Sutil
+                    [0.5, '#E65100'],   # Laranja Alerta
+                    [1.0, '#D50000']    # Vermelho Crítico
                 ],
                 showscale=False
             ))
