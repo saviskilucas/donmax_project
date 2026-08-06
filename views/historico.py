@@ -53,9 +53,6 @@ def converter_para_numero(serie):
         errors='coerce'
     ).fillna(0.0)
 
-# =========================================================
-# GERADOR DE GRÁFICOS PARA PDF (MATPLOTLIB)
-# =========================================================
 def gerar_img_heatmap(df_matriz):
     import matplotlib
     matplotlib.use('Agg')
@@ -117,39 +114,40 @@ def gerar_img_heatmap(df_matriz):
                     else:
                         color_array[i, j] = 0.0
 
-        altura = max(2.5, num_rows * 0.45)
+        # Proporção ideal de altura para manter os números e nomes perfeitamente legíveis
+        altura_figura = max(2.5, num_rows * 0.45)
 
-        fig, ax = plt.subplots(figsize=(6.5, altura), facecolor='#FFFFFF')
+        fig, ax = plt.subplots(figsize=(6.8, altura_figura), facecolor='#FFFFFF')
         ax.set_facecolor('#FFFFFF')
 
         im = ax.imshow(color_array, cmap='YlOrRd', aspect='auto', alpha=0.88, vmin=0, vmax=1)
 
         ax.set_xticks(np.arange(num_cols))
         ax.set_yticks(np.arange(num_rows))
-        ax.set_xticklabels(colunas, color='#111111', fontsize=8, fontweight='bold')
-        ax.set_yticklabels(pratos, color='#222222', fontsize=8)
+        ax.set_xticklabels(colunas, color='#111111', fontsize=8.5, fontweight='bold')
+        ax.set_yticklabels(pratos, color='#222222', fontsize=8.5)
 
         for i in range(num_rows):
             is_total = (i == num_rows - 1) and (pratos[i] == 'TOTAL GERAL')
             for j in range(num_cols):
                 if is_total:
                     ax.add_patch(plt.Rectangle((j - 0.5, i - 0.5), 1, 1, fill=True, color='#262626', ec='#111111', lw=1, zorder=3))
-                    ax.text(j, i, text_matrix[i][j], ha="center", va="center", color='#FFFFFF', fontsize=8, fontweight='bold', zorder=4)
+                    ax.text(j, i, text_matrix[i][j], ha="center", va="center", color='#FFFFFF', fontsize=8.5, fontweight='bold', zorder=4)
                 else:
                     if raw_array[i, j] == 0:
                         ax.add_patch(plt.Rectangle((j - 0.5, i - 0.5), 1, 1, fill=True, color='#FFFFFF', ec='#E0E0E0', lw=0.5, zorder=3))
-                        ax.text(j, i, text_matrix[i][j], ha="center", va="center", color='#999999', fontsize=7.5, zorder=4)
+                        ax.text(j, i, text_matrix[i][j], ha="center", va="center", color='#999999', fontsize=8, zorder=4)
                     else:
                         intensity = color_array[i, j]
                         text_color = "#FFFFFF" if intensity > 0.65 else "#111111"
-                        ax.text(j, i, text_matrix[i][j], ha="center", va="center", color=text_color, fontsize=7.5, fontweight='bold')
+                        ax.text(j, i, text_matrix[i][j], ha="center", va="center", color=text_color, fontsize=8, fontweight='bold')
 
         ax.spines[:].set_visible(False)
         ax.tick_params(top=True, bottom=False, labeltop=True, labelbottom=False)
 
         buf = io.BytesIO()
         plt.tight_layout()
-        plt.savefig(buf, format='png', dpi=200, facecolor=fig.get_facecolor(), bbox_inches='tight')
+        plt.savefig(buf, format='png', dpi=220, facecolor=fig.get_facecolor(), bbox_inches='tight')
         plt.close(fig)
         buf.seek(0)
         return buf
@@ -274,12 +272,12 @@ def criar_banner_titulo(texto):
     return t_banner
 
 # =========================================================
-# GERADOR DE PDF EXECUTIVO (REPORTLAB) - COM TRAVA DE DIMENSÃO
+# GERADOR DE PDF EXECUTIVO (REPORTLAB) - QUEBRA AUTOMÁTICA
 # =========================================================
 def gerar_pdf_relatorio(df, tot_prod, tot_descarte, tot_sobra, tot_clientes, dt_inicio, dt_fim, prod_ini, reposicao, df_data, df_matriz):
     from reportlab.lib.pagesizes import letter
     from reportlab.lib import colors
-    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image, PageBreak
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 
     buffer = io.BytesIO()
@@ -305,15 +303,14 @@ def gerar_pdf_relatorio(df, tot_prod, tot_descarte, tot_sobra, tot_clientes, dt_
     agora_brasilia = datetime.now(ZoneInfo("America/Sao_Paulo"))
     dt_emissao_str = agora_brasilia.strftime('%d/%m/%Y às %H:%M:%S')
 
-    # Largura máxima disponível no quadro útil do PDF
-    LARGURA_MAXIMA = 520
+    LARGURA_MAXIMA = 500
 
     header_table_data = [[
         Paragraph("<b>DON MAX BUFFET</b>", style_header_app),
         Paragraph("<font color='#FFFFFF'><b>RELATÓRIO EXECUTIVO</b></font>", ParagraphStyle('HRight', fontName='Helvetica-Bold', fontSize=9, textColor=colors.white, alignment=2))
     ]]
     
-    t_header = Table(header_table_data, colWidths=[260, 260])
+    t_header = Table(header_table_data, colWidths=[250, 250])
     t_header.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#B71C1C')),
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
@@ -345,7 +342,7 @@ def gerar_pdf_relatorio(df, tot_prod, tot_descarte, tot_sobra, tot_clientes, dt_
         ]
     ]
 
-    t_cards = Table(cards_data, colWidths=[130, 130, 130, 130])
+    t_cards = Table(cards_data, colWidths=[125, 125, 125, 125])
     t_cards.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#FFF5F5')),
         ('BORDER', (0,0), (-1,-1), 1, colors.HexColor('#FFCDD2')),
@@ -363,12 +360,13 @@ def gerar_pdf_relatorio(df, tot_prod, tot_descarte, tot_sobra, tot_clientes, dt_
             elements.append(criar_banner_titulo("Matriz de Desempenho por Produto"))
             elements.append(Spacer(1, 6))
             
-            # Trava de altura para evitar estouro da página
-            altura_calculada = len(df_matriz) * 22
-            altura_h = min(450, max(140, altura_calculada))
+            # Mantém a proporção real para que a fonte fique perfeita
+            num_linhas = len(df_matriz)
+            altura_proporcional = max(160, num_linhas * 26)
             
-            elements.append(Image(img_h, width=LARGURA_MAXIMA, height=altura_h))
+            elements.append(Image(img_h, width=LARGURA_MAXIMA, height=altura_proporcional))
             elements.append(Paragraph("* A linha TOTAL GERAL indica o Descarte Médio Ponderado Global (Descarte Total / Produção Total).", style_note))
+            elements.append(Spacer(1, 10))
 
     elements.append(criar_banner_titulo("Análise Comparativa de Produção"))
     elements.append(Spacer(1, 6))
@@ -381,12 +379,12 @@ def gerar_pdf_relatorio(df, tot_prod, tot_descarte, tot_sobra, tot_clientes, dt_
             Paragraph("<b>Sobra vs Descarte</b>", ParagraphStyle('SubR', fontName='Helvetica-Bold', fontSize=8.5, textColor=colors.HexColor('#333333'), alignment=1))
         ],
         [
-            Image(img_b, width=250, height=150),
-            Image(img_r, width=250, height=150)
+            Image(img_b, width=245, height=150),
+            Image(img_r, width=245, height=150)
         ]
     ]
     
-    t_quadros = Table(quadros_table_data, colWidths=[260, 260])
+    t_quadros = Table(quadros_table_data, colWidths=[250, 250])
     t_quadros.setStyle(TableStyle([
         ('ALIGN', (0,0), (-1,-1), 'CENTER'),
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
@@ -420,7 +418,7 @@ def gerar_pdf_relatorio(df, tot_prod, tot_descarte, tot_sobra, tot_clientes, dt_
         ]
         table_data.append(linha)
 
-    t_table = Table(table_data, colWidths=[60, 170, 70, 70, 75, 75])
+    t_table = Table(table_data, colWidths=[60, 160, 70, 70, 70, 70])
     t_table.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#B71C1C')),
         ('TEXTCOLOR', (0,0), (-1,0), colors.white),
