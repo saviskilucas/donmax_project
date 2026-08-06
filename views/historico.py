@@ -949,15 +949,26 @@ def render():
                     id_selecionado = st.selectbox("Selecione o ID do Lançamento:", options=ids_disponiveis, format_func=lambda x: f"ID #{x}")
                     linha_sel, reg_sel = mapa_ids[id_selecionado]
 
-                    # Leitura dos valores existentes na planilha
+                    # 1. Ajuste e Formatação Rígida da Data e Hora (24h - HH:MM)
                     dt_lan_str = str(reg_sel.get('Data', ''))
                     try:
                         dt_lan_obj = datetime.strptime(dt_lan_str, '%d/%m/%Y').date()
                     except Exception:
                         dt_lan_obj = date.today()
 
-                    hora_lan = str(reg_sel.get('Hora', ''))
-                    prato_lan = str(reg_sel.get('ID_Prato', '-'))
+                    hora_raw = str(reg_sel.get('Hora', '')).strip()
+                    hora_lan = "00:00"
+                    if hora_raw:
+                        for fmt in ('%H:%M', '%H:%M:%S', '%I:%M:%S %p', '%I:%M %p'):
+                            try:
+                                hora_lan = datetime.strptime(hora_raw, fmt).strftime('%H:%M')
+                                break
+                            except ValueError:
+                                pass
+                        if hora_lan == "00:00" and ":" in hora_raw:
+                            hora_lan = hora_raw.split(":")[0].zfill(2) + ":" + hora_raw.split(":")[1].zfill(2)[:2]
+
+                    prato_lan = str(reg_sel.get('ID_Prato', '-')).strip()
                     resp_lan = str(reg_sel.get('Responsavel', ''))
                     p_ini_num = float(converter_para_numero(pd.Series([reg_sel.get('Prod_Inicial_KG', 0)]))[0])
                     repo_num = float(converter_para_numero(pd.Series([reg_sel.get('Reposicao_KG', 0)]))[0])
@@ -966,13 +977,13 @@ def render():
                     cli_num = int(converter_para_numero(pd.Series([reg_sel.get('Clientes_Atendidos', 0)]))[0])
                     obs_lan = str(reg_sel.get('Observacoes', ''))
 
-                    # Busca lista de pratos da aba Alimentos para popular a caixa de seleção
+                    # 2. Carrega Todos os Pratos Ativos da Aba Alimentos
                     try:
-                        from config import carregar_alimentos_planilha
-                        alimentos_reg = carregar_alimentos_planilha()
+                        sheet_alimentos = conectar_gsheets().worksheet("Alimentos")
+                        registros_alimentos_atuais = sheet_alimentos.get_all_records()
                         lista_pratos_opt = [
                             str(r.get("Prato", r.get("prato", r.get("ID_Prato", "")))).strip()
-                            for r in alimentos_reg
+                            for r in registros_alimentos_atuais
                             if str(r.get("Prato", r.get("prato", r.get("ID_Prato", "")))).strip()
                         ]
                     except Exception:
@@ -1008,14 +1019,14 @@ def render():
                         with b_excluir:
                             btn_excluir_l = st.form_submit_button("🗑️ EXCLUIR REGISTRO", width="stretch")
 
+                        # 3. Processamento Instantâneo com st.toast sem escurecer a tela
                         if btn_salvar_l:
                             try:
                                 dt_formatada = e_dt.strftime('%d/%m/%Y')
                                 sheet_lancamentos = conectar_gsheets().worksheet("Lancamentos_Diarios")
 
-                                # Gravação estrita conforme a ordem oficial das colunas da planilha
                                 sheet_lancamentos.update_cell(linha_sel, 1, dt_formatada)          # Data
-                                sheet_lancamentos.update_cell(linha_sel, 2, hora_lan)              # Hora
+                                sheet_lancamentos.update_cell(linha_sel, 2, hora_lan)              # Hora (HH:MM)
                                 sheet_lancamentos.update_cell(linha_sel, 3, resp_lan)              # Responsavel
                                 sheet_lancamentos.update_cell(linha_sel, 4, str(e_cli))           # Clientes_Atendidos
                                 sheet_lancamentos.update_cell(linha_sel, 5, e_prato.strip())       # ID_Prato
@@ -1026,8 +1037,8 @@ def render():
                                 sheet_lancamentos.update_cell(linha_sel, 10, e_obs.strip())        # Observacoes
 
                                 st.cache_data.clear()
+                                st.toast(f"🟢 Lançamento ID #{id_selecionado} atualizado!", icon="✅")
                                 st.success(f"🟢 Lançamento ID #{id_selecionado} atualizado com sucesso!")
-                                st.rerun()
                             except Exception as e:
                                 st.error(f"❌ Erro ao atualizar lançamento: {e}")
 
@@ -1035,8 +1046,9 @@ def render():
                             try:
                                 sheet_lancamentos = conectar_gsheets().worksheet("Lancamentos_Diarios")
                                 sheet_lancamentos.delete_rows(linha_sel)
+                                
                                 st.cache_data.clear()
+                                st.toast(f"🗑️ Lançamento ID #{id_selecionado} excluído!", icon="🗑️")
                                 st.success(f"🗑️ Lançamento ID #{id_selecionado} excluído com sucesso!")
-                                st.rerun()
                             except Exception as e:
                                 st.error(f"❌ Erro ao excluir lançamento: {e}")
