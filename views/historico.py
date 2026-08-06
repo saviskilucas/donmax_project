@@ -274,7 +274,7 @@ def criar_banner_titulo(texto):
     return t_banner
 
 # =========================================================
-# GERADOR DE PDF EXECUTIVO (REPORTLAB)
+# GERADOR DE PDF EXECUTIVO (REPORTLAB) - COM TRAVA DE DIMENSÃO
 # =========================================================
 def gerar_pdf_relatorio(df, tot_prod, tot_descarte, tot_sobra, tot_clientes, dt_inicio, dt_fim, prod_ini, reposicao, df_data, df_matriz):
     from reportlab.lib.pagesizes import letter
@@ -305,12 +305,15 @@ def gerar_pdf_relatorio(df, tot_prod, tot_descarte, tot_sobra, tot_clientes, dt_
     agora_brasilia = datetime.now(ZoneInfo("America/Sao_Paulo"))
     dt_emissao_str = agora_brasilia.strftime('%d/%m/%Y às %H:%M:%S')
 
+    # Largura máxima disponível no quadro útil do PDF
+    LARGURA_MAXIMA = 520
+
     header_table_data = [[
         Paragraph("<b>DON MAX BUFFET</b>", style_header_app),
         Paragraph("<font color='#FFFFFF'><b>RELATÓRIO EXECUTIVO</b></font>", ParagraphStyle('HRight', fontName='Helvetica-Bold', fontSize=9, textColor=colors.white, alignment=2))
     ]]
     
-    t_header = Table(header_table_data, colWidths=[270, 270])
+    t_header = Table(header_table_data, colWidths=[260, 260])
     t_header.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#B71C1C')),
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
@@ -342,7 +345,7 @@ def gerar_pdf_relatorio(df, tot_prod, tot_descarte, tot_sobra, tot_clientes, dt_
         ]
     ]
 
-    t_cards = Table(cards_data, colWidths=[135, 135, 135, 135])
+    t_cards = Table(cards_data, colWidths=[130, 130, 130, 130])
     t_cards.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#FFF5F5')),
         ('BORDER', (0,0), (-1,-1), 1, colors.HexColor('#FFCDD2')),
@@ -359,8 +362,12 @@ def gerar_pdf_relatorio(df, tot_prod, tot_descarte, tot_sobra, tot_clientes, dt_
         if img_h is not None:
             elements.append(criar_banner_titulo("Matriz de Desempenho por Produto"))
             elements.append(Spacer(1, 6))
-            altura_h = max(160, len(df_matriz) * 26)
-            elements.append(Image(img_h, width=540, height=altura_h))
+            
+            # Trava de altura para evitar estouro da página
+            altura_calculada = len(df_matriz) * 22
+            altura_h = min(450, max(140, altura_calculada))
+            
+            elements.append(Image(img_h, width=LARGURA_MAXIMA, height=altura_h))
             elements.append(Paragraph("* A linha TOTAL GERAL indica o Descarte Médio Ponderado Global (Descarte Total / Produção Total).", style_note))
 
     elements.append(criar_banner_titulo("Análise Comparativa de Produção"))
@@ -374,12 +381,12 @@ def gerar_pdf_relatorio(df, tot_prod, tot_descarte, tot_sobra, tot_clientes, dt_
             Paragraph("<b>Sobra vs Descarte</b>", ParagraphStyle('SubR', fontName='Helvetica-Bold', fontSize=8.5, textColor=colors.HexColor('#333333'), alignment=1))
         ],
         [
-            Image(img_b, width=260, height=160),
-            Image(img_r, width=260, height=160)
+            Image(img_b, width=250, height=150),
+            Image(img_r, width=250, height=150)
         ]
     ]
     
-    t_quadros = Table(quadros_table_data, colWidths=[270, 270])
+    t_quadros = Table(quadros_table_data, colWidths=[260, 260])
     t_quadros.setStyle(TableStyle([
         ('ALIGN', (0,0), (-1,-1), 'CENTER'),
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
@@ -390,10 +397,10 @@ def gerar_pdf_relatorio(df, tot_prod, tot_descarte, tot_sobra, tot_clientes, dt_
     elements.append(Spacer(1, 8))
 
     if not df_data.empty:
-        elements.append(criar_banner_titulo("Linha do Tempo de Descarte"))
+        elements.append(criar_banner_titulo("Linha do Tempo de Descarte e Sobra"))
         elements.append(Spacer(1, 6))
         img_l = gerar_img_linha(df_data)
-        elements.append(Image(img_l, width=540, height=170))
+        elements.append(Image(img_l, width=LARGURA_MAXIMA, height=150))
         elements.append(Spacer(1, 8))
 
     elements.append(criar_banner_titulo("Detalhamento de Lançamentos"))
@@ -413,7 +420,7 @@ def gerar_pdf_relatorio(df, tot_prod, tot_descarte, tot_sobra, tot_clientes, dt_
         ]
         table_data.append(linha)
 
-    t_table = Table(table_data, colWidths=[65, 185, 70, 70, 75, 75])
+    t_table = Table(table_data, colWidths=[60, 170, 70, 70, 75, 75])
     t_table.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#B71C1C')),
         ('TEXTCOLOR', (0,0), (-1,0), colors.white),
