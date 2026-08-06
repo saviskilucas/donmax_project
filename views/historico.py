@@ -434,21 +434,29 @@ def render():
 
     st.markdown("""
         <style>
-        /* BLOQUEIA O TECLADO VIRTUAL E FORÇA O USO EXCLUSIVO DO CALENDÁRIO */
+        /* EVITA O FOCO DE DIGITAÇÃO E O TECLADO MANTENDO O CALENDÁRIO ATIVO */
         div[data-baseweb="input"] input {
             caret-color: transparent !important;
             user-select: none !important;
             -webkit-user-select: none !important;
-            pointer-events: none !important;
+            -webkit-touch-callout: none !important;
         }
 
-        /* FAZ O CLIQUE EM QUALQUER LUGAR DA CAIXA ABRIR O CALENDÁRIO */
+        /* SOBREPOSIÇÃO TRANSPARENTE SOBRE A CAIXA DE TEXTO QUE REENCAMINHA O TOQUE PARA O POPUP DO CALENDÁRIO */
         div[data-baseweb="input"] {
+            position: relative !important;
             cursor: pointer !important;
         }
-        
-        div[data-baseweb="input"] > div {
-            pointer-events: auto !important;
+
+        div[data-baseweb="input"]::after {
+            content: "" !important;
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 40px !important;
+            bottom: 0 !important;
+            z-index: 2 !important;
+            cursor: pointer !important;
         }
 
         div[data-testid="stHorizontalBlock"] {
