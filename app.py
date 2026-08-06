@@ -40,7 +40,7 @@ if not st.session_state["usuario_logado"]:
 aba = st.session_state["aba_ativa"]
 
 # =========================================================
-# 2. INJEÇÃO DE CSS GLOBAL (BLINDAGEM DE DESMONTE DOM)
+# 2. INJEÇÃO DE CSS GLOBAL (SISTEMA E MENU FIXO OBRIGATÓRIO)
 # =========================================================
 st.markdown("""
     <style>
@@ -48,12 +48,6 @@ st.markdown("""
     html, body, [data-testid="stApp"], .stApp {
         background-color: #121212 !important;
         color: #F8F9FA !important;
-    }
-
-    /* PREVINE DESFORMATAMENTO DE KPIS E PLOTLY NO UNMOUNT */
-    [data-testid="stMainBlockContainer"], .block-container {
-        contain: layout style paint !important;
-        contain-intrinsic-size: 1000px !important;
     }
 
     /* OCULTAR ELEMENTOS NATIVOS */
@@ -69,13 +63,14 @@ st.markdown("""
         pointer-events: none !important;
     }
 
-    /* Espaçamento do container principal */
+    /* Espaçamento do container principal para não sobrepor o menu fixo */
     .block-container {
         padding-top: 3.8rem !important;
         padding-bottom: 10.5rem !important; 
         padding-left: 0.8rem !important;
         padding-right: 0.8rem !important;
         max-width: 100% !important;
+        contain: layout style paint !important;
     }
 
     /* BARRA SUPERIOR FIXA NO TOPO */
@@ -106,7 +101,6 @@ st.markdown("""
         gap: 10px;
     }
 
-    /* ESTILO DO BOTÃO DE SAIR DENTRO DO CABEÇALHO */
     .btn-header-action {
         background-color: rgba(255, 255, 255, 0.2);
         color: #FFFFFF !important;
@@ -129,11 +123,11 @@ st.markdown("""
         color: #B71C1C !important;
     }
 
-    /* CÁPSULA TRAVADA NO RODAPÉ */
+    /* MENU DE NAVEGAÇÃO 100% FIXO NO RODAPÉ */
     div[data-testid="stElementContainer"]:has(div.st-key-nav_bar_container),
     div:has(> div.st-key-nav_bar_container) {
         position: fixed !important;
-        bottom: 70px !important;
+        bottom: 25px !important;
         left: 50% !important;
         transform: translateX(-50%) !important;
         width: 360px !important;
@@ -307,7 +301,30 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # =========================================================
-# 4. RODAPÉ FIXO (CÁPSULA)
+# 4. ROTEAMENTO DE ABAS DENTRO DO CONTEÚDO PRINCIPAL
+# =========================================================
+conteudo_container = st.container()
+
+with conteudo_container:
+    if aba == "inicio":
+        inicio.render()
+    elif aba == "pesagem" and st.session_state["usuario_logado"]:
+        if tem_permissao("pesagem:visualizar"):
+            pesagem.render()
+        else:
+            st.toast("⛔ Acesso bloqueado ao formulário.", icon="🔒")
+    elif aba == "historico" and st.session_state["usuario_logado"]:
+        if tem_permissao("dashboard:visualizar"):
+            historico.render()
+        else:
+            st.toast("⛔ Acesso bloqueado ao painel.", icon="🔒")
+    elif aba == "config" and st.session_state["usuario_logado"]:
+        if tem_permissao("usuarios:gerenciar") or tem_permissao("pratos:gerenciar"):
+            config.render()
+
+# =========================================================
+# 5. MENU DE NAVEGAÇÃO FIXO (CÁPSULA NO RODAPÉ)
+#    Renderizado ao final para garantir que persista sempre na tela
 # =========================================================
 if st.session_state["usuario_logado"]:
     nav_bar = st.container(key="nav_bar_container")
@@ -346,25 +363,3 @@ if st.session_state["usuario_logado"]:
                         st.rerun()
                 else:
                     st.toast("⛔ Sem permissão para as Configurações.", icon="🔒")
-
-# =========================================================
-# 5. ROTEAMENTO DE ABAS EM CONTAINER PROTEGIDO
-# =========================================================
-aba_container = st.container()
-
-with aba_container:
-    if aba == "inicio":
-        inicio.render()
-    elif aba == "pesagem" and st.session_state["usuario_logado"]:
-        if tem_permissao("pesagem:visualizar"):
-            pesagem.render()
-        else:
-            st.toast("⛔ Acesso bloqueado ao formulário.", icon="🔒")
-    elif aba == "historico" and st.session_state["usuario_logado"]:
-        if tem_permissao("dashboard:visualizar"):
-            historico.render()
-        else:
-            st.toast("⛔ Acesso bloqueado ao painel.", icon="🔒")
-    elif aba == "config" and st.session_state["usuario_logado"]:
-        if tem_permissao("usuarios:gerenciar") or tem_permissao("pratos:gerenciar"):
-            config.render()
