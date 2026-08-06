@@ -129,7 +129,7 @@ def gerar_img_heatmap(df_matriz):
                     ax.text(j, i, text_matrix[i][j], ha="center", va="center", color='#FFFFFF', fontsize=8, fontweight='bold', zorder=4)
                 else:
                     if raw_array[i, j] == 0:
-                        ax.add_patch(plt.Rectangle((j - 0.5, i - 0.5), 1, 1, fill=True, color='#FFFFFF', ec='#333333', lw=0.5, zorder=3))
+                        ax.add_patch(plt.Rectangle((j - 0.5, i - 0.5), 1, 1, fill=True, color='#FFFFFF', ec='#111111', lw=0.5, zorder=3))
                         ax.text(j, i, text_matrix[i][j], ha="center", va="center", color='#888888', fontsize=7.5, zorder=4)
                     else:
                         intensity = color_array[i, j]
