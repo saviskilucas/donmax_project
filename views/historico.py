@@ -858,25 +858,35 @@ def render():
         # =========================================================
         # TABELA DE LANÇAMENTOS
         # =========================================================
-        df_exibicao = df.copy()
+        df_exibicao = df.copy()[cite: 4]
         
-        cols_remover = ['Data_DT', 'Prod_Ini_Calc', 'Reposicao_Calc', 'Prod_Total_Calc', 'Descarte_Calc', 'Sobra_Buffet_Calc']
-        for c in cols_remover:
-            if c in df_exibicao.columns:
-                df_exibicao.drop(columns=[c], inplace=True)
+        cols_remover = ['Data_DT', 'Prod_Ini_Calc', 'Reposicao_Calc', 'Prod_Total_Calc', 'Descarte_Calc', 'Sobra_Buffet_Calc'][cite: 4]
+        for c in cols_remover:[cite: 4]
+            if c in df_exibicao.columns:[cite: 4]
+                df_exibicao.drop(columns=[c], inplace=True)[cite: 4]
 
-        cols_peso = ['Prod_Inicial_KG', 'Reposicao_KG', 'Sobra_Buffet_KG', 'Descarte_KG']
-        for c in cols_peso:
-            if c in df_exibicao.columns:
-                df_exibicao[c] = converter_para_numero(df_exibicao[c]).apply(lambda x: f"{x:.3f} kg")
+        cols_peso = ['Prod_Inicial_KG', 'Reposicao_KG', 'Sobra_Buffet_KG', 'Descarte_KG'][cite: 4]
+        for c in cols_peso:[cite: 4]
+            if c in df_exibicao.columns:[cite: 4]
+                df_exibicao[c] = converter_para_numero(df_exibicao[c]).apply(lambda x: f"{x:.3f} kg")[cite: 4]
 
-        colunas_ordem = ['ID'] + [c for c in df_exibicao.columns if c != 'ID']
-        df_exibicao = df_exibicao[colunas_ordem]
+        colunas_ordem = ['ID'] + [c for c in df_exibicao.columns if c != 'ID'][cite: 4]
+        df_exibicao = df_exibicao[colunas_ordem][cite: 4]
 
-        for col in df_exibicao.columns:
-            df_exibicao[col] = df_exibicao[col].astype(str)
+        for col in df_exibicao.columns:[cite: 4]
+            df_exibicao[col] = df_exibicao[col].astype(str)[cite: 4]
 
-        st.dataframe(df_exibicao.tail(10).iloc[::-1], width="stretch", hide_index=True)
+        # ---------------------------------------------------------------------------------
+        # TRECHO ATUALIZADO:
+        # Exibe todos os registros ordenados dos mais recentes para os mais antigos (.iloc[::-1]),
+        # mantendo a caixa com altura fixa para permitir a rolagem vertical.
+        # ---------------------------------------------------------------------------------
+        st.dataframe(
+            df_exibicao.iloc[::-1], 
+            use_container_width=True, 
+            hide_index=True,
+            height=380
+        )
 
         # =========================================================
         # EDIÇÃO / EXCLUSÃO DE LANÇAMENTOS (ADMIN E MASTER)
