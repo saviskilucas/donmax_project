@@ -229,8 +229,11 @@ def gerar_img_linha(df_data):
     fig, ax = plt.subplots(figsize=(6.5, 2.2), facecolor='#FFFFFF')
     ax.set_facecolor('#FFFFFF')
     
-    ax.plot(df_data['Data'], df_data['Descarte'], color='#C62828', marker='o', linewidth=2, markersize=4)
+    ax.plot(df_data['Data'], df_data['Descarte'], color='#C62828', marker='o', linewidth=2, markersize=4, label='Descarte')
+    if 'Sobra Buffet' in df_data.columns:
+        ax.plot(df_data['Data'], df_data['Sobra Buffet'], color='#EF6C00', marker='o', linewidth=2, markersize=4, label='Sobra Buffet')
     
+    ax.legend(fontsize=7, loc='upper right', frameon=False)
     ax.tick_params(colors='#333333', labelsize=7.5)
     plt.xticks(rotation=30)
     ax.spines['top'].set_visible(False)
@@ -612,9 +615,13 @@ def render():
 
         df_data = pd.DataFrame()
         if 'Data' in df.columns:
-            df_temp_data = pd.DataFrame({'Data': df['Data'], 'Descarte': descarte})
+            df_temp_data = pd.DataFrame({
+                'Data': df['Data'], 
+                'Descarte': descarte,
+                'Sobra Buffet': sobra_buffet
+            })
             df_temp_data['Data_DT'] = pd.to_datetime(df_temp_data['Data'], format='%d/%m/%Y', errors='coerce')
-            df_data = df_temp_data.groupby(['Data_DT', 'Data'])['Descarte'].sum().reset_index()
+            df_data = df_temp_data.groupby(['Data_DT', 'Data'])[['Descarte', 'Sobra Buffet']].sum().reset_index()
             df_data = df_data.sort_values('Data_DT', ascending=True)
 
         df_matriz = pd.DataFrame()
@@ -892,18 +899,26 @@ def render():
             st.info("Sem registros de sobras ou descarte no período selecionado.")
 
         if not df_data.empty:
-            st.markdown("##### Linha do Tempo de Descarte")
+            st.markdown("##### Linha do Tempo de Descarte e Sobra")
             fig_line = px.line(
-                df_data, x='Data', y='Descarte', markers=True
+                df_data, 
+                x='Data', 
+                y=['Descarte', 'Sobra Buffet'], 
+                markers=True,
+                color_discrete_map={
+                    'Descarte': '#FF5252',
+                    'Sobra Buffet': '#FB8C00'
+                }
             )
-            fig_line.update_traces(line_color='#FF5252', marker=dict(size=7, color='#FFFFFF'))
+            fig_line.update_traces(marker=dict(size=7))
             fig_line.update_layout(
                 paper_bgcolor='rgba(0,0,0,0)',
                 plot_bgcolor='rgba(0,0,0,0)',
                 font=dict(color="#E0E0E0"),
                 margin=dict(l=5, r=5, t=10, b=5),
                 xaxis=dict(showgrid=False, fixedrange=True, type='category'),
-                yaxis=dict(showgrid=True, gridcolor='#2D2D2D', fixedrange=True)
+                yaxis=dict(showgrid=True, gridcolor='#2D2D2D', fixedrange=True, title=""),
+                legend=dict(title="", orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
             )
             st.plotly_chart(fig_line, width="stretch", config=config_plotly_mobile)
 
