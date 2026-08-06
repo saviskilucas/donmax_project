@@ -771,17 +771,32 @@ def render():
                     import base64
                     pdf_base64 = base64.b64encode(pdf_bytes.getvalue()).decode('utf-8')
                     
-                    # Força a abertura do visualizador PDF em nova aba sem acionar o download automático direto
-                    js_code = f"""
-                    <script>
-                        var pdfWindow = window.open("");
-                        pdfWindow.document.write(
-                            "<iframe width='100%' height='100%' style='border:none;' src='data:application/pdf;base64,{pdf_base64}'></iframe>"
-                        );
-                        pdfWindow.document.title = "Relatorio_DonMax.pdf";
-                    </script>
-                    """
-                    st.markdown(js_code, unsafe_allow_html=True)
+                    # Salva o PDF na sessão para manter o botão de abrir visível
+                    st.session_state["pdf_base64_pronto"] = pdf_base64
+
+                # Exibe o botão de abertura em nova aba sem bloqueio de pop-up
+                if "pdf_base64_pronto" in st.session_state:
+                    pdf_data_url = f"data:application/pdf;base64,{st.session_state['pdf_base64_pronto']}"
+                    
+                    st.markdown(f"""
+                        <a href="{pdf_data_url}" target="_blank" style="
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            width: 100%;
+                            height: 42px;
+                            background-color: #2E7D32;
+                            color: #FFFFFF !important;
+                            font-weight: 700;
+                            font-size: 0.9rem;
+                            text-decoration: none;
+                            border-radius: 8px;
+                            margin-top: 6px;
+                            box-shadow: 0px 4px 10px rgba(0,0,0,0.3);
+                        ">
+                            👁️ Abrir PDF em Nova Aba
+                        </a>
+                    """, unsafe_allow_html=True)
 
         st.markdown("---")
         st.markdown("##### 📊 Lançamentos Registrados")
