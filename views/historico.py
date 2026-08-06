@@ -61,15 +61,12 @@ def gerar_img_heatmap(df_matriz):
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
 
-    if df_matriz.empty:
+    if df_matriz is None or df_matriz.empty:
         return None
 
     try:
         df_pratos = df_matriz[df_matriz['ID_Prato'] != 'TOTAL GERAL'].copy()
         df_total = df_matriz[df_matriz['ID_Prato'] == 'TOTAL GERAL'].copy()
-
-        if df_pratos.empty and df_total.empty:
-            return None
 
         df_exibicao = pd.concat([df_pratos, df_total], ignore_index=True)
 
@@ -110,9 +107,7 @@ def gerar_img_heatmap(df_matriz):
                 if c_max > c_min:
                     color_array[:n_pratos, j] = (col_vals - c_min) / (c_max - c_min)
                 else:
-                    color_array[:n_pratos, j] = 0.3
-            if len(df_total) > 0:
-                color_array[-1, j] = 0.0
+                    color_array[:n_pratos, j] = 0.1
 
         altura = max(2.5, num_rows * 0.45)
 
@@ -133,9 +128,13 @@ def gerar_img_heatmap(df_matriz):
                     ax.add_patch(plt.Rectangle((j - 0.5, i - 0.5), 1, 1, fill=True, color='#262626', ec='#111111', lw=1, zorder=3))
                     ax.text(j, i, text_matrix[i][j], ha="center", va="center", color='#FFFFFF', fontsize=8, fontweight='bold', zorder=4)
                 else:
-                    intensity = color_array[i, j]
-                    text_color = "#FFFFFF" if intensity > 0.65 else "#111111"
-                    ax.text(j, i, text_matrix[i][j], ha="center", va="center", color=text_color, fontsize=7.5, fontweight='bold')
+                    if raw_array[i, j] == 0:
+                        ax.add_patch(plt.Rectangle((j - 0.5, i - 0.5), 1, 1, fill=True, color='#000000', ec='#333333', lw=0.5, zorder=3))
+                        ax.text(j, i, text_matrix[i][j], ha="center", va="center", color='#888888', fontsize=7.5, zorder=4)
+                    else:
+                        intensity = color_array[i, j]
+                        text_color = "#FFFFFF" if intensity > 0.65 else "#111111"
+                        ax.text(j, i, text_matrix[i][j], ha="center", va="center", color=text_color, fontsize=7.5, fontweight='bold')
 
         ax.spines[:].set_visible(False)
         ax.tick_params(top=True, bottom=False, labeltop=True, labelbottom=False)
@@ -264,7 +263,7 @@ def criar_banner_titulo(texto):
     return t_banner
 
 # =========================================================
-# GERADOR DE PDF EXECUTIVO (LAZY LOADING DE REPORTLAB)
+# GERADOR DE PDF EXECUTIVO (REPORTLAB)
 # =========================================================
 def gerar_pdf_relatorio(df, tot_prod, tot_descarte, tot_sobra, tot_clientes, dt_inicio, dt_fim, prod_ini, reposicao, df_data, df_matriz):
     from reportlab.lib.pagesizes import letter
@@ -344,12 +343,12 @@ def gerar_pdf_relatorio(df, tot_prod, tot_descarte, tot_sobra, tot_clientes, dt_
     elements.append(t_cards)
     elements.append(Spacer(1, 10))
 
-    if not df_matriz.empty:
+    if df_matriz is not None and not df_matriz.empty:
         img_h = gerar_img_heatmap(df_matriz)
-        if img_h:
+        if img_h is not None:
             elements.append(criar_banner_titulo("Matriz de Desempenho por Produto"))
             elements.append(Spacer(1, 6))
-            altura_h = max(160, len(df_matriz) * 28)
+            altura_h = max(160, len(df_matriz) * 26)
             elements.append(Image(img_h, width=540, height=altura_h))
             elements.append(Paragraph("* A linha TOTAL GERAL indica o Descarte Médio Ponderado Global (Descarte Total / Produção Total).", style_note))
 
@@ -682,7 +681,7 @@ def render():
         st.plotly_chart(fig_balanco, width="stretch", config=config_plotly_mobile)
 
         # =========================================================
-        # 2. HEATMAP (DASHBOARD - MODO ESCURO SENSÍVEL)
+        # 2. HEATMAP (DASHBOARD - VALORES ZERADOS EM PRETO)
         # =========================================================
         if tem_permissao("dashboard:matriz") and not df_matriz.empty:
             st.markdown("##### Matriz de Desempenho por Produto")
@@ -726,17 +725,22 @@ def render():
                     col_data = raw_arr[:n_pratos, j]
                     c_min = col_data.min()
                     c_max = col_data.max()
-                    if c_max > c_min:
-                        z_colors[:n_pratos, j] = (col_data - c_min) / (c_max - c_min)
-                    else:
-                        z_colors[:n_pratos, j] = 0.2
+                    for i in range(n_pratos):
+                        v = raw_arr[i, j]
+                        if v == 0:
+                            z_colors[i, j] = 0.0
+                        else:
+                            if c_max > c_min:
+                                z_colors[i, j] = 0.15 + 0.85 * ((v - c_min) / (c_max - c_min))
+                            else:
+                                z_colors[i, j] = 0.5
                 if len(df_total) > 0:
                     z_colors[-1, j] = 0.0
 
             colorscale_dark = [
-                [0.0, '#1E1E1E'],   # Neutro Base
-                [0.2, '#1A3A5C'],   # Azul Escuro
-                [0.45, '#00695C'],  # Verde Musgo
+                [0.0, '#000000'],   # Preto Absoluto para Zerados
+                [0.15, '#1E2A38'],  # Azul Marinho
+                [0.4, '#00695C'],   # Verde Escuro
                 [0.7, '#EF6C00'],   # Laranja Alerta
                 [1.0, '#C62828']    # Vermelho Crítico
             ]
