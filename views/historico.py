@@ -739,8 +739,8 @@ def render():
 
             colorscale_dark = [
                 [0.0, '#1e1e1e'],   # Preto Absoluto para Zerados
-                [0.15, '#1E2A38'],  # Azul Marinho
-                [0.4, '#00695C'],   # Verde Escuro
+                [0.15, '#3b3620'],  # Azul Marinho
+                [0.4, '#968430'],   # Verde Escuro
                 [0.7, '#EF6C00'],   # Laranja Alerta
                 [1.0, '#C62828']    # Vermelho Crítico
             ]
