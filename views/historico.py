@@ -728,26 +728,10 @@ def render():
         st.plotly_chart(fig_balanco, width="stretch", config=config_plotly_mobile)
 
         # =========================================================
-        # CONSTRUÇÃO DA MATRIZ COMPLETA (TODOS OS ALIMENTOS)
+        # CONSTRUÇÃO DA MATRIZ (SOMENTE PRATOS COM MOVIMENTAÇÃO)
         # =========================================================
         df_matriz = pd.DataFrame()
         if 'ID_Prato' in df.columns:
-            # 1. Carrega todos os pratos cadastrados da aba Alimentos
-            try:
-                sheet_alimentos_m = conectar_gsheets().worksheet("Alimentos")
-                reg_alim_m = sheet_alimentos_m.get_all_records()
-                todos_pratos = [
-                    str(r.get("Prato", r.get("prato", r.get("ID_Prato", "")))).strip()
-                    for r in reg_alim_m
-                    if str(r.get("Prato", r.get("prato", r.get("ID_Prato", "")))).strip()
-                ]
-            except Exception:
-                todos_pratos = []
-
-            # Se não encontrar pratos da aba Alimentos, usa os pratos presentes nos lançamentos
-            if not todos_pratos:
-                todos_pratos = [p for p in df['ID_Prato'].unique() if p and p != '-']
-
             # Agrupa os lançamentos do período
             df_matriz = df.groupby('ID_Prato').agg({
                 'Prod_Ini_Calc': 'sum',
@@ -756,20 +740,16 @@ def render():
                 'Descarte_Calc': 'sum'
             }).reset_index()
 
-            # Inclui pratos que ainda não tiveram lançamentos no período (zerados)
-            for p in todos_pratos:
-                if p not in df_matriz['ID_Prato'].values:
-                    nova_linha_p = pd.DataFrame([{
-                        'ID_Prato': p,
-                        'Prod_Ini_Calc': 0.0,
-                        'Reposicao_Calc': 0.0,
-                        'Sobra_Buffet_Calc': 0.0,
-                        'Descarte_Calc': 0.0
-                    }])
-                    df_matriz = pd.concat([df_matriz, nova_linha_p], ignore_index=True)
-
             # Filtra pratos inválidos
             df_matriz = df_matriz[df_matriz['ID_Prato'] != '-']
+
+            # FILTRO RÍGIDO: Remove pratos onde TODAS as colunas principais são zeradas
+            df_matriz = df_matriz[
+                (df_matriz['Prod_Ini_Calc'] > 0) | 
+                (df_matriz['Reposicao_Calc'] > 0) | 
+                (df_matriz['Sobra_Buffet_Calc'] > 0) | 
+                (df_matriz['Descarte_Calc'] > 0)
+            ]
 
             # Calcula a % de perda por prato
             df_matriz['Perda_%'] = (df_matriz['Descarte_Calc'] / (df_matriz['Prod_Ini_Calc'] + df_matriz['Reposicao_Calc']) * 100).fillna(0)
@@ -791,15 +771,16 @@ def render():
             df_matriz = pd.concat([df_matriz, linha_total], ignore_index=True)
 
         # =========================================================
-        # 2. HEATMAP (DASHBOARD - ORDEM ALFABÉTICA E CORES GARANTIDAS)
+        # 2. HEATMAP (DASHBOARD)
         # =========================================================
-        if tem_permissao("dashboard:matriz") and not df_matriz.empty:
+        if tem_permissao("dashboard:matriz") and not df_matriz.empty and len(df_matriz) > 1:
             st.markdown("##### Matriz de Desempenho por Produto")
 
-            # Mantém ordem alfabética no Plotly (invertido para renderizar de A no topo até Z abaixo)
+            # Pratos em ordem alfabética invertida para exibição de A (topo) a Z
             df_pratos = df_matriz[df_matriz['ID_Prato'] != 'TOTAL GERAL'].iloc[::-1].copy()
             df_total = df_matriz[df_matriz['ID_Prato'] == 'TOTAL GERAL'].copy()
 
+            # Index 0 = TOTAL GERAL / Index 1..N = Pratos
             df_matriz_plot = pd.concat([df_total, df_pratos], ignore_index=True)
 
             pratos = df_matriz_plot['ID_Prato'].tolist()
@@ -831,28 +812,29 @@ def render():
             z_colors = np.zeros_like(raw_arr)
             n_pratos = len(df_pratos)
 
-            # Normalização de cores corrigida: Valores > 0 garantem intensidade colorida mínima (0.2 a 1.0)
+            # Linha 0 (TOTAL GERAL) é mantida sem cor (0.0)
+            z_colors[0, :] = 0.0
+
+            # Normalização das cores estritamente para as linhas dos pratos (linhas 1 até N)
             for j in range(num_cols):
                 if n_pratos > 0:
-                    col_data = raw_arr[:n_pratos, j]
+                    col_data = raw_arr[1:, j]
                     c_min = col_data.min()
                     c_max = col_data.max()
-                    for i in range(n_pratos):
+                    for i in range(1, num_rows):
                         v = raw_arr[i, j]
                         if v == 0:
                             z_colors[i, j] = 0.0
                         else:
                             if c_max > c_min:
-                                z_colors[i, j] = 0.20 + 0.80 * ((v - c_min) / (c_max - c_min))
+                                z_colors[i, j] = 0.15 + 0.85 * ((v - c_min) / (c_max - c_min))
                             else:
-                                z_colors[i, j] = 0.60
-                if len(df_total) > 0:
-                    z_colors[-1, j] = 0.0
+                                z_colors[i, j] = 0.5
 
             colorscale_dark = [
-                [0.0, '#1e1e1e'],   # Fundo neutro do container para ZERADOS
-                [0.15, '#1E2A38'],  # Azul Marinho suave
-                [0.4, '#00695C'],   # Verde Escuro
+                [0.0, '#1e1e1e'],   # Fundo neutro do container para Zerados e TOTAL GERAL
+                [0.15, '#3b3620'],  #
+                [0.4, '#968430'],   #
                 [0.7, '#EF6C00'],   # Laranja Alerta
                 [1.0, '#C62828']    # Vermelho Crítico
             ]
