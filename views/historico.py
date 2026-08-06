@@ -436,8 +436,6 @@ def render():
         <style>
         div[data-baseweb="input"] input {
             caret-color: transparent !important;
-            user-select: none !important;
-            -webkit-user-select: none !important;
             cursor: pointer !important;
         }
 
@@ -494,21 +492,29 @@ def render():
         </style>
 
         <script>
-        (function desativarTecladoCalendario() {
-            const desativar = () => {
+        (function fecharTecladoAutomatico() {
+            const aplicarBlurAutomacao = () => {
                 const doc = window.parent.document;
                 const inputs = doc.querySelectorAll('div[data-baseweb="input"] input');
+                
                 inputs.forEach(input => {
-                    if (!input.readOnly) {
-                        input.setAttribute('readonly', 'true');
-                        input.setAttribute('inputmode', 'none');
+                    if (!input.dataset.blurAtivo) {
+                        input.dataset.blurAtivo = "true";
+                        
+                        // Assim que o campo ganha foco (quando o teclado tenta subir), o blur() recolhe ele na hora
+                        input.addEventListener('focus', (e) => {
+                            setTimeout(() => {
+                                e.target.blur();
+                            }, 50);
+                        });
                     }
                 });
             };
 
-            // Executa imediatamente e registra observador para reagir a cada rerun
-            desativar();
-            const observer = new MutationObserver(desativar);
+            aplicarBlurAutomacao();
+            
+            // Monitora reruns do Streamlit para reatribuir o manipulador nos novos elementos
+            const observer = new MutationObserver(aplicarBlurAutomacao);
             observer.observe(window.parent.document.body, { childList: true, subtree: true });
         })();
         </script>
