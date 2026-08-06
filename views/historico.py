@@ -492,30 +492,37 @@ def render():
         </style>
 
         <script>
-        (function fecharTecladoAutomatico() {
-            const aplicarBlurAutomacao = () => {
-                const doc = window.parent.document;
+        (function fecharTecladoImediato() {
+            const doc = window.parent.document;
+
+            const aplicarDesfoqueRigido = () => {
                 const inputs = doc.querySelectorAll('div[data-baseweb="input"] input');
                 
                 inputs.forEach(input => {
-                    if (!input.dataset.blurAtivo) {
-                        input.dataset.blurAtivo = "true";
+                    if (!input.dataset.blurHardAtivo) {
+                        input.dataset.blurHardAtivo = "true";
                         
-                        // Assim que o campo ganha foco (quando o teclado tenta subir), o blur() recolhe ele na hora
-                        input.addEventListener('focus', (e) => {
-                            setTimeout(() => {
-                                e.target.blur();
-                            }, 50);
-                        });
+                        // Captura o toque no exato milissegundo em que o dedo encosta no campo
+                        const tirarFoco = () => {
+                            requestAnimationFrame(() => {
+                                input.blur();
+                                if (doc.activeElement) {
+                                    doc.activeElement.blur();
+                                }
+                            });
+                        };
+
+                        input.addEventListener('touchstart', tirarFoco, { passive: true });
+                        input.addEventListener('pointerdown', tirarFoco, { passive: true });
+                        input.addEventListener('focus', tirarFoco, { passive: true });
                     }
                 });
             };
 
-            aplicarBlurAutomacao();
+            aplicarDesfoqueRigido();
             
-            // Monitora reruns do Streamlit para reatribuir o manipulador nos novos elementos
-            const observer = new MutationObserver(aplicarBlurAutomacao);
-            observer.observe(window.parent.document.body, { childList: true, subtree: true });
+            const observer = new MutationObserver(aplicarDesfoqueRigido);
+            observer.observe(doc.body, { childList: true, subtree: true });
         })();
         </script>
     """, unsafe_allow_html=True)
