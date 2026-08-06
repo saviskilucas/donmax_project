@@ -17,9 +17,9 @@ def buscar_pratos_cadastrados():
         sheet = conectar_gsheets().worksheet("Alimentos")
         registros = sheet.get_all_records()
         lista = [str(r.get("Prato", "")).strip() for r in registros if r.get("Prato")]
-        return [p for p in lista if p]
+        return sorted([p for p in lista if p])
     except Exception:
-        return ["Arroz", "Feijão", "Barreado", "Carne 1", "Carne 2", "Salada", "Sobremesa"]
+        return sorted(["Arroz", "Feijão", "Barreado", "Carne 1", "Carne 2", "Salada", "Sobremesa"])
 
 def render():
     # 1. TRAVA PRINCIPAL DE ACESSO
