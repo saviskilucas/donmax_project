@@ -434,14 +434,15 @@ def render():
 
     st.markdown("""
         <style>
-        /* IMPEDE A ABERTURA DO TECLADO NO CALENDÁRIO EM DISPOSITIVOS MÓVEIS */
+        /* BLOQUEIA A ABERTURA DO TECLADO NO CELULAR MANTENDO O CLIQUE DO CALENDÁRIO ATIVO */
         div[data-baseweb="input"] input {
             caret-color: transparent !important;
             user-select: none !important;
-            pointer-events: none !important;
+            -webkit-user-select: none !important;
+            inputmode: none !important;
         }
 
-        /* PERMITE QUE O CLIQUE ABRA APENAS A CAIXA DO CALENDÁRIO */
+        /* PERMITE QUE O CLIQUE NO CAMPO ACIONE APENAS O POPUP DO CALENDÁRIO */
         div[data-baseweb="input"] {
             cursor: pointer !important;
         }
@@ -493,6 +494,17 @@ def render():
             line-height: 1.1 !important;
         }
         </style>
+
+        <script>
+        // Injeta atributo readonly nos inputs de data para desativar o teclado no Android/iOS
+        setTimeout(function() {
+            var inputs = window.parent.document.querySelectorAll('div[data-baseweb="input"] input');
+            inputs.forEach(function(input) {
+                input.setAttribute('readonly', 'readonly');
+                input.setAttribute('inputmode', 'none');
+            });
+        }, 1000);
+        </script>
     """, unsafe_allow_html=True)
 
     st.markdown("<div class='section-header'>DASHBOARD</div>", unsafe_allow_html=True)
