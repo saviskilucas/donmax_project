@@ -40,7 +40,7 @@ if not st.session_state["usuario_logado"]:
 aba = st.session_state["aba_ativa"]
 
 # =========================================================
-# 2. INJEÇÃO DE CSS GLOBAL (ESTRUTURA ORIGINAL PRESERVADA)
+# 2. INJEÇÃO DE CSS GLOBAL (BLINDAGEM DE DESMONTE DOM)
 # =========================================================
 st.markdown("""
     <style>
@@ -50,18 +50,18 @@ st.markdown("""
         color: #F8F9FA !important;
     }
 
-    /* OCULTAR FOTO DO GITHUB, BADGES DO STREAMLIT E RODAPÉS NATIVOS */
-    #MainMenu, 
-    header, 
-    footer, 
-    [data-testid="stFooter"], 
-    [data-testid="stHeader"],
-    .stDeployButton, 
-    div[class*="viewerBadge"], 
-    div[class*="styles_viewerBadge"], 
-    div[class*="stStatusWidget"],
-    a[href*="streamlit.io"],
-    a[href*="github.com"] {
+    /* PREVINE DESFORMATAMENTO DE KPIS E PLOTLY NO UNMOUNT */
+    [data-testid="stMainBlockContainer"], .block-container {
+        contain: layout style paint !important;
+        contain-intrinsic-size: 1000px !important;
+    }
+
+    /* OCULTAR ELEMENTOS NATIVOS */
+    #MainMenu, header, footer, 
+    [data-testid="stFooter"], [data-testid="stHeader"],
+    .stDeployButton, div[class*="viewerBadge"], 
+    div[class*="styles_viewerBadge"], div[class*="stStatusWidget"],
+    a[href*="streamlit.io"], a[href*="github.com"] {
         display: none !important;
         visibility: hidden !important;
         opacity: 0 !important;
@@ -307,8 +307,7 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # =========================================================
-# 4. RODAPÉ FIXO (CÁPSULA) - RENDERIZADO ANTES DO CONTEÚDO
-#    (Evita que o menu desapareça durante a montagem do Painel)
+# 4. RODAPÉ FIXO (CÁPSULA)
 # =========================================================
 if st.session_state["usuario_logado"]:
     nav_bar = st.container(key="nav_bar_container")
@@ -349,20 +348,23 @@ if st.session_state["usuario_logado"]:
                     st.toast("⛔ Sem permissão para as Configurações.", icon="🔒")
 
 # =========================================================
-# 5. ROTEAMENTO DE ABAS DENTRO DO CONTEÚDO PRINCIPAL
+# 5. ROTEAMENTO DE ABAS EM CONTAINER PROTEGIDO
 # =========================================================
-if aba == "inicio":
-    inicio.render()
-elif aba == "pesagem" and st.session_state["usuario_logado"]:
-    if tem_permissao("pesagem:visualizar"):
-        pesagem.render()
-    else:
-        st.toast("⛔ Acesso bloqueado ao formulário.", icon="🔒")
-elif aba == "historico" and st.session_state["usuario_logado"]:
-    if tem_permissao("dashboard:visualizar"):
-        historico.render()
-    else:
-        st.toast("⛔ Acesso bloqueado ao painel.", icon="🔒")
-elif aba == "config" and st.session_state["usuario_logado"]:
-    if tem_permissao("usuarios:gerenciar") or tem_permissao("pratos:gerenciar"):
-        config.render()
+aba_container = st.container()
+
+with aba_container:
+    if aba == "inicio":
+        inicio.render()
+    elif aba == "pesagem" and st.session_state["usuario_logado"]:
+        if tem_permissao("pesagem:visualizar"):
+            pesagem.render()
+        else:
+            st.toast("⛔ Acesso bloqueado ao formulário.", icon="🔒")
+    elif aba == "historico" and st.session_state["usuario_logado"]:
+        if tem_permissao("dashboard:visualizar"):
+            historico.render()
+        else:
+            st.toast("⛔ Acesso bloqueado ao painel.", icon="🔒")
+    elif aba == "config" and st.session_state["usuario_logado"]:
+        if tem_permissao("usuarios:gerenciar") or tem_permissao("pratos:gerenciar"):
+            config.render()

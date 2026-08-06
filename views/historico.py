@@ -430,33 +430,34 @@ def render():
         }
 
         .metric-card {
-            background-color: #1E1E1E;
-            border: 1px solid #2D2D2D;
-            border-left: 4px solid #B71C1C;
-            border-radius: 12px;
-            padding: 10px 6px;
-            text-align: center;
-            box-shadow: 0px 4px 10px rgba(0,0,0,0.4);
-            margin-bottom: 8px;
-            width: 100%;
-            box-sizing: border-box;
+            background-color: #1E1E1E !important;
+            border: 1px solid #2D2D2D !important;
+            border-left: 4px solid #B71C1C !important;
+            border-radius: 12px !important;
+            padding: 10px 6px !important;
+            text-align: center !important;
+            box-shadow: 0px 4px 10px rgba(0,0,0,0.4) !important;
+            margin-bottom: 8px !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+            display: block !important;
         }
         .metric-card-title {
-            font-size: 0.70rem;
-            font-weight: 700;
-            color: #A0A0A0;
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
-            margin-bottom: 3px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            font-size: 0.70rem !important;
+            font-weight: 700 !important;
+            color: #A0A0A0 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.3px !important;
+            margin-bottom: 3px !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
         }
         .metric-card-value {
-            font-size: 1.10rem;
-            font-weight: 800;
-            color: #FFFFFF;
-            line-height: 1.1;
+            font-size: 1.10rem !important;
+            font-weight: 800 !important;
+            color: #FFFFFF !important;
+            line-height: 1.1 !important;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -585,7 +586,7 @@ def render():
             
         with c2:
             st.markdown(f"""
-                <div class="metric-card" style="border-left-color: #FF5252;">
+                <div class="metric-card" style="border-left-color: #FF5252 !important;">
                     <div class="metric-card-title">Descarte Total</div>
                     <div class="metric-card-value" style="color:#FF5252">{tot_descarte:.3f} <span style="font-size:0.75rem">kg</span></div>
                 </div>
@@ -594,7 +595,7 @@ def render():
         c3, c4 = st.columns(2)
         with c3:
             st.markdown(f"""
-                <div class="metric-card" style="border-left-color: #FFB74D;">
+                <div class="metric-card" style="border-left-color: #FFB74D !important;">
                     <div class="metric-card-title">Sobra Buffet</div>
                     <div class="metric-card-value" style="color:#FFB74D">{tot_sobra_buffet:.3f} <span style="font-size:0.75rem">kg</span></div>
                 </div>
@@ -602,7 +603,7 @@ def render():
             
         with c4:
             st.markdown(f"""
-                <div class="metric-card" style="border-left-color: #AB47BC;">
+                <div class="metric-card" style="border-left-color: #AB47BC !important;">
                     <div class="metric-card-title">Atendimento</div>
                     <div class="metric-card-value" style="color:#E1BEE7">{int(tot_clientes)} <span style="font-size:0.75rem">clientes</span></div>
                 </div>
