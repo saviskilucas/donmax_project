@@ -489,15 +489,6 @@ def render():
             color: #FFFFFF !important;
             line-height: 1.1 !important;
         }
-        /* Garante margem de rolagem para o topo quando o campo recebe foco */
-        div[data-baseweb="input"] {
-            scroll-margin-top: 80px !important;
-        }
-
-        div[data-baseweb="input"] input:focus {
-            /* Rola a tela do celular suavemente para colocar o input no topo */
-            scroll-behavior: smooth !important;
-        }
         </style>
 
         <script>
@@ -563,7 +554,6 @@ def render():
         else:
             data_min = data_max = date.today()
 
-        # Garante que o título e filtro fiquem posicionados com respiro no topo
         st.markdown("##### Filtrar por Período")
         
         if tem_permissao("dashboard:filtrar"):
