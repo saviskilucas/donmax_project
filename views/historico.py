@@ -114,8 +114,8 @@ def gerar_img_heatmap(df_matriz):
                     else:
                         color_array[i, j] = 0.0
 
-        # Proporção ideal de altura para manter os números e nomes perfeitamente legíveis
-        altura_figura = max(2.5, num_rows * 0.45)
+        # Altura proporcional real sem achatar as fontes
+        altura_figura = max(3.0, num_rows * 0.45)
 
         fig, ax = plt.subplots(figsize=(6.8, altura_figura), facecolor='#FFFFFF')
         ax.set_facecolor('#FFFFFF')
@@ -147,7 +147,7 @@ def gerar_img_heatmap(df_matriz):
 
         buf = io.BytesIO()
         plt.tight_layout()
-        plt.savefig(buf, format='png', dpi=220, facecolor=fig.get_facecolor(), bbox_inches='tight')
+        plt.savefig(buf, format='png', dpi=200, facecolor=fig.get_facecolor(), bbox_inches='tight')
         plt.close(fig)
         buf.seek(0)
         return buf
@@ -272,7 +272,7 @@ def criar_banner_titulo(texto):
     return t_banner
 
 # =========================================================
-# GERADOR DE PDF EXECUTIVO (REPORTLAB) - QUEBRA AUTOMÁTICA
+# GERADOR DE PDF EXECUTIVO (REPORTLAB) - MULTI-PÁGINAS
 # =========================================================
 def gerar_pdf_relatorio(df, tot_prod, tot_descarte, tot_sobra, tot_clientes, dt_inicio, dt_fim, prod_ini, reposicao, df_data, df_matriz):
     from reportlab.lib.pagesizes import letter
@@ -305,6 +305,7 @@ def gerar_pdf_relatorio(df, tot_prod, tot_descarte, tot_sobra, tot_clientes, dt_
 
     LARGURA_MAXIMA = 500
 
+    # --- PÁGINA 1: CABEÇALHO + CARDS + GRÁFICOS DE BALANÇO E LINHA ---
     header_table_data = [[
         Paragraph("<b>DON MAX BUFFET</b>", style_header_app),
         Paragraph("<font color='#FFFFFF'><b>RELATÓRIO EXECUTIVO</b></font>", ParagraphStyle('HRight', fontName='Helvetica-Bold', fontSize=9, textColor=colors.white, alignment=2))
@@ -354,20 +355,6 @@ def gerar_pdf_relatorio(df, tot_prod, tot_descarte, tot_sobra, tot_clientes, dt_
     elements.append(t_cards)
     elements.append(Spacer(1, 10))
 
-    if df_matriz is not None and not df_matriz.empty:
-        img_h = gerar_img_heatmap(df_matriz)
-        if img_h is not None:
-            elements.append(criar_banner_titulo("Matriz de Desempenho por Produto"))
-            elements.append(Spacer(1, 6))
-            
-            # Mantém a proporção real para que a fonte fique perfeita
-            num_linhas = len(df_matriz)
-            altura_proporcional = max(160, num_linhas * 26)
-            
-            elements.append(Image(img_h, width=LARGURA_MAXIMA, height=altura_proporcional))
-            elements.append(Paragraph("* A linha TOTAL GERAL indica o Descarte Médio Ponderado Global (Descarte Total / Produção Total).", style_note))
-            elements.append(Spacer(1, 10))
-
     elements.append(criar_banner_titulo("Análise Comparativa de Produção"))
     elements.append(Spacer(1, 6))
     img_b = gerar_img_balanco(prod_ini, reposicao, tot_sobra, tot_descarte)
@@ -379,8 +366,8 @@ def gerar_pdf_relatorio(df, tot_prod, tot_descarte, tot_sobra, tot_clientes, dt_
             Paragraph("<b>Sobra vs Descarte</b>", ParagraphStyle('SubR', fontName='Helvetica-Bold', fontSize=8.5, textColor=colors.HexColor('#333333'), alignment=1))
         ],
         [
-            Image(img_b, width=245, height=150),
-            Image(img_r, width=245, height=150)
+            Image(img_b, width=245, height=140),
+            Image(img_r, width=245, height=140)
         ]
     ]
     
@@ -398,9 +385,25 @@ def gerar_pdf_relatorio(df, tot_prod, tot_descarte, tot_sobra, tot_clientes, dt_
         elements.append(criar_banner_titulo("Linha do Tempo de Descarte e Sobra"))
         elements.append(Spacer(1, 6))
         img_l = gerar_img_linha(df_data)
-        elements.append(Image(img_l, width=LARGURA_MAXIMA, height=150))
-        elements.append(Spacer(1, 8))
+        elements.append(Image(img_l, width=LARGURA_MAXIMA, height=140))
 
+    # --- PÁGINA 2: QUEBRA FORÇADA PARA A MATRIZ DE DESEMPENHO ---
+    if df_matriz is not None and not df_matriz.empty:
+        elements.append(PageBreak())  # Pula limpo para a próxima página
+        elements.append(criar_banner_titulo("Matriz de Desempenho por Produto"))
+        elements.append(Spacer(1, 6))
+        
+        img_h = gerar_img_heatmap(df_matriz)
+        if img_h is not None:
+            # Mantém a altura proporcional do gráfico para leitura perfeita
+            num_linhas = len(df_matriz)
+            altura_proporcional = max(180, num_linhas * 26)
+            
+            elements.append(Image(img_h, width=LARGURA_MAXIMA, height=altura_proporcional))
+            elements.append(Paragraph("* A linha TOTAL GERAL indica o Descarte Médio Ponderado Global (Descarte Total / Produção Total).", style_note))
+
+    # --- PÁGINA 3 (OU CONTINUAÇÃO): DETALHAMENTO DE LANÇAMENTOS ---
+    elements.append(Spacer(1, 10))
     elements.append(criar_banner_titulo("Detalhamento de Lançamentos"))
     elements.append(Spacer(1, 6))
 
