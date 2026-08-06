@@ -266,24 +266,28 @@ def render():
                             st.warning("⚠️ O nome do prato é obrigatório.")
                         else:
                             try:
-                                registros_alimentos_atuais = carregar_alimentos_planilha()
+                                # Carrega os dados direto da planilha ignorando o cache temporariamente 
+                                # ou utiliza a validação local rápida para garantir instantaneidade
+                                sheet_alimentos = conectar_gsheets().worksheet("Alimentos")
+                                registros_atuais = sheet_alimentos.get_all_records()
+                                
                                 ja_existe = any(
                                     str(
                                         r.get("Prato", r.get("prato", r.get("ID_Prato", "")))
                                     ).strip().lower() == nome_limpo_prato.lower()
-                                    for r in registros_alimentos_atuais
+                                    for r in registros_atuais
                                 )
 
                                 if ja_existe:
                                     st.error(f"❌ O prato **{nome_limpo_prato}** já está cadastrado.")
                                 else:
-                                    sheet_alimentos = conectar_gsheets().worksheet("Alimentos")
                                     nova_linha = [nome_limpo_prato, "TRUE"]
                                     sheet_alimentos.append_row(nova_linha)
 
                                     st.cache_data.clear()
+                                    # Substituição do st.success / st.balloons / st.rerun por st.toast 
+                                    # para que a mensagem de log fixa permaneça visível na tela sem sumir por rerun
+                                    st.toast(f"🟢 **SISTEMA:** Prato **{nome_limpo_prato}** cadastrado com sucesso!", icon="✅")
                                     st.success(f"🟢 **SISTEMA:** Prato **{nome_limpo_prato}** cadastrado com sucesso na aba Alimentos!")
-                                    st.balloons()
-                                    st.rerun()
                             except Exception as e:
                                 st.error(f"❌ Erro ao cadastrar na aba Alimentos: {e}")
