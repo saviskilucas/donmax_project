@@ -949,14 +949,14 @@ def render():
                     id_selecionado = st.selectbox("Selecione o ID do Lançamento:", options=ids_disponiveis, format_func=lambda x: f"ID #{x}")
                     linha_sel, reg_sel = mapa_ids[id_selecionado]
 
-                    # 1. Ajuste e Formatação Rígida da Data e Hora (24h - HH:MM)
+                    # 1. Leitura e Formatação Rígida de Data e Hora
                     dt_lan_str = str(reg_sel.get('Data', ''))
                     try:
                         dt_lan_obj = datetime.strptime(dt_lan_str, '%d/%m/%Y').date()
                     except Exception:
                         dt_lan_obj = date.today()
 
-                    hora_raw = str(reg_sel.get('Hora', '')).strip()
+                    hora_raw = str(reg_sel.get('Hora', '')).replace("'", "").strip()
                     hora_lan = "00:00"
                     if hora_raw:
                         for fmt in ('%H:%M', '%H:%M:%S', '%I:%M:%S %p', '%I:%M %p'):
@@ -966,7 +966,8 @@ def render():
                             except ValueError:
                                 pass
                         if hora_lan == "00:00" and ":" in hora_raw:
-                            hora_lan = hora_raw.split(":")[0].zfill(2) + ":" + hora_raw.split(":")[1].zfill(2)[:2]
+                            partes_h = hora_raw.split(":")
+                            hora_lan = f"{partes_h[0].zfill(2)}:{partes_h[1].zfill(2)[:2]}"
 
                     prato_lan = str(reg_sel.get('ID_Prato', '-')).strip()
                     resp_lan = str(reg_sel.get('Responsavel', ''))
@@ -1019,14 +1020,16 @@ def render():
                         with b_excluir:
                             btn_excluir_l = st.form_submit_button("🗑️ EXCLUIR REGISTRO", width="stretch")
 
-                        # 3. Processamento Instantâneo com st.toast sem escurecer a tela
                         if btn_salvar_l:
                             try:
                                 dt_formatada = e_dt.strftime('%d/%m/%Y')
                                 sheet_lancamentos = conectar_gsheets().worksheet("Lancamentos_Diarios")
 
+                                # Força formato de texto com apóstrofo para manter ex: '14:52
+                                hora_para_planilha = f"'{hora_lan}" if not hora_lan.startswith("'") else hora_lan
+
                                 sheet_lancamentos.update_cell(linha_sel, 1, dt_formatada)          # Data
-                                sheet_lancamentos.update_cell(linha_sel, 2, hora_lan)              # Hora (HH:MM)
+                                sheet_lancamentos.update_cell(linha_sel, 2, hora_para_planilha)    # Hora ('14:52)
                                 sheet_lancamentos.update_cell(linha_sel, 3, resp_lan)              # Responsavel
                                 sheet_lancamentos.update_cell(linha_sel, 4, str(e_cli))           # Clientes_Atendidos
                                 sheet_lancamentos.update_cell(linha_sel, 5, e_prato.strip())       # ID_Prato
@@ -1037,8 +1040,8 @@ def render():
                                 sheet_lancamentos.update_cell(linha_sel, 10, e_obs.strip())        # Observacoes
 
                                 st.cache_data.clear()
-                                st.toast(f"🟢 Lançamento ID #{id_selecionado} atualizado!", icon="✅")
-                                st.success(f"🟢 Lançamento ID #{id_selecionado} atualizado com sucesso!")
+                                st.toast(f"🟢 Lançamento ID #{id_selecionado} atualizado com sucesso!", icon="✅")
+                                st.info(f"✅ **LOG:** Lançamento ID #{id_selecionado} alterado com sucesso.")
                             except Exception as e:
                                 st.error(f"❌ Erro ao atualizar lançamento: {e}")
 
@@ -1049,6 +1052,6 @@ def render():
                                 
                                 st.cache_data.clear()
                                 st.toast(f"🗑️ Lançamento ID #{id_selecionado} excluído!", icon="🗑️")
-                                st.success(f"🗑️ Lançamento ID #{id_selecionado} excluído com sucesso!")
+                                st.info(f"🗑️ **LOG:** Lançamento ID #{id_selecionado} removido do sistema.")
                             except Exception as e:
                                 st.error(f"❌ Erro ao excluir lançamento: {e}")
