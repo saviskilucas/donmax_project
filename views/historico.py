@@ -762,46 +762,36 @@ def render():
 
         with col_hdr_right:
             if tem_permissao("relatorios:exportar_pdf"):
-                if st.button("📄 Gerar PDF", width="stretch"):
-                    # 1. Gera os bytes do PDF
-                    pdf_bytes = gerar_pdf_relatorio(
-                        df, tot_prod, tot_descarte, tot_sobra_buffet, tot_clientes,
-                        dt_inicio, dt_fim,
-                        prod_ini, reposicao, df_data, df_matriz
-                    )
-                    
-                    import base64
-                    pdf_b64 = base64.b64encode(pdf_bytes.getvalue()).decode('utf-8')
-                    
-                    # 2. Injeta script ultra-leve que abre a aba direto sem escurecer/recarregar a tela
-                    html_code = f"""
-                    <script>
-                        (function() {{
-                            try {{
-                                const byteCharacters = atob("{pdf_b64}");
-                                const byteNumbers = new Array(byteCharacters.length);
-                                for (let i = 0; i < byteCharacters.length; i++) {{
-                                    byteNumbers[i] = byteCharacters.charCodeAt(i);
-                                }}
-                                const byteArray = new Uint8Array(byteNumbers);
-                                const blob = new Blob([byteArray], {{ type: 'application/pdf' }});
-                                const blobUrl = URL.createObjectURL(blob);
-                                
-                                const win = window.open(blobUrl, '_blank');
-                                if (!win || win.closed || typeof win.closed == 'undefined') {{
-                                    // Fallback instantâneo caso o popup blocker atue no desktop
-                                    const a = document.createElement('a');
-                                    a.href = blobUrl;
-                                    a.target = '_blank';
-                                    a.click();
-                                }}
-                            }} catch(e) {{
-                                console.error(e);
-                            }}
-                        }})();
-                    </script>
-                    """
-                    st.components.v1.html(html_code, height=0, width=0)
+                # 1. Prepara o PDF em memória no carregamento do painel
+                pdf_bytes = gerar_pdf_relatorio(
+                    df, tot_prod, tot_descarte, tot_sobra_buffet, tot_clientes,
+                    dt_inicio, dt_fim,
+                    prod_ini, reposicao, df_data, df_matriz
+                )
+                import base64
+                pdf_b64 = base64.b64encode(pdf_bytes.getvalue()).decode('utf-8')
+                
+                # 2. Renderiza o botão como um link direto (impossível de bloquear pop-up e instantâneo)
+                st.markdown(f"""
+                    <a href="data:application/pdf;base64,{pdf_b64}" target="_blank" download="Relatorio_DonMax.pdf" style="
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        width: 100%;
+                        height: 38px;
+                        background-color: #262626;
+                        color: #FFFFFF !important;
+                        font-weight: 700;
+                        font-size: 0.85rem;
+                        text-decoration: none;
+                        border-radius: 8px;
+                        border: 1px solid #333333;
+                        transition: all 0.2s ease;
+                        box-sizing: border-box;
+                    ">
+                        📄 Gerar PDF
+                    </a>
+                """, unsafe_allow_html=True)
 
         st.markdown("---")
         st.markdown("##### 📊 Lançamentos Registrados")
