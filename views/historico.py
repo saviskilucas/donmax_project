@@ -53,16 +53,18 @@ def converter_para_numero(serie):
         errors='coerce'
     ).fillna(0.0)
 
-def gerar_img_heatmap(df_matriz):
-    import matplotlib
-    matplotlib.use('Agg')
-    import matplotlib.pyplot as plt
+# =========================================================
+# MONTADOR DA MATRIZ DE DESEMPENHO NATIVA DO PDF (SEMS ERROS)
+# =========================================================
+def montar_tabela_heatmap_pdf(df_matriz):
+    from reportlab.lib import colors
+    from reportlab.platypus import Table, TableStyle
 
     if df_matriz is None or df_matriz.empty:
         return None
 
     try:
-        # Separa os pratos e garante ordenação ALFABÉTICA (A-Z)
+        # Separa os pratos e ordena em Ordem Alfabética (A-Z)
         df_pratos = df_matriz[df_matriz['ID_Prato'] != 'TOTAL GERAL'].copy()
         df_pratos = df_pratos.sort_values(by='ID_Prato', ascending=True)
 
@@ -70,87 +72,89 @@ def gerar_img_heatmap(df_matriz):
 
         df_exibicao = pd.concat([df_pratos, df_total], ignore_index=True)
 
-        pratos = df_exibicao['ID_Prato'].astype(str).tolist()
-        colunas = ['Produção Ini.', 'Reposição', 'Sobra Buffet', 'Descarte Total', '% Perda']
+        colunas_hdr = ['Prato / Item', 'Prod. Ini.', 'Reposição', 'Sobra Buf.', 'Descarte Total', '% Perda']
+        table_data = [colunas_hdr]
 
         raw_matrix = []
-        text_matrix = []
-
         for _, row in df_exibicao.iterrows():
             p_ini = float(row.get('Prod_Ini_Calc', 0.0))
             repo = float(row.get('Reposicao_Calc', 0.0))
             s_buf = float(row.get('Sobra_Buffet_Calc', 0.0))
             desc = float(row.get('Descarte_Calc', 0.0))
             pct = float(row.get('Perda_%', 0.0))
-
+            
             raw_matrix.append([p_ini, repo, s_buf, desc, pct])
-            text_matrix.append([
+
+            prato_nome = str(row.get('ID_Prato', ''))[:24]
+            linha_txt = [
+                prato_nome,
                 f"{p_ini:.2f} kg",
                 f"{repo:.2f} kg",
                 f"{s_buf:.2f} kg",
                 f"{desc:.2f} kg",
                 f"{pct:.1f}%"
-            ])
+            ]
+            table_data.append(linha_txt)
 
-        raw_array = np.array(raw_matrix, dtype=float)
-        num_rows = len(pratos)
-        num_cols = len(colunas)
-
-        color_array = np.zeros_like(raw_array)
+        raw_arr = np.array(raw_matrix, dtype=float)
         n_pratos = len(df_pratos)
+        num_cols = 5
 
+        # Estilo base da tabela
+        t_style = [
+            ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#B71C1C')),
+            ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+            ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0,0), (-1,0), 8),
+            ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+            ('ALIGN', (0,0), (0,-1), 'LEFT'),
+            ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#D6D6D6')),
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ('TOPPADDING', (0,0), (-1,-1), 4),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 4),
+        ]
+
+        # Aplicação dinâmica das cores de Heatmap célula a célula
         for j in range(num_cols):
             if n_pratos > 0:
-                col_vals = raw_array[:n_pratos, j]
+                col_vals = raw_arr[:n_pratos, j]
                 c_min = col_vals.min()
                 c_max = col_vals.max()
+
                 for i in range(n_pratos):
-                    v = raw_array[i, j]
-                    if v > 0:
-                        if c_max > c_min:
-                            color_array[i, j] = 0.2 + 0.8 * ((v - c_min) / (c_max - c_min))
+                    v = raw_arr[i, j]
+                    col_idx = j + 1
+                    row_idx = i + 1
+
+                    if v == 0:
+                        t_style.append(('BACKGROUND', (col_idx, row_idx), (col_idx, row_idx), colors.white))
+                        t_style.append(('TEXTCOLOR', (col_idx, row_idx), (col_idx, row_idx), colors.HexColor('#888888')))
+                    else:
+                        ratio = (v - c_min) / (c_max - c_min) if c_max > c_min else 0.5
+                        if ratio < 0.30:
+                            bg = colors.HexColor('#FFF9C4')  # Amarelo
+                            txt = colors.HexColor('#111111')
+                        elif ratio < 0.70:
+                            bg = colors.HexColor('#FFE0B2')  # Laranja
+                            txt = colors.HexColor('#111111')
                         else:
-                            color_array[i, j] = 0.6
-                    else:
-                        color_array[i, j] = 0.0
+                            bg = colors.HexColor('#EF5350')  # Vermelho
+                            txt = colors.white
 
-        # Altura proporcional real sem achatar as fontes
-        altura_figura = max(3.0, num_rows * 0.45)
+                        t_style.append(('BACKGROUND', (col_idx, row_idx), (col_idx, row_idx), bg))
+                        t_style.append(('TEXTCOLOR', (col_idx, row_idx), (col_idx, row_idx), txt))
+                        t_style.append(('FONTNAME', (col_idx, row_idx), (col_idx, row_idx), 'Helvetica-Bold'))
 
-        fig, ax = plt.subplots(figsize=(6.8, altura_figura), facecolor='#FFFFFF')
-        ax.set_facecolor('#FFFFFF')
+        # Estilo exclusivo para a linha TOTAL GERAL
+        if len(df_total) > 0:
+            last_row = len(table_data) - 1
+            t_style.append(('BACKGROUND', (0, last_row), (-1, last_row), colors.HexColor('#262626')))
+            t_style.append(('TEXTCOLOR', (0, last_row), (-1, last_row), colors.white))
+            t_style.append(('FONTNAME', (0, last_row), (-1, last_row), 'Helvetica-Bold'))
 
-        im = ax.imshow(color_array, cmap='YlOrRd', aspect='auto', alpha=0.88, vmin=0, vmax=1)
-
-        ax.set_xticks(np.arange(num_cols))
-        ax.set_yticks(np.arange(num_rows))
-        ax.set_xticklabels(colunas, color='#111111', fontsize=8.5, fontweight='bold')
-        ax.set_yticklabels(pratos, color='#222222', fontsize=8.5)
-
-        for i in range(num_rows):
-            is_total = (i == num_rows - 1) and (pratos[i] == 'TOTAL GERAL')
-            for j in range(num_cols):
-                if is_total:
-                    ax.add_patch(plt.Rectangle((j - 0.5, i - 0.5), 1, 1, fill=True, color='#262626', ec='#111111', lw=1, zorder=3))
-                    ax.text(j, i, text_matrix[i][j], ha="center", va="center", color='#FFFFFF', fontsize=8.5, fontweight='bold', zorder=4)
-                else:
-                    if raw_array[i, j] == 0:
-                        ax.add_patch(plt.Rectangle((j - 0.5, i - 0.5), 1, 1, fill=True, color='#FFFFFF', ec='#E0E0E0', lw=0.5, zorder=3))
-                        ax.text(j, i, text_matrix[i][j], ha="center", va="center", color='#999999', fontsize=8, zorder=4)
-                    else:
-                        intensity = color_array[i, j]
-                        text_color = "#FFFFFF" if intensity > 0.65 else "#111111"
-                        ax.text(j, i, text_matrix[i][j], ha="center", va="center", color=text_color, fontsize=8, fontweight='bold')
-
-        ax.spines[:].set_visible(False)
-        ax.tick_params(top=True, bottom=False, labeltop=True, labelbottom=False)
-
-        buf = io.BytesIO()
-        plt.tight_layout()
-        plt.savefig(buf, format='png', dpi=200, facecolor=fig.get_facecolor(), bbox_inches='tight')
-        plt.close(fig)
-        buf.seek(0)
-        return buf
+        t_heatmap = Table(table_data, colWidths=[150, 70, 70, 70, 70, 70])
+        t_heatmap.setStyle(TableStyle(t_style))
+        return t_heatmap
     except Exception as e:
         return None
 
@@ -272,7 +276,7 @@ def criar_banner_titulo(texto):
     return t_banner
 
 # =========================================================
-# GERADOR DE PDF EXECUTIVO (REPORTLAB) - MULTI-PÁGINAS
+# GERADOR DE PDF EXECUTIVO (REPORTLAB) - 100% ESTÁVEL
 # =========================================================
 def gerar_pdf_relatorio(df, tot_prod, tot_descarte, tot_sobra, tot_clientes, dt_inicio, dt_fim, prod_ini, reposicao, df_data, df_matriz):
     from reportlab.lib.pagesizes import letter
@@ -305,7 +309,7 @@ def gerar_pdf_relatorio(df, tot_prod, tot_descarte, tot_sobra, tot_clientes, dt_
 
     LARGURA_MAXIMA = 500
 
-    # --- PÁGINA 1: CABEÇALHO + CARDS + GRÁFICOS DE BALANÇO E LINHA ---
+    # 1. CABEÇALHO DO RELATÓRIO
     header_table_data = [[
         Paragraph("<b>DON MAX BUFFET</b>", style_header_app),
         Paragraph("<font color='#FFFFFF'><b>RELATÓRIO EXECUTIVO</b></font>", ParagraphStyle('HRight', fontName='Helvetica-Bold', fontSize=9, textColor=colors.white, alignment=2))
@@ -325,6 +329,7 @@ def gerar_pdf_relatorio(df, tot_prod, tot_descarte, tot_sobra, tot_clientes, dt_
     dt_str = f"Período Analisado: <b>{dt_inicio.strftime('%d/%m/%Y')}</b> até <b>{dt_fim.strftime('%d/%m/%Y')}</b> &nbsp;|&nbsp; Emitido em: {dt_emissao_str}"
     elements.append(Paragraph(dt_str, style_sub))
 
+    # 2. CARDS RESUMO
     elements.append(criar_banner_titulo("INDICADORES CHAVE DO PERÍODO"))
     elements.append(Spacer(1, 6))
 
@@ -355,6 +360,7 @@ def gerar_pdf_relatorio(df, tot_prod, tot_descarte, tot_sobra, tot_clientes, dt_
     elements.append(t_cards)
     elements.append(Spacer(1, 10))
 
+    # 3. BALANÇO E SOBRA VS DESCARTE
     elements.append(criar_banner_titulo("Análise Comparativa de Produção"))
     elements.append(Spacer(1, 6))
     img_b = gerar_img_balanco(prod_ini, reposicao, tot_sobra, tot_descarte)
@@ -366,8 +372,8 @@ def gerar_pdf_relatorio(df, tot_prod, tot_descarte, tot_sobra, tot_clientes, dt_
             Paragraph("<b>Sobra vs Descarte</b>", ParagraphStyle('SubR', fontName='Helvetica-Bold', fontSize=8.5, textColor=colors.HexColor('#333333'), alignment=1))
         ],
         [
-            Image(img_b, width=245, height=140),
-            Image(img_r, width=245, height=140)
+            Image(img_b, width=245, height=135),
+            Image(img_r, width=245, height=135)
         ]
     ]
     
@@ -381,28 +387,25 @@ def gerar_pdf_relatorio(df, tot_prod, tot_descarte, tot_sobra, tot_clientes, dt_
     elements.append(t_quadros)
     elements.append(Spacer(1, 8))
 
+    # 4. LINHA DO TEMPO
     if not df_data.empty:
         elements.append(criar_banner_titulo("Linha do Tempo de Descarte e Sobra"))
         elements.append(Spacer(1, 6))
         img_l = gerar_img_linha(df_data)
-        elements.append(Image(img_l, width=LARGURA_MAXIMA, height=140))
+        elements.append(Image(img_l, width=LARGURA_MAXIMA, height=135))
 
-    # --- PÁGINA 2: QUEBRA FORÇADA PARA A MATRIZ DE DESEMPENHO ---
+    # 5. MATRIZ DE DESEMPENHO (TABELA NATIVA QUE QUEBRA PÁGINA AUTOMATICAMENTE)
     if df_matriz is not None and not df_matriz.empty:
-        elements.append(PageBreak())  # Pula limpo para a próxima página
+        elements.append(PageBreak())
         elements.append(criar_banner_titulo("Matriz de Desempenho por Produto"))
         elements.append(Spacer(1, 6))
         
-        img_h = gerar_img_heatmap(df_matriz)
-        if img_h is not None:
-            # Mantém a altura proporcional do gráfico para leitura perfeita
-            num_linhas = len(df_matriz)
-            altura_proporcional = max(180, num_linhas * 26)
-            
-            elements.append(Image(img_h, width=LARGURA_MAXIMA, height=altura_proporcional))
+        tabela_heatmap = montar_tabela_heatmap_pdf(df_matriz)
+        if tabela_heatmap is not None:
+            elements.append(tabela_heatmap)
             elements.append(Paragraph("* A linha TOTAL GERAL indica o Descarte Médio Ponderado Global (Descarte Total / Produção Total).", style_note))
 
-    # --- PÁGINA 3 (OU CONTINUAÇÃO): DETALHAMENTO DE LANÇAMENTOS ---
+    # 6. DETALHAMENTO DOS LANÇAMENTOS
     elements.append(Spacer(1, 10))
     elements.append(criar_banner_titulo("Detalhamento de Lançamentos"))
     elements.append(Spacer(1, 6))
