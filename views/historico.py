@@ -65,7 +65,10 @@ def gerar_img_heatmap(df_matriz):
         return None
 
     try:
+        # Separa os pratos e garante ordenação ALFABÉTICA (A-Z)
         df_pratos = df_matriz[df_matriz['ID_Prato'] != 'TOTAL GERAL'].copy()
+        df_pratos = df_pratos.sort_values(by='ID_Prato', ascending=True)
+
         df_total = df_matriz[df_matriz['ID_Prato'] == 'TOTAL GERAL'].copy()
 
         df_exibicao = pd.concat([df_pratos, df_total], ignore_index=True)
@@ -104,10 +107,15 @@ def gerar_img_heatmap(df_matriz):
                 col_vals = raw_array[:n_pratos, j]
                 c_min = col_vals.min()
                 c_max = col_vals.max()
-                if c_max > c_min:
-                    color_array[:n_pratos, j] = (col_vals - c_min) / (c_max - c_min)
-                else:
-                    color_array[:n_pratos, j] = 0.1
+                for i in range(n_pratos):
+                    v = raw_array[i, j]
+                    if v > 0:
+                        if c_max > c_min:
+                            color_array[i, j] = 0.2 + 0.8 * ((v - c_min) / (c_max - c_min))
+                        else:
+                            color_array[i, j] = 0.6
+                    else:
+                        color_array[i, j] = 0.0
 
         altura = max(2.5, num_rows * 0.45)
 
@@ -129,8 +137,8 @@ def gerar_img_heatmap(df_matriz):
                     ax.text(j, i, text_matrix[i][j], ha="center", va="center", color='#FFFFFF', fontsize=8, fontweight='bold', zorder=4)
                 else:
                     if raw_array[i, j] == 0:
-                        ax.add_patch(plt.Rectangle((j - 0.5, i - 0.5), 1, 1, fill=True, color='#FFFFFF', ec='#333333', lw=0.5, zorder=3))
-                        ax.text(j, i, text_matrix[i][j], ha="center", va="center", color='#888888', fontsize=7.5, zorder=4)
+                        ax.add_patch(plt.Rectangle((j - 0.5, i - 0.5), 1, 1, fill=True, color='#FFFFFF', ec='#E0E0E0', lw=0.5, zorder=3))
+                        ax.text(j, i, text_matrix[i][j], ha="center", va="center", color='#999999', fontsize=7.5, zorder=4)
                     else:
                         intensity = color_array[i, j]
                         text_color = "#FFFFFF" if intensity > 0.65 else "#111111"
@@ -720,11 +728,75 @@ def render():
         st.plotly_chart(fig_balanco, width="stretch", config=config_plotly_mobile)
 
         # =========================================================
-        # 2. HEATMAP (DASHBOARD - VALORES ZERADOS EM PRETO)
+        # CONSTRUÇÃO DA MATRIZ COMPLETA (TODOS OS ALIMENTOS)
+        # =========================================================
+        df_matriz = pd.DataFrame()
+        if 'ID_Prato' in df.columns:
+            # 1. Carrega todos os pratos cadastrados da aba Alimentos
+            try:
+                sheet_alimentos_m = conectar_gsheets().worksheet("Alimentos")
+                reg_alim_m = sheet_alimentos_m.get_all_records()
+                todos_pratos = [
+                    str(r.get("Prato", r.get("prato", r.get("ID_Prato", "")))).strip()
+                    for r in reg_alim_m
+                    if str(r.get("Prato", r.get("prato", r.get("ID_Prato", "")))).strip()
+                ]
+            except Exception:
+                todos_pratos = []
+
+            # Se não encontrar pratos da aba Alimentos, usa os pratos presentes nos lançamentos
+            if not todos_pratos:
+                todos_pratos = [p for p in df['ID_Prato'].unique() if p and p != '-']
+
+            # Agrupa os lançamentos do período
+            df_matriz = df.groupby('ID_Prato').agg({
+                'Prod_Ini_Calc': 'sum',
+                'Reposicao_Calc': 'sum',
+                'Sobra_Buffet_Calc': 'sum',
+                'Descarte_Calc': 'sum'
+            }).reset_index()
+
+            # Inclui pratos que ainda não tiveram lançamentos no período (zerados)
+            for p in todos_pratos:
+                if p not in df_matriz['ID_Prato'].values:
+                    nova_linha_p = pd.DataFrame([{
+                        'ID_Prato': p,
+                        'Prod_Ini_Calc': 0.0,
+                        'Reposicao_Calc': 0.0,
+                        'Sobra_Buffet_Calc': 0.0,
+                        'Descarte_Calc': 0.0
+                    }])
+                    df_matriz = pd.concat([df_matriz, nova_linha_p], ignore_index=True)
+
+            # Filtra pratos inválidos
+            df_matriz = df_matriz[df_matriz['ID_Prato'] != '-']
+
+            # Calcula a % de perda por prato
+            df_matriz['Perda_%'] = (df_matriz['Descarte_Calc'] / (df_matriz['Prod_Ini_Calc'] + df_matriz['Reposicao_Calc']) * 100).fillna(0)
+            
+            # ORDENAÇÃO ALFABÉTICA ESTÁVEL (A-Z)
+            df_matriz = df_matriz.sort_values(by='ID_Prato', ascending=True)
+
+            # Adiciona a linha TOTAL GERAL ao final
+            pct_total_geral = (tot_descarte / tot_prod * 100) if tot_prod > 0 else 0.0
+            linha_total = pd.DataFrame([{
+                'ID_Prato': 'TOTAL GERAL',
+                'Prod_Ini_Calc': tot_prod_ini,
+                'Reposicao_Calc': tot_reposicao,
+                'Sobra_Buffet_Calc': tot_sobra_buffet,
+                'Descarte_Calc': tot_descarte,
+                'Perda_%': pct_total_geral
+            }])
+            
+            df_matriz = pd.concat([df_matriz, linha_total], ignore_index=True)
+
+        # =========================================================
+        # 2. HEATMAP (DASHBOARD - ORDEM ALFABÉTICA E CORES GARANTIDAS)
         # =========================================================
         if tem_permissao("dashboard:matriz") and not df_matriz.empty:
             st.markdown("##### Matriz de Desempenho por Produto")
 
+            # Mantém ordem alfabética no Plotly (invertido para renderizar de A no topo até Z abaixo)
             df_pratos = df_matriz[df_matriz['ID_Prato'] != 'TOTAL GERAL'].iloc[::-1].copy()
             df_total = df_matriz[df_matriz['ID_Prato'] == 'TOTAL GERAL'].copy()
 
@@ -759,6 +831,7 @@ def render():
             z_colors = np.zeros_like(raw_arr)
             n_pratos = len(df_pratos)
 
+            # Normalização de cores corrigida: Valores > 0 garantem intensidade colorida mínima (0.2 a 1.0)
             for j in range(num_cols):
                 if n_pratos > 0:
                     col_data = raw_arr[:n_pratos, j]
@@ -770,16 +843,16 @@ def render():
                             z_colors[i, j] = 0.0
                         else:
                             if c_max > c_min:
-                                z_colors[i, j] = 0.15 + 0.85 * ((v - c_min) / (c_max - c_min))
+                                z_colors[i, j] = 0.20 + 0.80 * ((v - c_min) / (c_max - c_min))
                             else:
-                                z_colors[i, j] = 0.5
+                                z_colors[i, j] = 0.60
                 if len(df_total) > 0:
                     z_colors[-1, j] = 0.0
 
             colorscale_dark = [
-                [0.0, '#1e1e1e'],   # Preto Absoluto para Zerados
-                [0.15, '#3b3620'],  # Azul Marinho
-                [0.4, '#968430'],   # Verde Escuro
+                [0.0, '#1e1e1e'],   # Fundo neutro do container para ZERADOS
+                [0.15, '#1E2A38'],  # Azul Marinho suave
+                [0.4, '#00695C'],   # Verde Escuro
                 [0.7, '#EF6C00'],   # Laranja Alerta
                 [1.0, '#C62828']    # Vermelho Crítico
             ]
@@ -797,7 +870,7 @@ def render():
                 zmax=1
             ))
 
-            altura_matriz = max(280, num_rows * 45)
+            altura_matriz = max(280, num_rows * 42)
 
             fig_heatmap.update_layout(
                 paper_bgcolor='rgba(0,0,0,0)',
