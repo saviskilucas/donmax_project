@@ -54,7 +54,7 @@ def converter_para_numero(serie):
     ).fillna(0.0)
 
 # =========================================================
-# GERADOR DE GRÁFICOS PARA PDF (MATPLOTLIB - FUNDO BRANCO)
+# GERADOR DE GRÁFICOS PARA PDF (MATPLOTLIB)
 # =========================================================
 def gerar_img_heatmap(df_matriz):
     import matplotlib
@@ -125,14 +125,12 @@ def gerar_img_heatmap(df_matriz):
             is_total = (i == num_rows - 1) and (pratos[i] == 'TOTAL GERAL')
             for j in range(num_cols):
                 if is_total:
-                    # Linha TOTAL GERAL com tom cinza suave e borda
-                    ax.add_patch(plt.Rectangle((j - 0.5, i - 0.5), 1, 1, fill=True, color='#E0E0E0', ec='#BDBDBD', lw=1, zorder=3))
-                    ax.text(j, i, text_matrix[i][j], ha="center", va="center", color='#111111', fontsize=8, fontweight='bold', zorder=4)
+                    ax.add_patch(plt.Rectangle((j - 0.5, i - 0.5), 1, 1, fill=True, color='#262626', ec='#111111', lw=1, zorder=3))
+                    ax.text(j, i, text_matrix[i][j], ha="center", va="center", color='#FFFFFF', fontsize=8, fontweight='bold', zorder=4)
                 else:
                     if raw_array[i, j] == 0:
-                        # Célula ZERADA no PDF = Fundo Branco do papel com texto cinza
-                        ax.add_patch(plt.Rectangle((j - 0.5, i - 0.5), 1, 1, fill=True, color='#FFFFFF', ec='#E0E0E0', lw=0.5, zorder=3))
-                        ax.text(j, i, text_matrix[i][j], ha="center", va="center", color='#999999', fontsize=7.5, zorder=4)
+                        ax.add_patch(plt.Rectangle((j - 0.5, i - 0.5), 1, 1, fill=True, color='#000000', ec='#333333', lw=0.5, zorder=3))
+                        ax.text(j, i, text_matrix[i][j], ha="center", va="center", color='#888888', fontsize=7.5, zorder=4)
                     else:
                         intensity = color_array[i, j]
                         text_color = "#FFFFFF" if intensity > 0.65 else "#111111"
@@ -683,7 +681,7 @@ def render():
         st.plotly_chart(fig_balanco, width="stretch", config=config_plotly_mobile)
 
         # =========================================================
-        # 2. HEATMAP (DASHBOARD - ZERADOS COM COR DE FUNDO #1E1E1E)
+        # 2. HEATMAP (DASHBOARD - VALORES ZERADOS EM PRETO)
         # =========================================================
         if tem_permissao("dashboard:matriz") and not df_matriz.empty:
             st.markdown("##### Matriz de Desempenho por Produto")
@@ -740,8 +738,8 @@ def render():
                     z_colors[-1, j] = 0.0
 
             colorscale_dark = [
-                [0.0, '#1E1E1E'],   # Mesma cor de fundo do container no Painel
-                [0.15, '#1E2A38'],  # Azul Marinho suave
+                [0.0, '#1e1e1e'],   # Preto Absoluto para Zerados
+                [0.15, '#1E2A38'],  # Azul Marinho
                 [0.4, '#00695C'],   # Verde Escuro
                 [0.7, '#EF6C00'],   # Laranja Alerta
                 [1.0, '#C62828']    # Vermelho Crítico
