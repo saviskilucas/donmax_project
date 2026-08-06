@@ -858,23 +858,23 @@ def render():
         # =========================================================
         # TABELA DE LANÇAMENTOS
         # =========================================================
-        df_exibicao = df.copy()[cite: 4]
+        df_exibicao = df.copy()
         
-        cols_remover = ['Data_DT', 'Prod_Ini_Calc', 'Reposicao_Calc', 'Prod_Total_Calc', 'Descarte_Calc', 'Sobra_Buffet_Calc'][cite: 4]
-        for c in cols_remover:[cite: 4]
-            if c in df_exibicao.columns:[cite: 4]
-                df_exibicao.drop(columns=[c], inplace=True)[cite: 4]
+        cols_remover = ['Data_DT', 'Prod_Ini_Calc', 'Reposicao_Calc', 'Prod_Total_Calc', 'Descarte_Calc', 'Sobra_Buffet_Calc']
+        for c in cols_remover:
+            if c in df_exibicao.columns:
+                df_exibicao.drop(columns=[c], inplace=True)
 
-        cols_peso = ['Prod_Inicial_KG', 'Reposicao_KG', 'Sobra_Buffet_KG', 'Descarte_KG'][cite: 4]
-        for c in cols_peso:[cite: 4]
-            if c in df_exibicao.columns:[cite: 4]
-                df_exibicao[c] = converter_para_numero(df_exibicao[c]).apply(lambda x: f"{x:.3f} kg")[cite: 4]
+        cols_peso = ['Prod_Inicial_KG', 'Reposicao_KG', 'Sobra_Buffet_KG', 'Descarte_KG']
+        for c in cols_peso:
+            if c in df_exibicao.columns:
+                df_exibicao[c] = converter_para_numero(df_exibicao[c]).apply(lambda x: f"{x:.3f} kg")
 
-        colunas_ordem = ['ID'] + [c for c in df_exibicao.columns if c != 'ID'][cite: 4]
-        df_exibicao = df_exibicao[colunas_ordem][cite: 4]
+        colunas_ordem = ['ID'] + [c for c in df_exibicao.columns if c != 'ID']
+        df_exibicao = df_exibicao[colunas_ordem]
 
-        for col in df_exibicao.columns:[cite: 4]
-            df_exibicao[col] = df_exibicao[col].astype(str)[cite: 4]
+        for col in df_exibicao.columns:
+            df_exibicao[col] = df_exibicao[col].astype(str)
 
         # ---------------------------------------------------------------------------------
         # TRECHO ATUALIZADO:
