@@ -761,17 +761,27 @@ def render():
                 st.rerun()
 
         with col_hdr_right:
-            if tem_permissao("relatorios:exportar_pdf"):
-                if st.button("📄 Gerar PDF", width="stretch"):
-                    pdf_bytes = gerar_pdf_relatorio(
-                        df, tot_prod, tot_descarte, tot_sobra_buffet, tot_clientes,
-                        dt_inicio, dt_fim,
-                        prod_ini, reposicao, df_data, df_matriz
-                    )
+            if tem_permissao("relatorios:exportar_pdf"):[cite: 4]
+                if st.button("📄 Gerar PDF", width="stretch"):[cite: 4]
+                    pdf_bytes = gerar_pdf_relatorio([cite: 4]
+                        df, tot_prod, tot_descarte, tot_sobra_buffet, tot_clientes,[cite: 4]
+                        dt_inicio, dt_fim,[cite: 4]
+                        prod_ini, reposicao, df_data, df_matriz[cite: 4]
+                    )[cite: 4]
                     import base64
-                    pdf_base64 = base64.b64encode(pdf_bytes.getvalue()).decode('utf-8')
-                    pdf_display = f'data:application/pdf;base64,{pdf_base64}'
-                    st.markdown(f'<a href="{pdf_display}" download="Relatorio_DonMax.pdf" id="pdf_down_link" target="_blank"></a><script>document.getElementById("pdf_down_link").click();</script>', unsafe_allow_html=True)
+                    pdf_base64 = base64.b64encode(pdf_bytes.getvalue()).decode('utf-8')[cite: 4]
+                    
+                    # Força a abertura do visualizador PDF em nova aba sem acionar o download automático direto
+                    js_code = f"""
+                    <script>
+                        var pdfWindow = window.open("");
+                        pdfWindow.document.write(
+                            "<iframe width='100%' height='100%' style='border:none;' src='data:application/pdf;base64,{pdf_base64}'></iframe>"
+                        );
+                        pdfWindow.document.title = "Relatorio_DonMax.pdf";
+                    </script>
+                    """
+                    st.markdown(js_code, unsafe_allow_html=True)
 
         st.markdown("---")
         st.markdown("##### 📊 Lançamentos Registrados")
