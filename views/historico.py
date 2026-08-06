@@ -766,13 +766,13 @@ def render():
                 st.rerun()
 
         with col_hdr_right:
-            if tem_permissao("relatorios:exportar_pdf"):[cite: 4]
+            if tem_permissao("relatorios:exportar_pdf"):
                 try:
-                    pdf_bytes = gerar_pdf_relatorio([cite: 4]
-                        df, tot_prod, tot_descarte, tot_sobra_buffet, tot_clientes,[cite: 4]
-                        dt_inicio, dt_fim,[cite: 4]
-                        prod_ini, reposicao, df_data, df_matriz[cite: 4]
-                    )[cite: 4]
+                    pdf_bytes = gerar_pdf_relatorio(
+                        df, tot_prod, tot_descarte, tot_sobra_buffet, tot_clientes,
+                        dt_inicio, dt_fim,
+                        prod_ini, reposicao, df_data, df_matriz
+                    )
                     import base64
                     pdf_b64 = base64.b64encode(pdf_bytes.getvalue()).decode('utf-8')
                     
