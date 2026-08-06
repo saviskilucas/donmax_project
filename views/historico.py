@@ -7,6 +7,7 @@ from google.oauth2.service_account import Credentials
 from datetime import datetime, date
 from zoneinfo import ZoneInfo
 import io
+import numpy as np
 
 from auth import tem_permissao
 
@@ -59,23 +60,24 @@ def gerar_img_heatmap(df_matriz):
     import matplotlib
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
-    import numpy as np
 
     if df_matriz.empty:
         return None
 
     try:
-        # Separa os pratos normais da linha TOTAL GERAL para não distorcer a escala
         df_pratos = df_matriz[df_matriz['ID_Prato'] != 'TOTAL GERAL'].copy()
         df_total = df_matriz[df_matriz['ID_Prato'] == 'TOTAL GERAL'].copy()
-        
+
+        if df_pratos.empty and df_total.empty:
+            return None
+
         df_exibicao = pd.concat([df_pratos, df_total], ignore_index=True)
 
         pratos = df_exibicao['ID_Prato'].astype(str).tolist()
         colunas = ['Produção Ini.', 'Reposição', 'Sobra Buffet', 'Descarte Total', '% Perda']
-        
-        z_values = []
-        text_values = []
+
+        raw_matrix = []
+        text_matrix = []
 
         for _, row in df_exibicao.iterrows():
             p_ini = float(row.get('Prod_Ini_Calc', 0.0))
@@ -84,8 +86,8 @@ def gerar_img_heatmap(df_matriz):
             desc = float(row.get('Descarte_Calc', 0.0))
             pct = float(row.get('Perda_%', 0.0))
 
-            z_values.append([p_ini, repo, s_buf, desc, pct])
-            text_values.append([
+            raw_matrix.append([p_ini, repo, s_buf, desc, pct])
+            text_matrix.append([
                 f"{p_ini:.2f} kg",
                 f"{repo:.2f} kg",
                 f"{s_buf:.2f} kg",
@@ -93,36 +95,47 @@ def gerar_img_heatmap(df_matriz):
                 f"{pct:.1f}%"
             ])
 
-        z_array = np.array(z_values)
-        altura = max(2.5, len(pratos) * 0.45)
+        raw_array = np.array(raw_matrix, dtype=float)
+        num_rows = len(pratos)
+        num_cols = len(colunas)
+
+        color_array = np.zeros_like(raw_array)
+        n_pratos = len(df_pratos)
+
+        for j in range(num_cols):
+            if n_pratos > 0:
+                col_vals = raw_array[:n_pratos, j]
+                c_min = col_vals.min()
+                c_max = col_vals.max()
+                if c_max > c_min:
+                    color_array[:n_pratos, j] = (col_vals - c_min) / (c_max - c_min)
+                else:
+                    color_array[:n_pratos, j] = 0.3
+            if len(df_total) > 0:
+                color_array[-1, j] = 0.0
+
+        altura = max(2.5, num_rows * 0.45)
 
         fig, ax = plt.subplots(figsize=(6.5, altura), facecolor='#FFFFFF')
         ax.set_facecolor('#FFFFFF')
 
-        # O Heatmap calcula o tom usando apenas a intensidade dos pratos normais
-        z_pratos_only = z_array[:-1] if len(df_total) > 0 and len(pratos) > 1 else z_array
-        max_val = z_pratos_only.max() if z_pratos_only.size > 0 and z_pratos_only.max() > 0 else 1.0
+        im = ax.imshow(color_array, cmap='YlOrRd', aspect='auto', alpha=0.88, vmin=0, vmax=1)
 
-        # Escala YlOrRd em fundo claro
-        im = ax.imshow(z_array, cmap='YlOrRd', aspect='auto', alpha=0.85, vmin=0, vmax=max_val)
-
-        ax.set_xticks(np.arange(len(colunas)))
-        ax.set_yticks(np.arange(len(pratos)))
+        ax.set_xticks(np.arange(num_cols))
+        ax.set_yticks(np.arange(num_rows))
         ax.set_xticklabels(colunas, color='#111111', fontsize=8, fontweight='bold')
         ax.set_yticklabels(pratos, color='#222222', fontsize=8)
 
-        for i in range(len(pratos)):
-            is_total = (i == len(pratos) - 1) and (pratos[i] == 'TOTAL GERAL')
-            for j in range(len(colunas)):
+        for i in range(num_rows):
+            is_total = (i == num_rows - 1) and (pratos[i] == 'TOTAL GERAL')
+            for j in range(num_cols):
                 if is_total:
-                    # Linha de Total com destaque escuro e texto branco no PDF
                     ax.add_patch(plt.Rectangle((j - 0.5, i - 0.5), 1, 1, fill=True, color='#262626', ec='#111111', lw=1, zorder=3))
-                    ax.text(j, i, text_values[i][j], ha="center", va="center", color='#FFFFFF', fontsize=8, fontweight='bold', zorder=4)
+                    ax.text(j, i, text_matrix[i][j], ha="center", va="center", color='#FFFFFF', fontsize=8, fontweight='bold', zorder=4)
                 else:
-                    val_norm = z_array[i, j] / max_val if max_val > 0 else 0
-                    # Define contraste automático da fonte para o modo claro
-                    color_text = "#FFFFFF" if val_norm > 0.7 else "#111111"
-                    ax.text(j, i, text_values[i][j], ha="center", va="center", color=color_text, fontsize=7.5, fontweight='bold')
+                    intensity = color_array[i, j]
+                    text_color = "#FFFFFF" if intensity > 0.65 else "#111111"
+                    ax.text(j, i, text_matrix[i][j], ha="center", va="center", color=text_color, fontsize=7.5, fontweight='bold')
 
         ax.spines[:].set_visible(False)
         ax.tick_params(top=True, bottom=False, labeltop=True, labelbottom=False)
@@ -134,7 +147,6 @@ def gerar_img_heatmap(df_matriz):
         buf.seek(0)
         return buf
     except Exception as e:
-        print(f"Erro ao gerar heatmap no PDF: {e}")
         return None
 
 def gerar_img_balanco(prod_ini, reposicao, tot_sobra, tot_descarte):
@@ -333,10 +345,10 @@ def gerar_pdf_relatorio(df, tot_prod, tot_descarte, tot_sobra, tot_clientes, dt_
     elements.append(Spacer(1, 10))
 
     if not df_matriz.empty:
-        elements.append(criar_banner_titulo("Matriz de Desempenho por Produto"))
-        elements.append(Spacer(1, 6))
         img_h = gerar_img_heatmap(df_matriz)
         if img_h:
+            elements.append(criar_banner_titulo("Matriz de Desempenho por Produto"))
+            elements.append(Spacer(1, 6))
             altura_h = max(160, len(df_matriz) * 28)
             elements.append(Image(img_h, width=540, height=altura_h))
             elements.append(Paragraph("* A linha TOTAL GERAL indica o Descarte Médio Ponderado Global (Descarte Total / Produção Total).", style_note))
@@ -670,12 +682,11 @@ def render():
         st.plotly_chart(fig_balanco, width="stretch", config=config_plotly_mobile)
 
         # =========================================================
-        # 2. HEATMAP (DASHBOARD - MODO ESCURO)
+        # 2. HEATMAP (DASHBOARD - MODO ESCURO SENSÍVEL)
         # =========================================================
         if tem_permissao("dashboard:matriz") and not df_matriz.empty:
             st.markdown("##### Matriz de Desempenho por Produto")
 
-            # Separa pratos normais e Total Geral
             df_pratos = df_matriz[df_matriz['ID_Prato'] != 'TOTAL GERAL'].iloc[::-1].copy()
             df_total = df_matriz[df_matriz['ID_Prato'] == 'TOTAL GERAL'].copy()
 
@@ -684,8 +695,8 @@ def render():
             pratos = df_matriz_plot['ID_Prato'].tolist()
             colunas_heatmap = ['Prod. Inicial', 'Reposição', 'Sobra Buffet', 'Descarte Total', '% Perda']
 
-            z_values = []
-            text_values = []
+            raw_vals = []
+            text_vals = []
 
             for _, row in df_matriz_plot.iterrows():
                 p_ini = float(row.get('Prod_Ini_Calc', 0.0))
@@ -694,8 +705,8 @@ def render():
                 desc = float(row.get('Descarte_Calc', 0.0))
                 pct = float(row.get('Perda_%', 0.0))
 
-                z_values.append([p_ini, repo, s_buf, desc, pct])
-                text_values.append([
+                raw_vals.append([p_ini, repo, s_buf, desc, pct])
+                text_vals.append([
                     f"{p_ini:.2f} kg",
                     f"{repo:.2f} kg",
                     f"{s_buf:.2f} kg",
@@ -703,23 +714,47 @@ def render():
                     f"{pct:.1f}%"
                 ])
 
+            raw_arr = np.array(raw_vals, dtype=float)
+            num_rows = len(pratos)
+            num_cols = len(colunas_heatmap)
+
+            z_colors = np.zeros_like(raw_arr)
+            n_pratos = len(df_pratos)
+
+            for j in range(num_cols):
+                if n_pratos > 0:
+                    col_data = raw_arr[:n_pratos, j]
+                    c_min = col_data.min()
+                    c_max = col_data.max()
+                    if c_max > c_min:
+                        z_colors[:n_pratos, j] = (col_data - c_min) / (c_max - c_min)
+                    else:
+                        z_colors[:n_pratos, j] = 0.2
+                if len(df_total) > 0:
+                    z_colors[-1, j] = 0.0
+
+            colorscale_dark = [
+                [0.0, '#1E1E1E'],   # Neutro Base
+                [0.2, '#1A3A5C'],   # Azul Escuro
+                [0.45, '#00695C'],  # Verde Musgo
+                [0.7, '#EF6C00'],   # Laranja Alerta
+                [1.0, '#C62828']    # Vermelho Crítico
+            ]
+
             fig_heatmap = go.Figure(data=go.Heatmap(
-                z=z_values,
+                z=z_colors,
                 x=colunas_heatmap,
                 y=pratos,
-                text=text_values,
+                text=text_vals,
                 texttemplate="%{text}",
                 textfont={"size": 10, "color": "#FFFFFF"},
-                colorscale=[
-                    [0.0, '#1E1E1E'],   # Neutro Escuro
-                    [0.2, '#3E2723'],   # Marrom Sutil
-                    [0.5, '#E65100'],   # Laranja Alerta
-                    [1.0, '#D50000']    # Vermelho Crítico
-                ],
-                showscale=False
+                colorscale=colorscale_dark,
+                showscale=False,
+                zmin=0,
+                zmax=1
             ))
 
-            altura_matriz = max(280, len(pratos) * 45)
+            altura_matriz = max(280, num_rows * 45)
 
             fig_heatmap.update_layout(
                 paper_bgcolor='rgba(0,0,0,0)',
@@ -811,7 +846,7 @@ def render():
                         </a>
                     """, unsafe_allow_html=True)
                 except Exception as err:
-                    st.error(f"Erro ao gerar link do PDF: {err}")
+                    st.error(f"Erro ao gerar PDF: {err}")
 
         st.markdown("---")
         st.markdown("##### 📊 Lançamentos Registrados")
