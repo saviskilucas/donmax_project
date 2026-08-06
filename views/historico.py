@@ -64,63 +64,68 @@ def gerar_img_heatmap(df_matriz):
     if df_matriz.empty:
         return None
 
-    pratos = df_matriz['ID_Prato'].tolist()
-    colunas = ['Produção Ini.', 'Reposição', 'Sobra Buffet', 'Descarte Total', '% Perda']
-    
-    z_values = []
-    text_values = []
+    try:
+        pratos = df_matriz['ID_Prato'].astype(str).tolist()
+        colunas = ['Produção Ini.', 'Reposição', 'Sobra Buffet', 'Descarte Total', '% Perda']
+        
+        z_values = []
+        text_values = []
 
-    for _, row in df_matriz.iterrows():
-        p_ini = row['Prod_Ini_Calc']
-        repo = row['Reposicao_Calc']
-        s_buf = row['Sobra_Buffet_Calc']
-        desc = row['Descarte_Calc']
-        pct = row['Perda_%']
+        for _, row in df_matriz.iterrows():
+            p_ini = float(row.get('Prod_Ini_Calc', 0.0))
+            repo = float(row.get('Reposicao_Calc', 0.0))
+            s_buf = float(row.get('Sobra_Buffet_Calc', 0.0))
+            desc = float(row.get('Descarte_Calc', 0.0))
+            pct = float(row.get('Perda_%', 0.0))
 
-        z_values.append([p_ini, repo, s_buf, desc, pct])
-        text_values.append([
-            f"{p_ini:.2f} kg",
-            f"{repo:.2f} kg",
-            f"{s_buf:.2f} kg",
-            f"{desc:.2f} kg",
-            f"{pct:.1f}%"
-        ])
+            z_values.append([p_ini, repo, s_buf, desc, pct])
+            text_values.append([
+                f"{p_ini:.2f} kg",
+                f"{repo:.2f} kg",
+                f"{s_buf:.2f} kg",
+                f"{desc:.2f} kg",
+                f"{pct:.1f}%"
+            ])
 
-    z_array = np.array(z_values)
-    altura = max(2.4, len(pratos) * 0.42)
+        z_array = np.array(z_values)
+        altura = max(2.5, len(pratos) * 0.45)
 
-    fig, ax = plt.subplots(figsize=(6.5, altura), facecolor='#FFFFFF')
-    ax.set_facecolor('#FFFFFF')
+        fig, ax = plt.subplots(figsize=(6.5, altura), facecolor='#FFFFFF')
+        ax.set_facecolor('#FFFFFF')
 
-    im = ax.imshow(z_array, cmap='Reds', aspect='auto', alpha=0.85)
+        im = ax.imshow(z_array, cmap='Reds', aspect='auto', alpha=0.85)
 
-    ax.set_xticks(np.arange(len(colunas)))
-    ax.set_yticks(np.arange(len(pratos)))
-    ax.set_xticklabels(colunas, color='#111111', fontsize=8, fontweight='bold')
-    ax.set_yticklabels(pratos, color='#222222', fontsize=8)
+        ax.set_xticks(np.arange(len(colunas)))
+        ax.set_yticks(np.arange(len(pratos)))
+        ax.set_xticklabels(colunas, color='#111111', fontsize=8, fontweight='bold')
+        ax.set_yticklabels(pratos, color='#222222', fontsize=8)
 
-    max_val = z_array[:-1].max() if len(pratos) > 1 and z_array[:-1].max() > 0 else 1
+        # Evita divisão por zero se todos os valores forem zerados
+        max_val = z_array[:-1].max() if len(pratos) > 1 and z_array[:-1].max() > 0 else 1.0
 
-    for i in range(len(pratos)):
-        is_total = (i == len(pratos) - 1) and (pratos[i] == 'TOTAL GERAL')
-        for j in range(len(colunas)):
-            if is_total:
-                ax.add_patch(plt.Rectangle((j - 0.5, i - 0.5), 1, 1, fill=True, color='#262626', ec='#111111', lw=1, zorder=3))
-                ax.text(j, i, text_values[i][j], ha="center", va="center", color='#FFFFFF', fontsize=8, fontweight='bold', zorder=4)
-            else:
-                val_norm = z_array[i, j] / max_val
-                color_text = "#FFFFFF" if val_norm > 0.65 else "#111111"
-                ax.text(j, i, text_values[i][j], ha="center", va="center", color=color_text, fontsize=7.5, fontweight='bold')
+        for i in range(len(pratos)):
+            is_total = (i == len(pratos) - 1) and (pratos[i] == 'TOTAL GERAL')
+            for j in range(len(colunas)):
+                if is_total:
+                    ax.add_patch(plt.Rectangle((j - 0.5, i - 0.5), 1, 1, fill=True, color='#262626', ec='#111111', lw=1, zorder=3))
+                    ax.text(j, i, text_values[i][j], ha="center", va="center", color='#FFFFFF', fontsize=8, fontweight='bold', zorder=4)
+                else:
+                    val_norm = z_array[i, j] / max_val if max_val > 0 else 0
+                    color_text = "#FFFFFF" if val_norm > 0.65 else "#111111"
+                    ax.text(j, i, text_values[i][j], ha="center", va="center", color=color_text, fontsize=7.5, fontweight='bold')
 
-    ax.spines[:].set_visible(False)
-    ax.tick_params(top=True, bottom=False, labeltop=True, labelbottom=False)
+        ax.spines[:].set_visible(False)
+        ax.tick_params(top=True, bottom=False, labeltop=True, labelbottom=False)
 
-    buf = io.BytesIO()
-    plt.tight_layout()
-    plt.savefig(buf, format='png', dpi=220, facecolor=fig.get_facecolor())
-    plt.close(fig)
-    buf.seek(0)
-    return buf
+        buf = io.BytesIO()
+        plt.tight_layout()
+        plt.savefig(buf, format='png', dpi=200, facecolor=fig.get_facecolor(), bbox_inches='tight')
+        plt.close(fig)
+        buf.seek(0)
+        return buf
+    except Exception as e:
+        print(f"Erro ao gerar heatmap no PDF: {e}")
+        return None
 
 def gerar_img_balanco(prod_ini, reposicao, tot_sobra, tot_descarte):
     import matplotlib
@@ -761,37 +766,38 @@ def render():
                 st.rerun()
 
         with col_hdr_right:
-            if tem_permissao("relatorios:exportar_pdf"):
-                # 1. Prepara o PDF em memória no carregamento do painel
-                pdf_bytes = gerar_pdf_relatorio(
-                    df, tot_prod, tot_descarte, tot_sobra_buffet, tot_clientes,
-                    dt_inicio, dt_fim,
-                    prod_ini, reposicao, df_data, df_matriz
-                )
-                import base64
-                pdf_b64 = base64.b64encode(pdf_bytes.getvalue()).decode('utf-8')
-                
-                # 2. Renderiza o botão como um link direto (impossível de bloquear pop-up e instantâneo)
-                st.markdown(f"""
-                    <a href="data:application/pdf;base64,{pdf_b64}" target="_blank" download="Relatorio_DonMax.pdf" style="
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        width: 100%;
-                        height: 38px;
-                        background-color: #262626;
-                        color: #FFFFFF !important;
-                        font-weight: 700;
-                        font-size: 0.85rem;
-                        text-decoration: none;
-                        border-radius: 8px;
-                        border: 1px solid #333333;
-                        transition: all 0.2s ease;
-                        box-sizing: border-box;
-                    ">
-                        📄 Gerar PDF
-                    </a>
-                """, unsafe_allow_html=True)
+            if tem_permissao("relatorios:exportar_pdf"):[cite: 4]
+                try:
+                    pdf_bytes = gerar_pdf_relatorio([cite: 4]
+                        df, tot_prod, tot_descarte, tot_sobra_buffet, tot_clientes,[cite: 4]
+                        dt_inicio, dt_fim,[cite: 4]
+                        prod_ini, reposicao, df_data, df_matriz[cite: 4]
+                    )[cite: 4]
+                    import base64
+                    pdf_b64 = base64.b64encode(pdf_bytes.getvalue()).decode('utf-8')
+                    
+                    st.markdown(f"""
+                        <a href="data:application/pdf;base64,{pdf_b64}" target="_blank" download="Relatorio_DonMax.pdf" style="
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            width: 100%;
+                            height: 38px;
+                            background-color: #262626;
+                            color: #FFFFFF !important;
+                            font-weight: 700;
+                            font-size: 0.85rem;
+                            text-decoration: none;
+                            border-radius: 8px;
+                            border: 1px solid #333333;
+                            transition: all 0.2s ease;
+                            box-sizing: border-box;
+                        ">
+                            📄 Gerar PDF
+                        </a>
+                    """, unsafe_allow_html=True)
+                except Exception as err:
+                    st.error(f"Erro ao gerar link do PDF: {err}")
 
         st.markdown("---")
         st.markdown("##### 📊 Lançamentos Registrados")
