@@ -434,9 +434,16 @@ def render():
 
     st.markdown("""
         <style>
+        /* IMPEDE A ABERTURA DO TECLADO NO CALENDÁRIO EM DISPOSITIVOS MÓVEIS */
         div[data-baseweb="input"] input {
             caret-color: transparent !important;
             user-select: none !important;
+            pointer-events: none !important;
+        }
+
+        /* PERMITE QUE O CLIQUE ABRA APENAS A CAIXA DO CALENDÁRIO */
+        div[data-baseweb="input"] {
+            cursor: pointer !important;
         }
 
         div[data-testid="stHorizontalBlock"] {
