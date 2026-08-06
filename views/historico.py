@@ -813,7 +813,7 @@ def render():
             n_pratos = len(df_pratos)
 
             # Linha 0 (TOTAL GERAL) é mantida sem cor (0.0)
-            z_colors[0, :] = 0.0
+            z_colors[0, :] = 0.08
 
             # Normalização das cores estritamente para as linhas dos pratos (linhas 1 até N)
             for j in range(num_cols):
@@ -832,9 +832,10 @@ def render():
                                 z_colors[i, j] = 0.5
 
             colorscale_dark = [
-                [0.0, '#1e1e1e'],   # Fundo neutro do container para Zerados e TOTAL GERAL
-                [0.15, '#3b3620'],  #
-                [0.4, '#968430'],   #
+                [0.0, '#1e1e1e'],   # Fundo neutro para Células Zeradas
+                [0.08, '#2A2A2A'],  # Cor de Fundo Destacada do TOTAL GERAL
+                [0.15, '#3b3620'],  # 
+                [0.4, '#968430'],   # 
                 [0.7, '#EF6C00'],   # Laranja Alerta
                 [1.0, '#C62828']    # Vermelho Crítico
             ]
