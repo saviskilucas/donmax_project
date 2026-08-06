@@ -163,93 +163,112 @@ def gerar_img_balanco(prod_ini, reposicao, tot_sobra, tot_descarte):
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
 
-    fig, ax = plt.subplots(figsize=(3.2, 2.2), facecolor='#FFFFFF')
-    ax.set_facecolor('#FFFFFF')
-    
-    categorias = ['Prod.', 'Repo.', 'Sobra', 'Desc.']
-    valores = [float(prod_ini.sum()), float(reposicao.sum()), tot_sobra, tot_descarte]
-    cores = ['#1565C0', '#00838F', '#EF6C00', '#C62828']
-    
-    bars = ax.bar(categorias, valores, color=cores, width=0.55)
-    
-    for bar in bars:
-        yval = bar.get_height()
-        ax.text(bar.get_x() + bar.get_width()/2.0, yval + (max(valores)*0.02 if max(valores)>0 else 0.05), 
-                f'{yval:.2f}', ha='center', va='bottom', color='#111111', fontsize=7, fontweight='bold')
+    try:
+        fig, ax = plt.subplots(figsize=(3.2, 2.2), facecolor='#FFFFFF')
+        ax.set_facecolor('#FFFFFF')
         
-    ax.tick_params(colors='#333333', labelsize=7.5)
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
-    ax.spines['left'].set_color('#CCCCCC')
-    ax.spines['bottom'].set_color('#CCCCCC')
-    ax.grid(axis='y', color='#E0E0E0', linestyle='--', alpha=0.7)
-    
-    buf = io.BytesIO()
-    plt.tight_layout()
-    plt.savefig(buf, format='png', dpi=220, facecolor=fig.get_facecolor())
-    plt.close(fig)
-    buf.seek(0)
-    return buf
+        categorias = ['Prod.', 'Repo.', 'Sobra', 'Desc.']
+        p_val = float(prod_ini.sum()) if hasattr(prod_ini, 'sum') else float(prod_ini)
+        r_val = float(reposicao.sum()) if hasattr(reposicao, 'sum') else float(reposicao)
+        s_val = float(tot_sobra)
+        d_val = float(tot_descarte)
+        
+        valores = [p_val, r_val, s_val, d_val]
+        cores = ['#1565C0', '#00838F', '#EF6C00', '#C62828']
+        
+        bars = ax.bar(categorias, valores, color=cores, width=0.55)
+        
+        max_v = max(valores) if max(valores) > 0 else 1.0
+        for bar in bars:
+            yval = bar.get_height()
+            ax.text(bar.get_x() + bar.get_width()/2.0, yval + (max_v * 0.02), 
+                    f'{yval:.2f}', ha='center', va='bottom', color='#111111', fontsize=7, fontweight='bold')
+            
+        ax.tick_params(colors='#333333', labelsize=7.5)
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.spines['left'].set_color('#CCCCCC')
+        ax.spines['bottom'].set_color('#CCCCCC')
+        ax.grid(axis='y', color='#E0E0E0', linestyle='--', alpha=0.7)
+        
+        buf = io.BytesIO()
+        plt.tight_layout()
+        plt.savefig(buf, format='png', dpi=220, facecolor=fig.get_facecolor())
+        plt.close(fig)
+        buf.seek(0)
+        return buf
+    except Exception as e:
+        return None
 
 def gerar_img_rosca(tot_descarte, tot_sobra):
     import matplotlib
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
 
-    fig, ax = plt.subplots(figsize=(3.2, 2.2), facecolor='#FFFFFF')
-    ax.set_facecolor('#FFFFFF')
-    
-    labels = ['Descarte', 'Sobra']
-    valores = [tot_descarte, tot_sobra]
-    cores = ['#C62828', '#EF6C00']
-    
-    if sum(valores) > 0:
-        wedges, texts, autotexts = ax.pie(
-            valores, labels=labels, colors=cores, autopct='%1.1f%%',
-            startangle=90, pctdistance=0.7,
-            textprops=dict(color="#222222", fontsize=7.5, weight="bold")
-        )
-        for autotext in autotexts:
-            autotext.set_color('#FFFFFF')
-        centre_circle = plt.Circle((0,0), 0.50, fc='#FFFFFF')
-        fig.gca().add_artist(centre_circle)
-    else:
-        ax.text(0, 0, 'Sem dados', color='#888888', ha='center', va='center')
+    try:
+        fig, ax = plt.subplots(figsize=(3.2, 2.2), facecolor='#FFFFFF')
+        ax.set_facecolor('#FFFFFF')
         
-    buf = io.BytesIO()
-    plt.tight_layout()
-    plt.savefig(buf, format='png', dpi=220, facecolor=fig.get_facecolor())
-    plt.close(fig)
-    buf.seek(0)
-    return buf
+        labels = ['Descarte', 'Sobra']
+        valores = [float(tot_descarte), float(tot_sobra)]
+        cores = ['#C62828', '#EF6C00']
+        
+        if sum(valores) > 0:
+            wedges, texts, autotexts = ax.pie(
+                valores, labels=labels, colors=cores, autopct='%1.1f%%',
+                startangle=90, pctdistance=0.7,
+                textprops=dict(color="#222222", fontsize=7.5, weight="bold")
+            )
+            for autotext in autotexts:
+                autotext.set_color('#FFFFFF')
+            centre_circle = plt.Circle((0,0), 0.50, fc='#FFFFFF')
+            fig.gca().add_artist(centre_circle)
+        else:
+            ax.text(0, 0, 'Sem dados', color='#888888', ha='center', va='center')
+            
+        buf = io.BytesIO()
+        plt.tight_layout()
+        plt.savefig(buf, format='png', dpi=220, facecolor=fig.get_facecolor())
+        plt.close(fig)
+        buf.seek(0)
+        return buf
+    except Exception as e:
+        return None
 
 def gerar_img_linha(df_data):
     import matplotlib
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
 
-    fig, ax = plt.subplots(figsize=(6.5, 2.2), facecolor='#FFFFFF')
-    ax.set_facecolor('#FFFFFF')
-    
-    ax.plot(df_data['Data'], df_data['Descarte'], color='#C62828', marker='o', linewidth=2, markersize=4, label='Descarte')
-    if 'Sobra Buffet' in df_data.columns:
-        ax.plot(df_data['Data'], df_data['Sobra Buffet'], color='#EF6C00', marker='o', linewidth=2, markersize=4, label='Sobra Buffet')
-    
-    ax.legend(fontsize=7, loc='upper right', frameon=False)
-    ax.tick_params(colors='#333333', labelsize=7.5)
-    plt.xticks(rotation=30)
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
-    ax.spines['left'].set_color('#CCCCCC')
-    ax.spines['bottom'].set_color('#CCCCCC')
-    ax.grid(axis='y', color='#E0E0E0', linestyle='--', alpha=0.7)
-    
-    buf = io.BytesIO()
-    plt.tight_layout()
-    plt.savefig(buf, format='png', dpi=220, facecolor=fig.get_facecolor())
-    plt.close(fig)
-    buf.seek(0)
-    return buf
+    if df_data is None or df_data.empty:
+        return None
+
+    try:
+        fig, ax = plt.subplots(figsize=(6.5, 2.2), facecolor='#FFFFFF')
+        ax.set_facecolor('#FFFFFF')
+        
+        if 'Descarte' in df_data.columns:
+            ax.plot(df_data['Data'], df_data['Descarte'], color='#C62828', marker='o', linewidth=2, markersize=4, label='Descarte')
+        if 'Sobra Buffet' in df_data.columns:
+            ax.plot(df_data['Data'], df_data['Sobra Buffet'], color='#EF6C00', marker='o', linewidth=2, markersize=4, label='Sobra Buffet')
+        
+        ax.legend(fontsize=7, loc='upper right', frameon=False)
+        ax.tick_params(colors='#333333', labelsize=7.5)
+        plt.xticks(rotation=30)
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.spines['left'].set_color('#CCCCCC')
+        ax.spines['bottom'].set_color('#CCCCCC')
+        ax.grid(axis='y', color='#E0E0E0', linestyle='--', alpha=0.7)
+        
+        buf = io.BytesIO()
+        plt.tight_layout()
+        plt.savefig(buf, format='png', dpi=220, facecolor=fig.get_facecolor())
+        plt.close(fig)
+        buf.seek(0)
+        return buf
+    except Exception as e:
+        return None
 
 def criar_banner_titulo(texto):
     from reportlab.lib import colors
@@ -361,38 +380,41 @@ def gerar_pdf_relatorio(df, tot_prod, tot_descarte, tot_sobra, tot_clientes, dt_
     elements.append(Spacer(1, 10))
 
     # 3. BALANÇO E SOBRA VS DESCARTE
-    elements.append(criar_banner_titulo("Análise Comparativa de Produção"))
-    elements.append(Spacer(1, 6))
     img_b = gerar_img_balanco(prod_ini, reposicao, tot_sobra, tot_descarte)
     img_r = gerar_img_rosca(tot_descarte, tot_sobra)
     
-    quadros_table_data = [
-        [
-            Paragraph("<b>Balanço da Cozinha</b>", ParagraphStyle('SubB', fontName='Helvetica-Bold', fontSize=8.5, textColor=colors.HexColor('#333333'), alignment=1)),
-            Paragraph("<b>Sobra vs Descarte</b>", ParagraphStyle('SubR', fontName='Helvetica-Bold', fontSize=8.5, textColor=colors.HexColor('#333333'), alignment=1))
-        ],
-        [
-            Image(img_b, width=245, height=135),
-            Image(img_r, width=245, height=135)
+    if img_b is not None and img_r is not None:
+        elements.append(criar_banner_titulo("Análise Comparativa de Produção"))
+        elements.append(Spacer(1, 6))
+        quadros_table_data = [
+            [
+                Paragraph("<b>Balanço da Cozinha</b>", ParagraphStyle('SubB', fontName='Helvetica-Bold', fontSize=8.5, textColor=colors.HexColor('#333333'), alignment=1)),
+                Paragraph("<b>Sobra vs Descarte</b>", ParagraphStyle('SubR', fontName='Helvetica-Bold', fontSize=8.5, textColor=colors.HexColor('#333333'), alignment=1))
+            ],
+            [
+                Image(img_b, width=245, height=135),
+                Image(img_r, width=245, height=135)
+            ]
         ]
-    ]
-    
-    t_quadros = Table(quadros_table_data, colWidths=[250, 250])
-    t_quadros.setStyle(TableStyle([
-        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
-        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-        ('TOPPADDING', (0,0), (-1,-1), 2),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 2),
-    ]))
-    elements.append(t_quadros)
-    elements.append(Spacer(1, 8))
+        
+        t_quadros = Table(quadros_table_data, colWidths=[250, 250])
+        t_quadros.setStyle(TableStyle([
+            ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ('TOPPADDING', (0,0), (-1,-1), 2),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 2),
+        ]))
+        elements.append(t_quadros)
+        elements.append(Spacer(1, 8))
 
     # 4. LINHA DO TEMPO
-    if not df_data.empty:
-        elements.append(criar_banner_titulo("Linha do Tempo de Descarte e Sobra"))
-        elements.append(Spacer(1, 6))
+    if df_data is not None and not df_data.empty:
         img_l = gerar_img_linha(df_data)
-        elements.append(Image(img_l, width=LARGURA_MAXIMA, height=135))
+        if img_l is not None:
+            elements.append(criar_banner_titulo("Linha do Tempo de Descarte e Sobra"))
+            elements.append(Spacer(1, 6))
+            elements.append(Image(img_l, width=LARGURA_MAXIMA, height=135))
+            elements.append(Spacer(1, 8))
 
     # 5. MATRIZ DE DESEMPENHO (TABELA NATIVA QUE QUEBRA PÁGINA AUTOMATICAMENTE)
     if df_matriz is not None and not df_matriz.empty:
