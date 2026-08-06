@@ -949,7 +949,14 @@ def render():
                     id_selecionado = st.selectbox("Selecione o ID do Lançamento:", options=ids_disponiveis, format_func=lambda x: f"ID #{x}")
                     linha_sel, reg_sel = mapa_ids[id_selecionado]
 
-                    dt_lan = str(reg_sel.get('Data', ''))
+                    # Leitura dos valores existentes na planilha
+                    dt_lan_str = str(reg_sel.get('Data', ''))
+                    try:
+                        dt_lan_obj = datetime.strptime(dt_lan_str, '%d/%m/%Y').date()
+                    except Exception:
+                        dt_lan_obj = date.today()
+
+                    hora_lan = str(reg_sel.get('Hora', ''))
                     prato_lan = str(reg_sel.get('ID_Prato', '-'))
                     resp_lan = str(reg_sel.get('Responsavel', ''))
                     p_ini_num = float(converter_para_numero(pd.Series([reg_sel.get('Prod_Inicial_KG', 0)]))[0])
@@ -959,13 +966,33 @@ def render():
                     cli_num = int(converter_para_numero(pd.Series([reg_sel.get('Clientes_Atendidos', 0)]))[0])
                     obs_lan = str(reg_sel.get('Observacoes', ''))
 
-                    st.info(f"📍 **Lançamento ID #{id_selecionado}:** {dt_lan} — {prato_lan} ({resp_lan})")
+                    # Busca lista de pratos da aba Alimentos para popular a caixa de seleção
+                    try:
+                        from config import carregar_alimentos_planilha
+                        alimentos_reg = carregar_alimentos_planilha()
+                        lista_pratos_opt = [
+                            str(r.get("Prato", r.get("prato", r.get("ID_Prato", "")))).strip()
+                            for r in alimentos_reg
+                            if str(r.get("Prato", r.get("prato", r.get("ID_Prato", "")))).strip()
+                        ]
+                    except Exception:
+                        lista_pratos_opt = []
+
+                    if prato_lan and prato_lan not in lista_pratos_opt and prato_lan != '-':
+                        lista_pratos_opt.insert(0, prato_lan)
+
+                    if not lista_pratos_opt:
+                        lista_pratos_opt = [prato_lan]
+
+                    idx_prato = lista_pratos_opt.index(prato_lan) if prato_lan in lista_pratos_opt else 0
+
+                    st.info(f"📍 **Lançamento ID #{id_selecionado}:** {dt_lan_str} — {prato_lan} ({resp_lan})")
 
                     with st.form(key=f"form_editar_id_{id_selecionado}"):
                         c_ed1, c_ed2 = st.columns(2)
                         with c_ed1:
-                            e_dt = st.text_input("Data (DD/MM/AAAA)", value=dt_lan)
-                            e_prato = st.text_input("Prato / Item", value=prato_lan)
+                            e_dt = st.date_input("Data", value=dt_lan_obj, format="DD/MM/YYYY")
+                            e_prato = st.selectbox("Prato / Item", options=lista_pratos_opt, index=idx_prato)
                             e_p_ini = st.number_input("Prod. Inicial (kg)", value=p_ini_num, step=0.1, format="%.3f")
                             e_repo = st.number_input("Reposição (kg)", value=repo_num, step=0.1, format="%.3f")
                         
@@ -983,16 +1010,20 @@ def render():
 
                         if btn_salvar_l:
                             try:
+                                dt_formatada = e_dt.strftime('%d/%m/%Y')
                                 sheet_lancamentos = conectar_gsheets().worksheet("Lancamentos_Diarios")
-                                sheet_lancamentos.update_cell(linha_sel, 1, e_dt.strip())
-                                sheet_lancamentos.update_cell(linha_sel, 2, resp_lan)
-                                sheet_lancamentos.update_cell(linha_sel, 3, e_prato.strip())
-                                sheet_lancamentos.update_cell(linha_sel, 4, str(e_p_ini))
-                                sheet_lancamentos.update_cell(linha_sel, 5, str(e_repo))
-                                sheet_lancamentos.update_cell(linha_sel, 6, str(e_sobra))
-                                sheet_lancamentos.update_cell(linha_sel, 7, str(e_desc))
-                                sheet_lancamentos.update_cell(linha_sel, 8, str(e_cli))
-                                sheet_lancamentos.update_cell(linha_sel, 9, e_obs.strip())
+
+                                # Gravação estrita conforme a ordem oficial das colunas da planilha
+                                sheet_lancamentos.update_cell(linha_sel, 1, dt_formatada)          # Data
+                                sheet_lancamentos.update_cell(linha_sel, 2, hora_lan)              # Hora
+                                sheet_lancamentos.update_cell(linha_sel, 3, resp_lan)              # Responsavel
+                                sheet_lancamentos.update_cell(linha_sel, 4, str(e_cli))           # Clientes_Atendidos
+                                sheet_lancamentos.update_cell(linha_sel, 5, e_prato.strip())       # ID_Prato
+                                sheet_lancamentos.update_cell(linha_sel, 6, str(e_p_ini))         # Prod_Inicial_KG
+                                sheet_lancamentos.update_cell(linha_sel, 7, str(e_repo))          # Reposicao_KG
+                                sheet_lancamentos.update_cell(linha_sel, 8, str(e_sobra))         # Sobra_Buffet_KG
+                                sheet_lancamentos.update_cell(linha_sel, 9, str(e_desc))          # Descarte_KG
+                                sheet_lancamentos.update_cell(linha_sel, 10, e_obs.strip())        # Observacoes
 
                                 st.cache_data.clear()
                                 st.success(f"🟢 Lançamento ID #{id_selecionado} atualizado com sucesso!")
@@ -1009,6 +1040,3 @@ def render():
                                 st.rerun()
                             except Exception as e:
                                 st.error(f"❌ Erro ao excluir lançamento: {e}")
-
-    else:
-        st.info("Nenhum registro encontrado na planilha ainda.")
