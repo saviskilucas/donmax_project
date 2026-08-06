@@ -237,7 +237,7 @@ def criar_banner_titulo(texto):
     return t_banner
 
 # =========================================================
-# GERADOR DE PDF EXECUTIVO (LAZY LOADING DE REPORTLAB)
+# GERADOR DE PDF EXECUTIVO
 # =========================================================
 def gerar_pdf_relatorio(df, tot_prod, tot_descarte, tot_sobra, tot_clientes, dt_inicio, dt_fim, prod_ini, reposicao, df_data, df_matriz):
     from reportlab.lib.pagesizes import letter
@@ -406,6 +406,7 @@ def render():
         st.error("⛔ Você não tem permissão para visualizar o Dashboard.")
         return
 
+    # TRAVAMENTO RIGOROSO DE LAYOUT PARA IMPEDIR DESFORMATAMENTO NO UNMOUNT
     st.markdown("""
         <style>
         div[data-baseweb="input"] input {
@@ -418,6 +419,7 @@ def render():
             flex-direction: row !important;
             flex-wrap: nowrap !important;
             gap: 8px !important;
+            contain: layout size style !important;
         }
         div[data-testid="stHorizontalBlock"] > div {
             width: 50% !important;
@@ -429,6 +431,7 @@ def render():
             pointer-events: none !important;
         }
 
+        /* CONSERVAÇÃO RIGOROSA DE TAMANHO E COR DOS CARDS */
         .metric-card {
             background-color: #1E1E1E !important;
             border: 1px solid #2D2D2D !important;
@@ -439,8 +442,11 @@ def render():
             box-shadow: 0px 4px 10px rgba(0,0,0,0.4) !important;
             margin-bottom: 8px !important;
             width: 100% !important;
+            height: 62px !important;
+            min-height: 62px !important;
             box-sizing: border-box !important;
-            display: block !important;
+            overflow: hidden !important;
+            contain: strict !important;
         }
         .metric-card-title {
             font-size: 0.70rem !important;
@@ -458,6 +464,12 @@ def render():
             font-weight: 800 !important;
             color: #FFFFFF !important;
             line-height: 1.1 !important;
+        }
+
+        /* ISOLAMENTO DA CAIXA DE GRÁFICOS PLOTLY */
+        .stPlotlyChart {
+            contain: layout paint !important;
+            contain-intrinsic-size: 220px !important;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -800,7 +812,7 @@ def render():
         st.dataframe(df_exibicao.tail(10).iloc[::-1], width="stretch", hide_index=True)
 
         # =========================================================
-        # EDIÇÃO / EXCLUSÃO DE LANÇAMENTOS (ADMIN E MASTER)
+        # EDIÇÃO / EXCLUSÃO DE LANÇAMENTOS
         # =========================================================
         perfil_atual = st.session_state.get("perfil_logado", "").lower()
         pode_editar_lancamento = perfil_atual in ["master", "admin"] or tem_permissao("lancamentos:editar")
