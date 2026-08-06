@@ -434,28 +434,14 @@ def render():
 
     st.markdown("""
         <style>
-        /* EVITA O FOCO DE DIGITAÇÃO E O TECLADO MANTENDO O CALENDÁRIO ATIVO */
         div[data-baseweb="input"] input {
             caret-color: transparent !important;
             user-select: none !important;
             -webkit-user-select: none !important;
-            -webkit-touch-callout: none !important;
-        }
-
-        /* SOBREPOSIÇÃO TRANSPARENTE SOBRE A CAIXA DE TEXTO QUE REENCAMINHA O TOQUE PARA O POPUP DO CALENDÁRIO */
-        div[data-baseweb="input"] {
-            position: relative !important;
             cursor: pointer !important;
         }
 
-        div[data-baseweb="input"]::after {
-            content: "" !important;
-            position: absolute !important;
-            top: 0 !important;
-            left: 0 !important;
-            right: 40px !important;
-            bottom: 0 !important;
-            z-index: 2 !important;
+        div[data-baseweb="input"] {
             cursor: pointer !important;
         }
 
@@ -506,6 +492,26 @@ def render():
             line-height: 1.1 !important;
         }
         </style>
+
+        <script>
+        (function desativarTecladoCalendario() {
+            const desativar = () => {
+                const doc = window.parent.document;
+                const inputs = doc.querySelectorAll('div[data-baseweb="input"] input');
+                inputs.forEach(input => {
+                    if (!input.readOnly) {
+                        input.setAttribute('readonly', 'true');
+                        input.setAttribute('inputmode', 'none');
+                    }
+                });
+            };
+
+            // Executa imediatamente e registra observador para reagir a cada rerun
+            desativar();
+            const observer = new MutationObserver(desativar);
+            observer.observe(window.parent.document.body, { childList: true, subtree: true });
+        })();
+        </script>
     """, unsafe_allow_html=True)
 
     st.markdown("<div class='section-header'>DASHBOARD</div>", unsafe_allow_html=True)
