@@ -833,7 +833,7 @@ def render():
 
             colorscale_dark = [
                 [0.0, '#1e1e1e'],   # Fundo neutro para Células Zeradas
-                [0.08, '#2A2A2A'],  # Cor de Fundo Destacada do TOTAL GERAL
+                [0.08, '#661010'],  # Cor de Fundo Destacada do TOTAL GERAL
                 [0.15, '#3b3620'],  # 
                 [0.4, '#968430'],   # 
                 [0.7, '#EF6C00'],   # Laranja Alerta
