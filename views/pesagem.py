@@ -38,7 +38,7 @@ def render():
     pode_obs = tem_permissao("campo:obs")
 
     # Divisão do Formulário em duas Abas
-    aba_prato, aba_cliente = st.tabs(["🍲 LANÇAMENTO DE PRATOS (COZINHA)", "👥 CLIENTES ATENDIDOS (CAIXA)"])
+    aba_prato, aba_cliente = st.tabs(["PRATOS", "CLIENTES ATENDIDOS"])
 
     # =========================================================
     # ABA 1: FORMULÁRIO DE PRATOS / PESAGEM
