@@ -80,7 +80,7 @@ def render():
 
                 observacoes = st.text_area("Observações (Opcional)", placeholder="Ex: Sobra de carne devido ao tempo chuvoso...", key="obs_prato")
 
-                btn_salvar_prato = st.form_submit_button("💾 SALVAR LANÇAMENTO DO PRATO")
+                btn_salvar_prato = st.form_submit_button("SALVAR")
 
                 if btn_salvar_prato:
                     if not tem_permissao("pesagem:criar"):
@@ -139,9 +139,9 @@ def render():
                 
                 st.markdown("<div class='section-header'>2. REGISTRO DE ATENDIMENTO</div>", unsafe_allow_html=True)
                 clientes_c = st.number_input("Clientes Atendidos no Dia", min_value=0, step=1, value=0, key="num_cli")
-                observacoes_c = st.text_area("Observações (Opcional)", placeholder="Ex: Baixo movimento devido ao feriado...", key="obs_cli")
+                observacoes_c = st.text_area("Observações (Opcional)", placeholder="Ex: Alto movimento por conta de evento...", key="obs_cli")
 
-                btn_salvar_cliente = st.form_submit_button("💾 SALVAR REGISTRO DE CLIENTES")
+                btn_salvar_cliente = st.form_submit_button("SALVAR")
 
                 if btn_salvar_cliente:
                     if not tem_permissao("pesagem:criar"):

@@ -307,45 +307,42 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # =========================================================
-# 4. RODAPÉ FIXO (CÁPSULA) - RENDERIZADO ANTES DO CONTEÚDO
+# 4. RODAPÉ FIXO (CÁPSULA) - RENDERIZADO DINAMICAMENTE
 # =========================================================
 if st.session_state["usuario_logado"]:
+    # 1. Mapeia quais botões o usuário logado realmente pode ver
+    botoes_disponiveis = []
+    
+    # Início sempre fica disponível para o usuário logado
+    botoes_disponiveis.append({"id": "inicio", "label": "Início"})
+    
+    if tem_permissao("pesagem:visualizar"):
+        botoes_disponiveis.append({"id": "pesagem", "label": "Formulário"})
+        
+    if tem_permissao("dashboard:visualizar"):
+        botoes_disponiveis.append({"id": "historico", "label": "Painel"})
+        
+    if tem_permissao("usuarios:gerenciar") or tem_permissao("pratos:gerenciar"):
+        botoes_disponiveis.append({"id": "config", "label": "⚙️"})
+
+    # Se a aba ativa atual for restrita e não puder ser acessada, volta para "inicio"
+    abas_permitidas_ids = [b["id"] for b in botoes_disponiveis]
+    if st.session_state["aba_ativa"] not in abas_permitidas_ids:
+        st.session_state["aba_ativa"] = "inicio"
+        aba = "inicio"
+
+    # 2. Renderiza a cápsula dividindo as colunas exatas para os botões permitidos
     nav_bar = st.container(key="nav_bar_container")
     with nav_bar:
-        c1, c2, c3, c4 = st.columns(4)
-        with c1:
-            tipo = "primary" if aba == "inicio" else "secondary"
-            if st.button("Início", key="btn_inicio", type=tipo):
-                if st.session_state["aba_ativa"] != "inicio":
-                    st.session_state["aba_ativa"] = "inicio"
-                    st.rerun()
-        with c2:
-            tipo = "primary" if aba == "pesagem" else "secondary"
-            if st.button("Formulário", key="btn_pesagem", type=tipo):
-                if tem_permissao("pesagem:visualizar"):
-                    if st.session_state["aba_ativa"] != "pesagem":
-                        st.session_state["aba_ativa"] = "pesagem"
+        cols = st.columns(len(botoes_disponiveis))
+        for idx, btn_info in enumerate(botoes_disponiveis):
+            with cols[idx]:
+                btn_id = btn_info["id"]
+                tipo = "primary" if aba == btn_id else "secondary"
+                if st.button(btn_info["label"], key=f"btn_{btn_id}", type=tipo):
+                    if st.session_state["aba_ativa"] != btn_id:
+                        st.session_state["aba_ativa"] = btn_id
                         st.rerun()
-                else:
-                    st.toast("⛔ Sem permissão para o Formulário.", icon="🔒")
-        with c3:
-            tipo = "primary" if aba == "historico" else "secondary"
-            if st.button("Painel", key="btn_historico", type=tipo):
-                if tem_permissao("dashboard:visualizar"):
-                    if st.session_state["aba_ativa"] != "historico":
-                        st.session_state["aba_ativa"] = "historico"
-                        st.rerun()
-                else:
-                    st.toast("⛔ Sem permissão para o Painel.", icon="🔒")
-        with c4:
-            tipo = "primary" if aba == "config" else "secondary"
-            if st.button("⚙️", key="btn_config", type=tipo):
-                if tem_permissao("usuarios:gerenciar") or tem_permissao("pratos:gerenciar"):
-                    if st.session_state["aba_ativa"] != "config":
-                        st.session_state["aba_ativa"] = "config"
-                        st.rerun()
-                else:
-                    st.toast("⛔ Sem permissão para as Configurações.", icon="🔒")
 
 # =========================================================
 # 5. ROTEAMENTO DE ABAS DENTRO DO CONTEÚDO PRINCIPAL
