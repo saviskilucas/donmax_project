@@ -258,20 +258,20 @@ def gerar_img_linha(df_data):
         fig, ax = plt.subplots(figsize=(6.5, 2.2), facecolor='#FFFFFF')
         ax.set_facecolor('#FFFFFF')
         
-        # Descarte: Rótulos empurrados para cima (xytext=(0, 7)) em negrito
+        # Descarte: Rótulo sempre acima da bolinha
         if 'Descarte' in df_data.columns:
             ax.plot(df_data['Data'], df_data['Descarte'], color='#C62828', marker='o', linewidth=2, markersize=4, label='Descarte')
             for x, y in zip(df_data['Data'], df_data['Descarte']):
                 if y > 0:
-                    ax.annotate(f'{y:.1f}kg', (x, y), textcoords="offset points", xytext=(0, 7), 
+                    ax.annotate(f'{y:.1f}kg', (x, y), textcoords="offset points", xytext=(0, 6), 
                                 ha='center', fontsize=7, fontweight='bold', color='#C62828')
 
-        # Sobra Buffet: Rótulos empurrados para baixo (xytext=(0, -12)) em negrito
+        # Sobra Buffet: Rótulo sempre acima da bolinha
         if 'Sobra Buffet' in df_data.columns:
             ax.plot(df_data['Data'], df_data['Sobra Buffet'], color='#EF6C00', marker='o', linewidth=2, markersize=4, label='Sobra Buffet')
             for x, y in zip(df_data['Data'], df_data['Sobra Buffet']):
                 if y > 0:
-                    ax.annotate(f'{y:.1f}kg', (x, y), textcoords="offset points", xytext=(0, -12), 
+                    ax.annotate(f'{y:.1f}kg', (x, y), textcoords="offset points", xytext=(0, 6), 
                                 ha='center', fontsize=7, fontweight='bold', color='#EF6C00')
         
         ax.legend(fontsize=7, loc='upper right', frameon=False)
@@ -283,8 +283,9 @@ def gerar_img_linha(df_data):
         ax.spines['bottom'].set_color('#CCCCCC')
         ax.grid(axis='y', color='#E0E0E0', linestyle='--', alpha=0.7)
         
-        # Dá margem vertical extra para não cortar os textos no topo da imagem
-        max_y = max(df_data[['Descarte', 'Sobra Buffet']].max()) * 1.2 if not df_data.empty else 10
+        # Dá folga no eixo Y para que o rótulo do maior valor não fique cortado
+        max_val = max(df_data[['Descarte', 'Sobra Buffet']].max()) if not df_data.empty else 10
+        max_y = max_val * 1.25 if max_val > 0 else 10
         ax.set_ylim(0, max_y)
 
         buf = io.BytesIO()
@@ -964,14 +965,14 @@ def render():
             st.info("Sem registros de sobras ou descarte no período selecionado.")
 
         # =========================================================
-        # LINHA DO TEMPO (RÓTULOS AFASTADOS E EM NEGRITO)
+        # LINHA DO TEMPO (RÓTULOS SEMPRE ACIMA DA BOLINHA)
         # =========================================================
         if not df_data.empty:
             st.markdown("##### Linha do Tempo de Descarte e Sobra")
             
             fig_line = go.Figure()
 
-            # Descarte: Rótulo reposicionado acima com deslocamento Y extra
+            # Descarte: Rótulo posicionado SEMPRE no topo
             if 'Descarte' in df_data.columns:
                 fig_line.add_trace(go.Scatter(
                     x=df_data['Data'],
@@ -985,7 +986,7 @@ def render():
                     marker=dict(size=8, color='#FF5252')
                 ))
 
-            # Sobra Buffet: Rótulo reposicionado abaixo com deslocamento Y extra
+            # Sobra Buffet: Rótulo posicionado SEMPRE no topo
             if 'Sobra Buffet' in df_data.columns:
                 fig_line.add_trace(go.Scatter(
                     x=df_data['Data'],
@@ -993,20 +994,21 @@ def render():
                     name='Sobra Buffet',
                     mode='lines+markers+text',
                     text=[f"<b>{v:.1f} kg</b>" if v > 0 else "" for v in df_data['Sobra Buffet']],
-                    textposition='bottom center',
+                    textposition='top center',
                     textfont=dict(color='#FB8C00', size=12, family="Arial Black"),
                     line=dict(color='#FB8C00', width=3),
                     marker=dict(size=8, color='#FB8C00')
                 ))
 
-            # Dá margem extra no eixo Y para o texto do topo não ser cortado
-            max_y = max(df_data[['Descarte', 'Sobra Buffet']].max()) * 1.25 if not df_data.empty else 10
+            # Ajusta o topo do gráfico para 130% do valor máximo para o texto do topo não cortar
+            max_val = max(df_data[['Descarte', 'Sobra Buffet']].max()) if not df_data.empty else 10
+            max_y = max_val * 1.30 if max_val > 0 else 10
 
             fig_line.update_layout(
                 paper_bgcolor='rgba(0,0,0,0)',
                 plot_bgcolor='rgba(0,0,0,0)',
                 font=dict(color="#E0E0E0"),
-                margin=dict(l=5, r=5, t=25, b=5),
+                margin=dict(l=5, r=5, t=30, b=5),
                 xaxis=dict(showgrid=False, fixedrange=True, type='category'),
                 yaxis=dict(showgrid=True, gridcolor='#2D2D2D', fixedrange=True, title="", range=[0, max_y]),
                 legend=dict(title="", orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
