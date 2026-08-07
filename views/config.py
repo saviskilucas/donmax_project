@@ -70,15 +70,24 @@ def render():
         st.error("⛔ Você não tem permissão para acessar o menu de Configurações.")
         return
 
-    aba_usr, aba_pratos = st.tabs(["USUÁRIOS", "PRATOS"])
+    # MONTAGEM DINÂMICA DAS ABAS DE ACORDO COM AS PERMISSÕES DO PERFIL
+    if pode_gerenciar_usr and pode_gerenciar_pratos:
+        # Se tem permissão para os dois (ex: Admin/Master), mostra as abas
+        tab_usr_ctx, tab_pratos_ctx = st.tabs(["USUÁRIOS", "PRATOS"])
+    elif pode_gerenciar_usr:
+        # Se só pode gerenciar usuários, renderiza direto num container
+        tab_usr_ctx = st.container()
+        tab_pratos_ctx = None
+    else:
+        # Se só pode gerenciar pratos (ex: Cozinha Escala 1), renderiza direto num container
+        tab_usr_ctx = None
+        tab_pratos_ctx = st.container()
 
     # =========================================================
     # SEÇÃO 1: GESTÃO DE USUÁRIOS
     # =========================================================
-    with aba_usr:
-        if not pode_gerenciar_usr:
-            st.warning("🔒 Seu perfil não possui permissão para gerenciar usuários.")
-        else:
+    if pode_gerenciar_usr and tab_usr_ctx is not None:
+        with tab_usr_ctx:
             perfis_disponiveis = buscar_perfis()
             lista_id_perfis = list(perfis_disponiveis.keys())
             perfil_usuario_atual = st.session_state.get("perfil_logado", "").lower()
@@ -229,10 +238,8 @@ def render():
     # =========================================================
     # SEÇÃO 2: GESTÃO DE PRATOS (ABA "ALIMENTOS")
     # =========================================================
-    with aba_pratos:
-        if not pode_gerenciar_pratos:
-            st.warning("🔒 Seu perfil não possui permissão para gerenciar pratos/produtos.")
-        else:
+    if pode_gerenciar_pratos and tab_pratos_ctx is not None:
+        with tab_pratos_ctx:
             tab_listar_pratos, tab_criar_prato = st.tabs(["📋 Pratos Cadastrados", "➕ Novo Prato"])
 
             # TAB: LISTAR E EDITAR PRATOS
