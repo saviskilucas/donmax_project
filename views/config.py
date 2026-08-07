@@ -80,16 +80,17 @@ def render():
                     for index, reg in enumerate(registros_usr):
                         linha_planilha = index + 2
                         
-                        usr_login = str(reg.get("Usuario", reg.get("usuario", reg.get("Email", "")))).strip().lower()
-                        nome_usr = str(reg.get("Nome", reg.get("nome", usr_login))).strip()
-                        id_perfil_usr = str(reg.get("ID_Perfil", reg.get("idperfil", reg.get("perfil", "cozinha")))).strip().lower()
-                        ativo_usr = str(reg.get("Ativo", reg.get("ativo", "TRUE"))).strip().upper() == "TRUE"
+                        # Captura as informações exatas da planilha (com suporte aos nomes em minúsculas e maiúsculas)
+                        nome_usr = str(reg.get("Nome", reg.get("nome", ""))).strip()
+                        usr_login = str(reg.get("Usuário", reg.get("Usuario", reg.get("usuario", reg.get("Email", ""))))).strip().lower()
                         senha_usr = str(reg.get("Senha", reg.get("senha", ""))).strip()
+                        id_perfil_usr = str(reg.get("ID_Perfil", reg.get("idperfil", reg.get("perfil", "cozinha")))).strip().lower()
+                        ativo_usr = str(reg.get("Ativo", reg.get("ativo", "TRUE"))).strip().upper() in ["TRUE", "VERDADEIRO", "1", "SIM", "S"]
 
                         nome_perfil_display = perfis_disponiveis.get(id_perfil_usr, {}).get("nome", id_perfil_usr.capitalize())
                         status_emoji = "🟢 Ativo" if ativo_usr else "🔴 Inativo"
 
-                        with st.expander(f"👤 {nome_usr} ({usr_login}) — [{nome_perfil_display}] {status_emoji}"):
+                        with st.expander(f"👤 {nome_usr if nome_usr else usr_login} ({usr_login}) — [{nome_perfil_display}] {status_emoji}"):
                             pode_editar = True
                             if perfil_usuario_atual != "master" and id_perfil_usr in ["master", "admin"]:
                                 pode_editar = False
@@ -100,10 +101,15 @@ def render():
                                 with st.form(f"form_editar_usr_{index}"):
                                     col_f1, col_f2 = st.columns(2)
                                     with col_f1:
+                                        # Puxa o Nome preenchido da planilha
                                         novo_nome = st.text_input("Nome Completo", value=nome_usr, key=f"edit_nome_{index}")
+                                        # Puxa o Usuário preenchido da planilha
                                         novo_login = st.text_input("Login / Usuário", value=usr_login, key=f"edit_login_{index}")
                                     with col_f2:
+                                        # Puxa a Senha preenchida da planilha
                                         nova_senha = st.text_input("Senha", value=senha_usr, type="password", key=f"edit_senha_{index}")
+                                        
+                                        # Puxa o Perfil de Acesso cadastrado
                                         index_perf = lista_id_perfis.index(id_perfil_usr) if id_perfil_usr in lista_id_perfis else 0
                                         novo_id_perfil = st.selectbox(
                                             "Perfil de Acesso",
@@ -113,6 +119,7 @@ def render():
                                             key=f"edit_perf_{index}"
                                         )
 
+                                    # Puxa o Status Ativo cadastrado
                                     novo_status = st.checkbox("Conta Ativa", value=ativo_usr, key=f"edit_ativo_{index}")
 
                                     col_btn1, col_btn2 = st.columns(2)
@@ -124,8 +131,7 @@ def render():
                                     if btn_salvar:
                                         try:
                                             sheet_usr = conectar_gsheets().worksheet("Usuarios")
-                                            # Atualização respeitando a ordem exata das 5 colunas no Google Sheets:
-                                            # Coluna 1: Nome | Coluna 2: Usuario | Coluna 3: Senha | Coluna 4: ID_Perfil | Coluna 5: Ativo
+                                            # Atualiza na ordem exata das colunas: 1: Nome, 2: Usuário, 3: Senha, 4: ID_Perfil, 5: Ativo
                                             sheet_usr.update_cell(linha_planilha, 1, novo_nome.strip())
                                             sheet_usr.update_cell(linha_planilha, 2, novo_login.strip().lower())
                                             sheet_usr.update_cell(linha_planilha, 3, nova_senha.strip())
@@ -150,7 +156,7 @@ def render():
                                                 st.rerun()
                                             except Exception as e:
                                                 st.error(f"❌ Erro ao excluir: {e}")
-                                                
+
             # TAB: CRIAR USUÁRIO
             with tab_criar_usr:
                 with st.form("form_novo_usuario_config"):
