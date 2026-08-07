@@ -14,13 +14,11 @@ def carregar_usuarios_planilha():
         if not valores or len(valores) < 2:
             return []
             
-        # Pega o cabeçalho e limpa espaços extras
         cabecalho = [str(c).strip() for c in valores[0]]
         linhas = valores[1:]
         
         registros = []
         for linha in linhas:
-            # Preenche linhas incompletas com string vazia
             linha_completa = linha + [""] * (len(cabecalho) - len(linha))
             registros.append(dict(zip(cabecalho, linha_completa)))
             
@@ -48,10 +46,9 @@ def carregar_alimentos_planilha():
         return []
 
 # =========================================================
-# RENDERIZAÇÃO DA PÁGINA DE CONFIGURAÇÕES (INSTANTÂNEA)
+# RENDERIZAÇÃO DA PÁGINA DE CONFIGURAÇÕES
 # =========================================================
 def render():
-    # Injeta ajuste CSS pontual apenas para os seletores flutuarem sobre a barra e permitirem rolagem
     st.markdown("""
         <style>
         div[data-baseweb="popover"], div[data-baseweb="menu"] {
@@ -60,31 +57,27 @@ def render():
         </style>
     """, unsafe_allow_html=True)
 
-    # 1. Desenha a estrutura da tela IMEDIATAMENTE no navegador
     st.markdown("<div class='section-header'>CONFIGURAÇÕES</div>", unsafe_allow_html=True)
 
     pode_gerenciar_usr = tem_permissao("usuarios:gerenciar")
     pode_gerenciar_pratos = tem_permissao("pratos:gerenciar")
 
+    # Se não tiver NENHUMA permissão, simplesmente encerra sem mostrar nada
     if not pode_gerenciar_usr and not pode_gerenciar_pratos:
-        st.error("⛔ Você não tem permissão para acessar o menu de Configurações.")
         return
 
-    # MONTAGEM DINÂMICA DAS ABAS DE ACORDO COM AS PERMISSÕES DO PERFIL
+    # MONTAGEM DINÂMICA (Exatamente como na tela de Lançamentos/Formulário)
     if pode_gerenciar_usr and pode_gerenciar_pratos:
-        # Se tem permissão para os dois (ex: Admin/Master), mostra as abas
         tab_usr_ctx, tab_pratos_ctx = st.tabs(["USUÁRIOS", "PRATOS"])
     elif pode_gerenciar_usr:
-        # Se só pode gerenciar usuários, renderiza direto num container
         tab_usr_ctx = st.container()
         tab_pratos_ctx = None
-    else:
-        # Se só pode gerenciar pratos (ex: Cozinha Escala 1), renderiza direto num container
+    elif pode_gerenciar_pratos:
         tab_usr_ctx = None
         tab_pratos_ctx = st.container()
 
     # =========================================================
-    # SEÇÃO 1: GESTÃO DE USUÁRIOS
+    # SEÇÃO 1: GESTÃO DE USUÁRIOS (SÓ RENDERIZA SE TIVER PERMISSÃO)
     # =========================================================
     if pode_gerenciar_usr and tab_usr_ctx is not None:
         with tab_usr_ctx:
@@ -103,10 +96,8 @@ def render():
                     for index, reg in enumerate(registros_usr):
                         linha_planilha = index + 2
                         
-                        # Mapeamento dinâmico e seguro para buscar o valor da coluna "Usuário"
                         nome_usr = str(reg.get("Nome", reg.get("nome", ""))).strip()
                         
-                        # Busca por qualquer variação do nome da coluna "Usuário"
                         usr_login = ""
                         for k, v in reg.items():
                             if k.strip().lower() in ["usuário", "usuario", "login", "email"]:
@@ -158,7 +149,6 @@ def render():
                                     if btn_salvar:
                                         try:
                                             sheet_usr = conectar_gsheets().worksheet("Usuarios")
-                                            # Coluna 1: Nome | Coluna 2: Usuário | Coluna 3: Senha | Coluna 4: ID_Perfil | Coluna 5: Ativo
                                             sheet_usr.update_cell(linha_planilha, 1, novo_nome.strip())
                                             sheet_usr.update_cell(linha_planilha, 2, novo_login.strip().lower())
                                             sheet_usr.update_cell(linha_planilha, 3, nova_senha.strip())
@@ -195,7 +185,6 @@ def render():
                     if perfil_usuario_atual != "master":
                         perfis_para_criacao = [p for p in lista_id_perfis if p not in ["master", "admin"]]
 
-                    # SELETOR EM LINHA PRÓPRIA
                     perfil_novo = st.selectbox(
                         "Perfil de Acesso",
                         options=perfis_para_criacao,
@@ -231,12 +220,11 @@ def render():
                             except Exception as e:
                                 st.error(f"❌ Erro ao cadastrar usuário: {e}")
 
-                # ESPAÇO RESERVADO APÓS O FORMULÁRIO PARA PERMITIR A ROLAGEM COMPLETA DO MENU
                 st.container().write("")
                 st.markdown("<div style='height: 180px;'></div>", unsafe_allow_html=True)
 
     # =========================================================
-    # SEÇÃO 2: GESTÃO DE PRATOS (ABA "ALIMENTOS")
+    # SEÇÃO 2: GESTÃO DE PRATOS (SÓ RENDERIZA SE TIVER PERMISSÃO)
     # =========================================================
     if pode_gerenciar_pratos and tab_pratos_ctx is not None:
         with tab_pratos_ctx:
