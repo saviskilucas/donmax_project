@@ -37,25 +37,11 @@ def carregar_alimentos_planilha():
 # RENDERIZAÇÃO DA PÁGINA DE CONFIGURAÇÕES (INSTANTÂNEA)
 # =========================================================
 def render():
-
+    # Injeta ajuste CSS pontual apenas para os seletores flutuarem sobre a barra e permitirem rolagem
     st.markdown("""
         <style>
-        /* 1. Permite que o menu suspenso saia do expander/card sem ser cortado */
-        div[data-testid="stExpander"],
-        div[data-testid="stForm"],
-        div[data-baseweb="select"] {
-            overflow: visible !important;
-        }
-
-        /* 2. Garante que a lista suspensa (dropdown) flutue na frente de qualquer barra fixa */
-        div[data-baseweb="popover"] {
+        div[data-baseweb="popover"], div[data-baseweb="menu"] {
             z-index: 999999 !important;
-        }
-
-        /* 3. Adiciona espaço na página principal e no container interno para rolagem extra */
-        .main .block-container,
-        div[data-testid="stVerticalBlock"] {
-            padding-bottom: 300px !important;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -112,20 +98,19 @@ def render():
                                 st.warning("🔒 Você não tem hierarquia para alterar este usuário.")
                             else:
                                 with st.form(f"form_editar_usr_{index}"):
-                                    col_f1, col_f2 = st.columns(2)
-                                    with col_f1:
-                                        novo_nome = st.text_input("Nome", value=nome_usr, key=f"edit_nome_{index}")
-                                        nova_senha = st.text_input("Senha", value=senha_usr, type="password", key=f"edit_senha_{index}")
-                                    with col_f2:
-                                        index_perf = lista_id_perfis.index(id_perfil_usr) if id_perfil_usr in lista_id_perfis else 0
-                                        novo_id_perfil = st.selectbox(
-                                            "Perfil de Acesso",
-                                            options=lista_id_perfis,
-                                            format_func=lambda x: perfis_disponiveis.get(x, {}).get("nome", x),
-                                            index=index_perf,
-                                            key=f"edit_perf_{index}"
-                                        )
-                                        novo_status = st.checkbox("Conta Ativa", value=ativo_usr, key=f"edit_ativo_{index}")
+                                    novo_nome = st.text_input("Nome", value=nome_usr, key=f"edit_nome_{index}")
+                                    nova_senha = st.text_input("Senha", value=senha_usr, type="password", key=f"edit_senha_{index}")
+                                    
+                                    # ORGANIZADO EM LINHAS PARA O SELECTBOX NATIVE TER ESPAÇO
+                                    index_perf = lista_id_perfis.index(id_perfil_usr) if id_perfil_usr in lista_id_perfis else 0
+                                    novo_id_perfil = st.selectbox(
+                                        "Perfil de Acesso",
+                                        options=lista_id_perfis,
+                                        format_func=lambda x: perfis_disponiveis.get(x, {}).get("nome", x),
+                                        index=index_perf,
+                                        key=f"edit_perf_{index}"
+                                    )
+                                    novo_status = st.checkbox("Conta Ativa", value=ativo_usr, key=f"edit_ativo_{index}")
 
                                     col_btn1, col_btn2 = st.columns(2)
                                     with col_btn1:
@@ -164,22 +149,20 @@ def render():
             # TAB: CRIAR USUÁRIO
             with tab_criar_usr:
                 with st.form("form_novo_usuario_config"):
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        nome_novo = st.text_input("Nome Completo", placeholder="ex: João Silva")
-                        usr_novo = st.text_input("Login", placeholder="ex: joao.silva")
-                    with col2:
-                        senha_nova = st.text_input("Senha", type="password", placeholder="••••••••")
-                        
-                        perfis_para_criacao = lista_id_perfis
-                        if perfil_usuario_atual != "master":
-                            perfis_para_criacao = [p for p in lista_id_perfis if p not in ["master", "admin"]]
+                    nome_novo = st.text_input("Nome Completo", placeholder="ex: João Silva")
+                    usr_novo = st.text_input("Login", placeholder="ex: joao.silva")
+                    senha_nova = st.text_input("Senha", type="password", placeholder="••••••••")
+                    
+                    perfis_para_criacao = lista_id_perfis
+                    if perfil_usuario_atual != "master":
+                        perfis_para_criacao = [p for p in lista_id_perfis if p not in ["master", "admin"]]
 
-                        perfil_novo = st.selectbox(
-                            "Perfil de Acesso",
-                            options=perfis_para_criacao,
-                            format_func=lambda x: perfis_disponiveis.get(x, {}).get("nome", x)
-                        )
+                    # SELETOR EM LINHA PRÓPRIA
+                    perfil_novo = st.selectbox(
+                        "Perfil de Acesso",
+                        options=perfis_para_criacao,
+                        format_func=lambda x: perfis_disponiveis.get(x, {}).get("nome", x)
+                    )
 
                     btn_cadastrar = st.form_submit_button("➕ CADASTRAR NOVO USUÁRIO", use_container_width=True)
 
@@ -209,6 +192,10 @@ def render():
                                     st.rerun()
                             except Exception as e:
                                 st.error(f"❌ Erro ao cadastrar usuário: {e}")
+
+                # ESPAÇO RESERVADO APÓS O FORMULÁRIO PARA PERMITIR A ROLAGEM COMPLETA DO MENU
+                st.container().write("")
+                st.markdown("<div style='height: 180px;'></div>", unsafe_allow_html=True)
 
     # =========================================================
     # SEÇÃO 2: GESTÃO DE PRATOS (ABA "ALIMENTOS")
@@ -289,8 +276,6 @@ def render():
                             st.warning("⚠️ O nome do prato é obrigatório.")
                         else:
                             try:
-                                # Carrega os dados direto da planilha ignorando o cache temporariamente 
-                                # ou utiliza a validação local rápida para garantir instantaneidade
                                 sheet_alimentos = conectar_gsheets().worksheet("Alimentos")
                                 registros_atuais = sheet_alimentos.get_all_records()
                                 
@@ -308,8 +293,6 @@ def render():
                                     sheet_alimentos.append_row(nova_linha)
 
                                     st.cache_data.clear()
-                                    # Substituição do st.success / st.balloons / st.rerun por st.toast 
-                                    # para que a mensagem de log fixa permaneça visível na tela sem sumir por rerun
                                     st.toast(f"🟢 **SISTEMA:** Prato **{nome_limpo_prato}** cadastrado com sucesso!", icon="✅")
                                     st.success(f"🟢 **SISTEMA:** Prato **{nome_limpo_prato}** cadastrado com sucesso na aba Alimentos!")
                             except Exception as e:
