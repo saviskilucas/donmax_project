@@ -94,10 +94,9 @@ def render():
                             data_br = data_sel.strftime("%d/%m/%Y")
                             hora_registro = agora_salvamento.strftime("%H:%M")
                             
-                            # Clientes fica VAZIO ("")
                             nova_linha = [
                                 data_br,                         # Data
-                                f"'{hora_registro}",             # Hora
+                                hora_registro,                   # Hora (limpa HH:MM)
                                 responsavel.strip(),             # Responsavel
                                 "",                              # Clientes_Atendidos (VAZIO)
                                 prato_sel,                       # ID_Prato
@@ -158,10 +157,9 @@ def render():
                             data_br_c = data_sel_c.strftime("%d/%m/%Y")
                             hora_registro_c = agora_salvamento.strftime("%H:%M")
                             
-                            # Prato e Pesos ficam VAZIOS ("")
                             nova_linha = [
                                 data_br_c,                       # Data
-                                f"'{hora_registro_c}",           # Hora
+                                hora_registro_c,                 # Hora (limpa HH:MM)
                                 responsavel_c.strip(),           # Responsavel
                                 int(clientes_c),                 # Clientes_Atendidos
                                 "",                              # ID_Prato (VAZIO)
