@@ -37,6 +37,15 @@ def carregar_alimentos_planilha():
 # RENDERIZAÇÃO DA PÁGINA DE CONFIGURAÇÕES (INSTANTÂNEA)
 # =========================================================
 def render():
+    st.markdown("""
+        <style>
+        /* Cria espaço extra no final da página para o menu suspenso não ser cortado */
+        .main .block-container {
+            padding-bottom: 250px !important;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+    
     # 1. Desenha a estrutura da tela IMEDIATAMENTE no navegador
     st.markdown("<div class='section-header'>CONFIGURAÇÕES</div>", unsafe_allow_html=True)
 
