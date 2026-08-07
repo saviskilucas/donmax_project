@@ -285,43 +285,57 @@ def render():
                                 st.error("❌ Usuário não localizado.")
 
     else:
-        # ESTILIZAÇÃO PARA BOTÕES GRANDES, COLORIDOS E DE FÁCIL CLIQUE NO CELULAR
+        # ESTILIZAÇÃO GIGANTE PARA OPERAÇÃO EM CELULAR / FÁCIL LEITURA E TOQUE
         st.markdown("""
             <style>
-            /* Container dos botões do início */
+            /* BOTÃO 1: LANÇAMENTOS (VERMELHO ULTRA DESTAQUE) */
             div.btn-inicio-lancamento button {
-                background: linear-gradient(135deg, #C62828 0%, #E53935 100%) !important;
+                background: linear-gradient(135deg, #B71C1C 0%, #FF1744 100%) !important;
                 color: #FFFFFF !important;
-                font-size: 1.25rem !important;
+                font-size: 1.45rem !important;
                 font-weight: 900 !important;
-                border-radius: 18px !important;
-                height: 72px !important;
-                border: 2px solid #FF5252 !important;
-                box-shadow: 0px 8px 20px rgba(198, 40, 40, 0.5) !important;
-                margin-bottom: 15px !important;
+                border-radius: 22px !important;
+                height: 90px !important;
+                border: 3px solid #FF5252 !important;
+                box-shadow: 0px 10px 25px rgba(255, 23, 68, 0.45) !important;
+                margin-bottom: 20px !important;
+                text-transform: uppercase !important;
+                letter-spacing: 0.5px !important;
+            }
+            div.btn-inicio-lancamento button:active {
+                transform: scale(0.97) !important;
+                box-shadow: 0px 4px 12px rgba(255, 23, 68, 0.6) !important;
             }
             
+            /* BOTÃO 2: PAINEL (AZUL CELESTE ULTRA DESTAQUE) */
             div.btn-inicio-painel button {
-                background: linear-gradient(135deg, #1565C0 0%, #1E88E5 100%) !important;
+                background: linear-gradient(135deg, #0D47A1 0%, #2979FF 100%) !important;
                 color: #FFFFFF !important;
-                font-size: 1.25rem !important;
+                font-size: 1.45rem !important;
                 font-weight: 900 !important;
-                border-radius: 18px !important;
-                height: 72px !important;
-                border: 2px solid #42A5F5 !important;
-                box-shadow: 0px 8px 20px rgba(21, 101, 192, 0.5) !important;
-                margin-bottom: 15px !important;
+                border-radius: 22px !important;
+                height: 90px !important;
+                border: 3px solid #82B1FF !important;
+                box-shadow: 0px 10px 25px rgba(41, 121, 255, 0.45) !important;
+                margin-bottom: 20px !important;
+                text-transform: uppercase !important;
+                letter-spacing: 0.5px !important;
+            }
+            div.btn-inicio-painel button:active {
+                transform: scale(0.97) !important;
+                box-shadow: 0px 4px 12px rgba(41, 121, 255, 0.6) !important;
             }
 
+            /* BOTÃO 3: ENCERRAR SESSÃO */
             div.btn-inicio-logout button {
-                background-color: transparent !important;
+                background-color: #1E1E1E !important;
                 color: #FF5252 !important;
-                font-size: 1rem !important;
+                font-size: 1.1rem !important;
                 font-weight: 800 !important;
-                border: 2px solid #B71C1C !important;
-                border-radius: 14px !important;
-                height: 52px !important;
-                margin-top: 20px !important;
+                border: 2px solid #D32F2F !important;
+                border-radius: 16px !important;
+                height: 58px !important;
+                margin-top: 25px !important;
             }
             </style>
         """, unsafe_allow_html=True)
