@@ -215,21 +215,23 @@ def gerar_img_rosca(tot_descarte, tot_sobra):
         
         tot = sum(valores)
         if tot > 0:
-            # Função para formatar o texto com valor em Kg e Percentual no PDF
             def make_fmt(vals):
                 def my_fmt(pct):
                     val = (pct / 100.0) * tot
                     return f'{val:.1f}kg\n({pct:.1f}%)'
                 return my_fmt
 
+            # Aumentada a fonte do gráfico de rosca no PDF para 8.5pt em negrito
             wedges, texts, autotexts = ax.pie(
                 valores, labels=labels, colors=cores, autopct=make_fmt(valores),
-                startangle=90, pctdistance=0.65,
-                textprops=dict(color="#222222", fontsize=7, weight="bold")
+                startangle=90, pctdistance=0.62,
+                textprops=dict(color="#222222", fontsize=8.5, weight="bold")
             )
             for autotext in autotexts:
                 autotext.set_color('#FFFFFF')
-            centre_circle = plt.Circle((0,0), 0.45, fc='#FFFFFF')
+                autotext.set_fontsize(8.5)
+                autotext.set_weight('bold')
+            centre_circle = plt.Circle((0,0), 0.40, fc='#FFFFFF')
             fig.gca().add_artist(centre_circle)
         else:
             ax.text(0, 0, 'Sem dados', color='#888888', ha='center', va='center')
@@ -243,6 +245,7 @@ def gerar_img_rosca(tot_descarte, tot_sobra):
     except Exception as e:
         return None
 
+
 def gerar_img_linha(df_data):
     import matplotlib
     matplotlib.use('Agg')
@@ -255,21 +258,21 @@ def gerar_img_linha(df_data):
         fig, ax = plt.subplots(figsize=(6.5, 2.2), facecolor='#FFFFFF')
         ax.set_facecolor('#FFFFFF')
         
-        # Desenha Descarte e seus rótulos na cor vermelha
+        # Descarte: Rótulos empurrados para cima (xytext=(0, 7)) em negrito
         if 'Descarte' in df_data.columns:
             ax.plot(df_data['Data'], df_data['Descarte'], color='#C62828', marker='o', linewidth=2, markersize=4, label='Descarte')
             for x, y in zip(df_data['Data'], df_data['Descarte']):
                 if y > 0:
-                    ax.annotate(f'{y:.1f}', (x, y), textcoords="offset points", xytext=(0, 5), 
-                                ha='center', fontsize=6.5, fontweight='bold', color='#C62828')
+                    ax.annotate(f'{y:.1f}kg', (x, y), textcoords="offset points", xytext=(0, 7), 
+                                ha='center', fontsize=7, fontweight='bold', color='#C62828')
 
-        # Desenha Sobra Buffet e seus rótulos na cor laranja
+        # Sobra Buffet: Rótulos empurrados para baixo (xytext=(0, -12)) em negrito
         if 'Sobra Buffet' in df_data.columns:
             ax.plot(df_data['Data'], df_data['Sobra Buffet'], color='#EF6C00', marker='o', linewidth=2, markersize=4, label='Sobra Buffet')
             for x, y in zip(df_data['Data'], df_data['Sobra Buffet']):
                 if y > 0:
-                    ax.annotate(f'{y:.1f}', (x, y), textcoords="offset points", xytext=(0, -9), 
-                                ha='center', fontsize=6.5, fontweight='bold', color='#EF6C00')
+                    ax.annotate(f'{y:.1f}kg', (x, y), textcoords="offset points", xytext=(0, -12), 
+                                ha='center', fontsize=7, fontweight='bold', color='#EF6C00')
         
         ax.legend(fontsize=7, loc='upper right', frameon=False)
         ax.tick_params(colors='#333333', labelsize=7.5)
@@ -280,6 +283,10 @@ def gerar_img_linha(df_data):
         ax.spines['bottom'].set_color('#CCCCCC')
         ax.grid(axis='y', color='#E0E0E0', linestyle='--', alpha=0.7)
         
+        # Dá margem vertical extra para não cortar os textos no topo da imagem
+        max_y = max(df_data[['Descarte', 'Sobra Buffet']].max()) * 1.2 if not df_data.empty else 10
+        ax.set_ylim(0, max_y)
+
         buf = io.BytesIO()
         plt.tight_layout()
         plt.savefig(buf, format='png', dpi=220, facecolor=fig.get_facecolor())
@@ -927,7 +934,7 @@ def render():
             st.plotly_chart(fig_heatmap, width="stretch", config=config_plotly_mobile)
 
         # =========================================================
-        # 3. SOBRA VS DESCARTE (COM VALOR E PERCENTUAL JUNTOS)
+        # 3. SOBRA VS DESCARTE (FONTE MAIOR E NEGRITO)
         # =========================================================
         st.markdown("##### Sobra vs Descarte")
         df_rosca = pd.DataFrame({
@@ -939,12 +946,12 @@ def render():
                 df_rosca, names='Tipo', values='Peso', hole=0.5,
                 color_discrete_sequence=['#E53935', '#FB8C00']
             )
-            # Atualização para exibir valor formatado em kg + porcentagem na mesma etiqueta
+            # Fonte aumentada para 14px em negrito
             fig_pie.update_traces(
                 textinfo='value+percent',
-                texttemplate='%{value:.2f} kg<br>(%{percent})',
+                texttemplate='<b>%{value:.2f} kg</b><br><b>(%{percent})</b>',
                 textposition='inside',
-                insidetextfont=dict(color='#FFFFFF', size=11, weight='bold')
+                insidetextfont=dict(color='#FFFFFF', size=14, family='Arial Black')
             )
             fig_pie.update_layout(
                 paper_bgcolor='rgba(0,0,0,0)',
@@ -957,40 +964,43 @@ def render():
             st.info("Sem registros de sobras ou descarte no período selecionado.")
 
         # =========================================================
-        # LINHA DO TEMPO COM RÓTULOS DE DADOS NA COR DA LINHA
+        # LINHA DO TEMPO (RÓTULOS AFASTADOS E EM NEGRITO)
         # =========================================================
         if not df_data.empty:
             st.markdown("##### Linha do Tempo de Descarte e Sobra")
             
             fig_line = go.Figure()
 
-            # Trace do Descarte (Vermelho)
+            # Descarte: Rótulo reposicionado acima com deslocamento Y extra
             if 'Descarte' in df_data.columns:
                 fig_line.add_trace(go.Scatter(
                     x=df_data['Data'],
                     y=df_data['Descarte'],
                     name='Descarte',
                     mode='lines+markers+text',
-                    text=[f"{v:.1f}k" if v > 0 else "" for v in df_data['Descarte']],
+                    text=[f"<b>{v:.1f} kg</b>" if v > 0 else "" for v in df_data['Descarte']],
                     textposition='top center',
-                    textfont=dict(color='#FF5252', size=11, family="Arial Black"),
-                    line=dict(color='#FF5252', width=2.5),
-                    marker=dict(size=7, color='#FF5252')
+                    textfont=dict(color='#FF5252', size=12, family="Arial Black"),
+                    line=dict(color='#FF5252', width=3),
+                    marker=dict(size=8, color='#FF5252')
                 ))
 
-            # Trace da Sobra Buffet (Laranja)
+            # Sobra Buffet: Rótulo reposicionado abaixo com deslocamento Y extra
             if 'Sobra Buffet' in df_data.columns:
                 fig_line.add_trace(go.Scatter(
                     x=df_data['Data'],
                     y=df_data['Sobra Buffet'],
                     name='Sobra Buffet',
                     mode='lines+markers+text',
-                    text=[f"{v:.1f}k" if v > 0 else "" for v in df_data['Sobra Buffet']],
+                    text=[f"<b>{v:.1f} kg</b>" if v > 0 else "" for v in df_data['Sobra Buffet']],
                     textposition='bottom center',
-                    textfont=dict(color='#FB8C00', size=11, family="Arial Black"),
-                    line=dict(color='#FB8C00', width=2.5),
-                    marker=dict(size=7, color='#FB8C00')
+                    textfont=dict(color='#FB8C00', size=12, family="Arial Black"),
+                    line=dict(color='#FB8C00', width=3),
+                    marker=dict(size=8, color='#FB8C00')
                 ))
+
+            # Dá margem extra no eixo Y para o texto do topo não ser cortado
+            max_y = max(df_data[['Descarte', 'Sobra Buffet']].max()) * 1.25 if not df_data.empty else 10
 
             fig_line.update_layout(
                 paper_bgcolor='rgba(0,0,0,0)',
@@ -998,7 +1008,7 @@ def render():
                 font=dict(color="#E0E0E0"),
                 margin=dict(l=5, r=5, t=25, b=5),
                 xaxis=dict(showgrid=False, fixedrange=True, type='category'),
-                yaxis=dict(showgrid=True, gridcolor='#2D2D2D', fixedrange=True, title=""),
+                yaxis=dict(showgrid=True, gridcolor='#2D2D2D', fixedrange=True, title="", range=[0, max_y]),
                 legend=dict(title="", orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
             )
             st.plotly_chart(fig_line, width="stretch", config=config_plotly_mobile)
