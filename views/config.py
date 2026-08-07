@@ -40,14 +40,22 @@ def render():
 
     st.markdown("""
         <style>
-        /* Força o menu suspenso (Selectbox/Multiselect) a ficar acima de barras fixas */
-        div[data-baseweb="popover"], div[data-baseweb="menu"] {
+        /* 1. Permite que o menu suspenso saia do expander/card sem ser cortado */
+        div[data-testid="stExpander"],
+        div[data-testid="stForm"],
+        div[data-baseweb="select"] {
+            overflow: visible !important;
+        }
+
+        /* 2. Garante que a lista suspensa (dropdown) flutue na frente de qualquer barra fixa */
+        div[data-baseweb="popover"] {
             z-index: 999999 !important;
         }
-        
-        /* Garante margem de rolagem no final da página */
-        .main .block-container {
-            padding-bottom: 250px !important;
+
+        /* 3. Adiciona espaço na página principal e no container interno para rolagem extra */
+        .main .block-container,
+        div[data-testid="stVerticalBlock"] {
+            padding-bottom: 300px !important;
         }
         </style>
     """, unsafe_allow_html=True)
