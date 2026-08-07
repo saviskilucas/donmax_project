@@ -285,57 +285,57 @@ def render():
                                 st.error("❌ Usuário não localizado.")
 
     else:
-        # ESTILIZAÇÃO GIGANTE PARA OPERAÇÃO EM CELULAR / FÁCIL LEITURA E TOQUE
+        # ESTILIZAÇÃO GIGANTE PARA OPERAÇÃO EM CELULAR (ALTURA 120PX, FONTE 1.6REM)
         st.markdown("""
             <style>
-            /* BOTÃO 1: LANÇAMENTOS (VERMELHO ULTRA DESTAQUE) */
+            /* BOTÃO 1: LANÇAMENTOS (VERMELHO VIBRANTE GIGANTE) */
             div.btn-inicio-lancamento button {
                 background: linear-gradient(135deg, #B71C1C 0%, #FF1744 100%) !important;
                 color: #FFFFFF !important;
-                font-size: 1.45rem !important;
+                font-size: 1.6rem !important;
                 font-weight: 900 !important;
-                border-radius: 22px !important;
-                height: 90px !important;
-                border: 3px solid #FF5252 !important;
-                box-shadow: 0px 10px 25px rgba(255, 23, 68, 0.45) !important;
-                margin-bottom: 20px !important;
+                border-radius: 24px !important;
+                height: 120px !important;
+                border: 4px solid #FF5252 !important;
+                box-shadow: 0px 12px 28px rgba(255, 23, 68, 0.5) !important;
+                margin-bottom: 25px !important;
                 text-transform: uppercase !important;
-                letter-spacing: 0.5px !important;
+                letter-spacing: 0.8px !important;
             }
             div.btn-inicio-lancamento button:active {
-                transform: scale(0.97) !important;
-                box-shadow: 0px 4px 12px rgba(255, 23, 68, 0.6) !important;
+                transform: scale(0.96) !important;
+                box-shadow: 0px 4px 14px rgba(255, 23, 68, 0.7) !important;
             }
             
-            /* BOTÃO 2: PAINEL (AZUL CELESTE ULTRA DESTAQUE) */
+            /* BOTÃO 2: PAINEL (AZUL VIBRANTE GIGANTE) */
             div.btn-inicio-painel button {
                 background: linear-gradient(135deg, #0D47A1 0%, #2979FF 100%) !important;
                 color: #FFFFFF !important;
-                font-size: 1.45rem !important;
+                font-size: 1.6rem !important;
                 font-weight: 900 !important;
-                border-radius: 22px !important;
-                height: 90px !important;
-                border: 3px solid #82B1FF !important;
-                box-shadow: 0px 10px 25px rgba(41, 121, 255, 0.45) !important;
-                margin-bottom: 20px !important;
+                border-radius: 24px !important;
+                height: 120px !important;
+                border: 4px solid #82B1FF !important;
+                box-shadow: 0px 12px 28px rgba(41, 121, 255, 0.5) !important;
+                margin-bottom: 25px !important;
                 text-transform: uppercase !important;
-                letter-spacing: 0.5px !important;
+                letter-spacing: 0.8px !important;
             }
             div.btn-inicio-painel button:active {
-                transform: scale(0.97) !important;
-                box-shadow: 0px 4px 12px rgba(41, 121, 255, 0.6) !important;
+                transform: scale(0.96) !important;
+                box-shadow: 0px 4px 14px rgba(41, 121, 255, 0.7) !important;
             }
 
             /* BOTÃO 3: ENCERRAR SESSÃO */
             div.btn-inicio-logout button {
                 background-color: #1E1E1E !important;
                 color: #FF5252 !important;
-                font-size: 1.1rem !important;
+                font-size: 1.15rem !important;
                 font-weight: 800 !important;
                 border: 2px solid #D32F2F !important;
-                border-radius: 16px !important;
-                height: 58px !important;
-                margin-top: 25px !important;
+                border-radius: 18px !important;
+                height: 60px !important;
+                margin-top: 30px !important;
             }
             </style>
         """, unsafe_allow_html=True)
