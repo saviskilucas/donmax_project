@@ -37,16 +37,41 @@ def render():
     pode_clientes = tem_permissao("campo:clientes")
     pode_obs = tem_permissao("campo:obs")
 
-    # Divisão do Formulário em duas Abas
-    aba_prato, aba_cliente = st.tabs(["PRATOS", "CLIENTES ATENDIDOS"])
+    # Determina dinamicamente a permissão de cada formulário
+    exibir_form_pratos = pode_prato or pode_pesos
+    exibir_form_clientes = pode_clientes
+
+    # Monta a lista de abas disponíveis
+    abas_disponiveis = []
+    if exibir_form_pratos:
+        abas_disponiveis.append("PRATOS")
+    if exibir_form_clientes:
+        abas_disponiveis.append("CLIENTES ATENDIDOS")
+
+    if not abas_disponiveis:
+        st.warning("🔒 Seu perfil não tem permissão para nenhum formulário de lançamento.")
+        return
+
+    # Se tiver apenas 1 formulário permitido, renderiza direto sem abas
+    if len(abas_disponiveis) == 1:
+        aba_unica = abas_disponiveis[0]
+        render_pratos = (aba_unica == "PRATOS")
+        render_clientes = (aba_unica == "CLIENTES ATENDIDOS")
+        ctx_pratos = st.container()
+        ctx_clientes = st.container()
+    else:
+        # Se tiver mais de 1 permissão (Admin/Master), desenha as abas
+        guias = st.tabs(abas_disponiveis)
+        render_pratos = True
+        render_clientes = True
+        ctx_pratos = guias[0]
+        ctx_clientes = guias[1]
 
     # =========================================================
-    # ABA 1: FORMULÁRIO DE PRATOS / PESAGEM
+    # FORMULÁRIO DE PRATOS / PESAGEM
     # =========================================================
-    with aba_prato:
-        if not pode_prato and not pode_pesos:
-            st.warning("🔒 Seu perfil não tem permissão para lançar pratos e medições de pesagem.")
-        else:
+    if exibir_form_pratos and render_pratos:
+        with ctx_pratos:
             with st.form("form_pesagem_pratos", clear_on_submit=True):
                 st.markdown("<div class='section-header'>1. INFORMAÇÕES DO SERVIÇO</div>", unsafe_allow_html=True)
                 
@@ -96,7 +121,7 @@ def render():
                             
                             nova_linha = [
                                 data_br,                         # Data
-                                hora_registro,                   # Hora (formato original do formulário)
+                                hora_registro,                   # Hora
                                 responsavel.strip(),             # Responsavel
                                 "",                              # Clientes_Atendidos
                                 prato_sel,                       # ID_Prato
@@ -114,12 +139,10 @@ def render():
                             st.error(f"❌ Erro ao salvar na planilha: {e}")
 
     # =========================================================
-    # ABA 2: FORMULÁRIO DE CLIENTES / CAIXA
+    # FORMULÁRIO DE CLIENTES / CAIXA
     # =========================================================
-    with aba_cliente:
-        if not pode_clientes:
-            st.warning("🔒 Seu perfil não tem permissão para lançar quantidade de clientes.")
-        else:
+    if exibir_form_clientes and render_clientes:
+        with ctx_clientes:
             with st.form("form_pesagem_clientes", clear_on_submit=True):
                 st.markdown("<div class='section-header'>1. INFORMAÇÕES DO SERVIÇO</div>", unsafe_allow_html=True)
                 
@@ -159,7 +182,7 @@ def render():
                             
                             nova_linha = [
                                 data_br_c,                       # Data
-                                hora_registro_c,                 # Hora (formato original do formulário)
+                                hora_registro_c,                 # Hora
                                 responsavel_c.strip(),           # Responsavel
                                 int(clientes_c),                 # Clientes_Atendidos
                                 "",                              # ID_Prato
