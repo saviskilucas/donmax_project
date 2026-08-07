@@ -26,36 +26,48 @@ TODAS_PERMISSOES = {
 }
 
 def buscar_perfis():
-    try:
-        sheet = conectar_gsheets().worksheet("Perfis")
-        registros = sheet.get_all_records()
-        perfis = {}
-        for r in registros:
-            item_limpo = {str(k).strip().lower().replace("_", "").replace(" ", ""): str(v).strip() for k, v in r.items()}
-            
-            id_p = item_limpo.get("idperfil", "").lower()
-            nome_p = item_limpo.get("nomeperfil", id_p)
-            perms_raw = item_limpo.get("permissoes", "")
-            
-            if not id_p:
-                continue
-
-            if perms_raw.upper() == "ALL":
-                lista_perms = ["ALL"]
-            else:
-                lista_perms = [p.strip() for p in perms_raw.split(",") if p.strip()]
-                
-            perfis[id_p] = {
-                "nome": nome_p,
-                "permissoes": lista_perms
-            }
-            
-        if "master" not in perfis:
-            perfis["master"] = {"nome": "Master", "permissoes": ["ALL"]}
-            
-        return perfis
-    except Exception:
-        return {"master": {"nome": "Master", "permissoes": ["ALL"]}}
+    return {
+        "master": {
+            "nome": "Master / Proprietário",
+            "permissoes": ["pesagem:visualizar", "pesagem:criar", "campo:data", "campo:prato", "campo:pesos", "campo:clientes", "campo:obs", "dashboard:visualizar", "dashboard:filtrar", "dashboard:matriz", "relatorios:exportar_pdf", "lancamentos:editar", "usuarios:gerenciar", "pratos:gerenciar"]
+        },
+        "admin": {
+            "nome": "Administrador",
+            "permissoes": ["pesagem:visualizar", "pesagem:criar", "campo:data", "campo:prato", "campo:pesos", "campo:clientes", "campo:obs", "dashboard:visualizar", "dashboard:filtrar", "dashboard:matriz", "relatorios:exportar_pdf", "lancamentos:editar", "usuarios:gerenciar", "pratos:gerenciar"]
+        },
+        # =========================================================
+        # NOVOS PERFIS DE COZINHA
+        # =========================================================
+        "cozinha_escala_1": {
+            "nome": "Cozinha - Escala 1 (Lança e Cadastra Pratos)",
+            "permissoes": [
+                "pesagem:visualizar", # Permite acessar a tela de lançamentos
+                "pesagem:criar",      # Permite salvar formulários
+                "campo:prato",        # Acesso ao campo de seleção de pratos
+                "campo:pesos",        # Acesso aos campos de medições (kg)
+                "campo:obs",          # Acesso ao campo de observações
+                "pratos:gerenciar"    # PERMISSÃO CHAVE: Permite criar novos pratos no menu Configurações
+            ]
+        },
+        "cozinha_escala_2": {
+            "nome": "Cozinha - Escala 2 (Apenas Lançamento)",
+            "permissoes": [
+                "pesagem:visualizar", # Permite acessar a tela de lançamentos
+                "pesagem:criar",      # Permite salvar formulários
+                "campo:prato",        # Acesso ao campo de seleção de pratos
+                "campo:pesos",        # Acesso aos campos de medições (kg)
+                "campo:obs"           # Acesso ao campo de observações
+                # (SEM 'pratos:gerenciar' e SEM 'usuarios:gerenciar')
+            ]
+        },
+        # Perfil Caixa tradicional
+        "caixa": {
+            "nome": "Caixa / Atendimento",
+            "permissoes": [
+                "pesagem:visualizar", "pesagem:criar", "campo:clientes", "campo:obs"
+            ]
+        }
+    }
 
 def tem_permissao(chave_permissao):
     """Retorna True se o usuário logado tiver a permissão informada."""
