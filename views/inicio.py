@@ -5,7 +5,8 @@ import os
 import base64
 from email.mime.text import MIMEText
 from google.oauth2.service_account import Credentials
-from auth import buscar_perfis, conectar_gsheets
+# ALTERE ESTA LINHA NO TOPO DO ARQUIVO:
+from auth import buscar_perfis, conectar_gsheets, tem_permissao
 
 # =========================================================
 # CONSULTA DE USUÁRIOS COM CACHE DE ALTA VELOCIDADE
@@ -291,12 +292,30 @@ def render():
         
         st.markdown("---")
         
-        col_a, col_b = st.columns(2)
-        with col_a:
+        # Mapeia dinamicamente quais botões o perfil atual pode ver no Início
+        pode_pesagem = tem_permissao("pesagem:visualizar")
+        pode_historico = tem_permissao("dashboard:visualizar")
+        
+        # 1. Se tiver acesso a AMBOS (Lançamento + Painel) -> 2 colunas lado a lado
+        if pode_pesagem and pode_historico:
+            col_a, col_b = st.columns(2)
+            with col_a:
+                if st.button("NOVO LANÇAMENTO", width="stretch"):
+                    st.session_state["aba_ativa"] = "pesagem"
+                    st.rerun()
+            with col_b:
+                if st.button("CONSULTAR PAINEL", width="stretch"):
+                    st.session_state["aba_ativa"] = "historico"
+                    st.rerun()
+
+        # 2. Se tiver acesso APENAS a Lançamentos (ex: Cozinha/Caixa)
+        elif pode_pesagem:
             if st.button("NOVO LANÇAMENTO", width="stretch"):
                 st.session_state["aba_ativa"] = "pesagem"
                 st.rerun()
-        with col_b:
+
+        # 3. Se tiver acesso APENAS ao Painel
+        elif pode_historico:
             if st.button("CONSULTAR PAINEL", width="stretch"):
                 st.session_state["aba_ativa"] = "historico"
                 st.rerun()
