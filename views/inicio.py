@@ -5,7 +5,6 @@ import os
 import base64
 from email.mime.text import MIMEText
 from google.oauth2.service_account import Credentials
-# ALTERE ESTA LINHA NO TOPO DO ARQUIVO:
 from auth import buscar_perfis, conectar_gsheets, tem_permissao
 
 # =========================================================
@@ -227,7 +226,7 @@ def render():
             with st.form("form_login_principal"):
                 usuario_login = st.text_input("Usuário", placeholder="ex: nome.sobrenome")
                 senha_login = st.text_input("Senha", type="password", placeholder="••••••••")
-                btn_login = st.form_submit_button("ENTRAR NO SISTEMA", width="stretch")
+                btn_login = st.form_submit_button("ENTRAR NO SISTEMA", use_container_width=True)
                 
                 if btn_login:
                     usr_digitado = usuario_login.strip().lower()
@@ -268,7 +267,7 @@ def render():
             with st.expander("🔑 Esqueceu sua senha?"):
                 with st.form("form_esqueci_senha_exp"):
                     usr_recup = st.text_input("Insira seu usuário cadastrado", placeholder="ex: nome.sobrenome")
-                    btn_recuperar = st.form_submit_button("SOLICITAR SENHA AO ADMIN", width="stretch")
+                    btn_recuperar = st.form_submit_button("SOLICITAR SENHA AO ADMIN", use_container_width=True)
                     
                     if btn_recuperar:
                         usr_target = usr_recup.strip().lower()
@@ -286,43 +285,138 @@ def render():
                                 st.error("❌ Usuário não localizado.")
 
     else:
+        # ESTILIZAÇÃO EXCLUSIVA PARA OS CARDS DO PAINEL INICIAL
+        st.markdown("""
+            <style>
+            .menu-card {
+                background: linear-gradient(135deg, #1E1E1E 0%, #262626 100%);
+                border: 1px solid #333333;
+                border-left: 5px solid #B71C1C;
+                border-radius: 14px;
+                padding: 16px;
+                margin-bottom: 12px;
+                box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.4);
+            }
+            .menu-card-title {
+                color: #FFFFFF;
+                font-size: 1.15rem;
+                font-weight: 800;
+                margin-bottom: 4px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            .menu-card-desc {
+                color: #AAAAAA;
+                font-size: 0.82rem;
+                line-height: 1.3;
+                margin-bottom: 12px;
+            }
+            .btn-dash-primary button {
+                background-color: #B71C1C !important;
+                color: #FFFFFF !important;
+                font-weight: 800 !important;
+                border-radius: 10px !important;
+                height: 44px !important;
+                border: none !important;
+                box-shadow: 0px 4px 10px rgba(183, 28, 28, 0.3) !important;
+                transition: all 0.2s ease !important;
+            }
+            .btn-dash-primary button:hover {
+                background-color: #D32F2F !important;
+                transform: translateY(-2px);
+            }
+            .btn-dash-config button {
+                background-color: #2D2D2D !important;
+                color: #FFFFFF !important;
+                font-weight: 800 !important;
+                border-radius: 10px !important;
+                height: 44px !important;
+                border: 1px solid #444444 !important;
+                transition: all 0.2s ease !important;
+            }
+            .btn-dash-config button:hover {
+                background-color: #383838 !important;
+                border-color: #666666 !important;
+                transform: translateY(-2px);
+            }
+            .btn-logout button {
+                background-color: transparent !important;
+                color: #FF5252 !important;
+                font-weight: 700 !important;
+                border: 1px solid #B71C1C !important;
+                border-radius: 10px !important;
+                height: 40px !important;
+                margin-top: 15px;
+            }
+            .btn-logout button:hover {
+                background-color: #B71C1C !important;
+                color: #FFFFFF !important;
+            }
+            </style>
+        """, unsafe_allow_html=True)
+
         st.markdown("<div class='section-header'>PAINEL INICIAL</div>", unsafe_allow_html=True)
         st.subheader(f"Olá, {st.session_state['usuario_logado']}! 👋")
-        st.info(f"Perfil de Acesso: **{st.session_state.get('nome_perfil_logado', 'Usuário')}**")
+        st.info(f"Perfil de Acesso: **{st.session_state.get('nome_perfil_logado', 'Usuário').upper()}**")
         
-        st.markdown("---")
-        
-        # Mapeia dinamicamente quais botões o perfil atual pode ver no Início
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        # Mapeia dinamicamente as permissões
         pode_pesagem = tem_permissao("pesagem:visualizar")
         pode_historico = tem_permissao("dashboard:visualizar")
-        
-        # 1. Se tiver acesso a AMBOS (Lançamento + Painel) -> 2 colunas lado a lado
-        if pode_pesagem and pode_historico:
-            col_a, col_b = st.columns(2)
-            with col_a:
-                if st.button("NOVO LANÇAMENTO", width="stretch"):
-                    st.session_state["aba_ativa"] = "pesagem"
-                    st.rerun()
-            with col_b:
-                if st.button("CONSULTAR PAINEL", width="stretch"):
-                    st.session_state["aba_ativa"] = "historico"
-                    st.rerun()
+        pode_config = tem_permissao("usuarios:gerenciar") or tem_permissao("pratos:gerenciar")
 
-        # 2. Se tiver acesso APENAS a Lançamentos (ex: Cozinha/Caixa)
-        elif pode_pesagem:
-            if st.button("NOVO LANÇAMENTO", width="stretch"):
+        # 1. CARD DE LANÇAMENTOS
+        if pode_pesagem:
+            st.markdown("""
+                <div class="menu-card">
+                    <div class="menu-card-title">📝 LANÇAMENTOS DE PESAGEM</div>
+                    <div class="menu-card-desc">Registre pratos do buffet, pesos de produção, sobra, descarte ou quantidade de clientes atendidos no turno.</div>
+                </div>
+            """, unsafe_allow_html=True)
+            st.markdown('<div class="btn-dash-primary">', unsafe_allow_html=True)
+            if st.button("NOVO LANÇAMENTO ➔", key="btn_dash_pesagem", use_container_width=True):
                 st.session_state["aba_ativa"] = "pesagem"
                 st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown("<br>", unsafe_allow_html=True)
 
-        # 3. Se tiver acesso APENAS ao Painel
-        elif pode_historico:
-            if st.button("CONSULTAR PAINEL", width="stretch"):
+        # 2. CARD DO PAINEL / DASHBOARD
+        if pode_historico:
+            st.markdown("""
+                <div class="menu-card">
+                    <div class="menu-card-title">📊 PAINEL EXECUTIVO & HISTÓRICO</div>
+                    <div class="menu-card-desc">Consulte gráficos de desempenho, acompanhe taxa de descarte, balanço da cozinha e exporte relatórios executivos em PDF.</div>
+                </div>
+            """, unsafe_allow_html=True)
+            st.markdown('<div class="btn-dash-primary">', unsafe_allow_html=True)
+            if st.button("CONSULTAR PAINEL ➔", key="btn_dash_historico", use_container_width=True):
                 st.session_state["aba_ativa"] = "historico"
                 st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown("<br>", unsafe_allow_html=True)
 
-        st.markdown("---")
-        if st.button("ENCERRAR SESSÃO", width="stretch"):
+        # 3. CARD DE CONFIGURAÇÕES (ADMIN / MASTER)
+        if pode_config:
+            st.markdown("""
+                <div class="menu-card" style="border-left-color: #757575;">
+                    <div class="menu-card-title">⚙️ GESTÃO & CONFIGURAÇÕES</div>
+                    <div class="menu-card-desc">Cadastre e edite contas de usuários, redefina perfis de acesso e gerencie o catálogo de pratos/alimentos.</div>
+                </div>
+            """, unsafe_allow_html=True)
+            st.markdown('<div class="btn-dash-config">', unsafe_allow_html=True)
+            if st.button("ACESSAR CONFIGURAÇÕES ⚙️", key="btn_dash_config", use_container_width=True):
+                st.session_state["aba_ativa"] = "config"
+                st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown("<br>", unsafe_allow_html=True)
+
+        # BOTÃO DE LOGOUT
+        st.markdown('<div class="btn-logout">', unsafe_allow_html=True)
+        if st.button("🚪 ENCERRAR SESSÃO", key="btn_dash_logout", use_container_width=True):
             for key in ["usuario_logado", "id_usuario_logado", "perfil_logado", "nome_perfil_logado", "permissoes_usuario"]:
                 st.session_state[key] = None
             st.session_state["aba_ativa"] = "inicio"
             st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
