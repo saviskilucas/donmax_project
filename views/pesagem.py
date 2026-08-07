@@ -38,7 +38,7 @@ def render():
     pode_obs = tem_permissao("campo:obs")
 
     # Divisão do Formulário em duas Abas
-    aba_prato, aba_cliente = st.tabs(["PRATOS", "CLIENTES ATENDIDOS"])
+    aba_prato, aba_cliente = st.tabs(["🍲 LANÇAMENTO DE PRATOS (COZINHA)", "👥 CLIENTES ATENDIDOS (CAIXA)"])
 
     # =========================================================
     # ABA 1: FORMULÁRIO DE PRATOS / PESAGEM
@@ -96,9 +96,9 @@ def render():
                             
                             nova_linha = [
                                 data_br,                         # Data
-                                hora_registro,                   # Hora (limpa HH:MM)
+                                hora_registro,                   # Hora (formato original do formulário)
                                 responsavel.strip(),             # Responsavel
-                                "",                              # Clientes_Atendidos (VAZIO)
+                                "",                              # Clientes_Atendidos
                                 prato_sel,                       # ID_Prato
                                 round(float(prod_inicial), 3),   # Prod_Inicial_KG
                                 round(float(reposicao), 3),      # Reposicao_KG
@@ -159,14 +159,14 @@ def render():
                             
                             nova_linha = [
                                 data_br_c,                       # Data
-                                hora_registro_c,                 # Hora (limpa HH:MM)
+                                hora_registro_c,                 # Hora (formato original do formulário)
                                 responsavel_c.strip(),           # Responsavel
                                 int(clientes_c),                 # Clientes_Atendidos
-                                "",                              # ID_Prato (VAZIO)
-                                "",                              # Prod_Inicial_KG (VAZIO)
-                                "",                              # Reposicao_KG (VAZIO)
-                                "",                              # Sobra_Buffet_KG (VAZIO)
-                                "",                              # Descarte_KG (VAZIO)
+                                "",                              # ID_Prato
+                                "",                              # Prod_Inicial_KG
+                                "",                              # Reposicao_KG
+                                "",                              # Sobra_Buffet_KG
+                                "",                              # Descarte_KG
                                 observacoes_c.strip()            # Observacoes
                             ]
                             sheet.append_row(nova_linha)
