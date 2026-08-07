@@ -285,106 +285,92 @@ def render():
                                 st.error("❌ Usuário não localizado.")
 
     else:
-        # ESTILIZAÇÃO SUPERIOR PARA OS BOTÕES GRANDES DE AÇÃO
+        # ESTILIZAÇÃO PARA BOTÕES GRANDES, COLORIDOS E DE FÁCIL CLIQUE NO CELULAR
         st.markdown("""
             <style>
-            /* BOTÃO PRINCIPAL (VERMELHO COM GRADIENTE E SOMBRA DE ELEVAÇÃO) */
-            .btn-main-action button {
-                background: linear-gradient(135deg, #B71C1C 0%, #D32F2F 100%) !important;
+            /* Container dos botões do início */
+            div.btn-inicio-lancamento button {
+                background: linear-gradient(135deg, #C62828 0%, #E53935 100%) !important;
                 color: #FFFFFF !important;
-                font-size: 1.15rem !important;
-                font-weight: 800 !important;
-                border-radius: 16px !important;
-                height: 64px !important;
-                border: none !important;
-                box-shadow: 0px 6px 18px rgba(183, 28, 28, 0.45) !important;
-                transition: all 0.25s ease-in-out !important;
-                letter-spacing: 0.5px !important;
+                font-size: 1.25rem !important;
+                font-weight: 900 !important;
+                border-radius: 18px !important;
+                height: 72px !important;
+                border: 2px solid #FF5252 !important;
+                box-shadow: 0px 8px 20px rgba(198, 40, 40, 0.5) !important;
+                margin-bottom: 15px !important;
             }
-            .btn-main-action button:hover {
-                background: linear-gradient(135deg, #D32F2F 0%, #E53935 100%) !important;
-                transform: translateY(-3px) !important;
-                box-shadow: 0px 8px 24px rgba(183, 28, 28, 0.65) !important;
+            
+            div.btn-inicio-painel button {
+                background: linear-gradient(135deg, #1565C0 0%, #1E88E5 100%) !important;
+                color: #FFFFFF !important;
+                font-size: 1.25rem !important;
+                font-weight: 900 !important;
+                border-radius: 18px !important;
+                height: 72px !important;
+                border: 2px solid #42A5F5 !important;
+                box-shadow: 0px 8px 20px rgba(21, 101, 192, 0.5) !important;
+                margin-bottom: 15px !important;
             }
 
-            /* BOTÃO DE CONFIGURAÇÕES (CINZA ESCURO PREMIUM) */
-            .btn-config-action button {
-                background: linear-gradient(135deg, #2A2A2A 0%, #383838 100%) !important;
-                color: #FFFFFF !important;
-                font-size: 1.1rem !important;
-                font-weight: 800 !important;
-                border-radius: 16px !important;
-                height: 58px !important;
-                border: 1px solid #444444 !important;
-                box-shadow: 0px 4px 14px rgba(0, 0, 0, 0.5) !important;
-                transition: all 0.25s ease-in-out !important;
-            }
-            .btn-config-action button:hover {
-                background: linear-gradient(135deg, #383838 0%, #484848 100%) !important;
-                border-color: #666666 !important;
-                transform: translateY(-2px) !important;
-            }
-
-            /* BOTÃO DE SAÍDA */
-            .btn-logout-action button {
+            div.btn-inicio-logout button {
                 background-color: transparent !important;
                 color: #FF5252 !important;
-                font-size: 0.95rem !important;
-                font-weight: 700 !important;
+                font-size: 1rem !important;
+                font-weight: 800 !important;
                 border: 2px solid #B71C1C !important;
                 border-radius: 14px !important;
-                height: 48px !important;
-                margin-top: 10px !important;
-                transition: all 0.2s ease !important;
-            }
-            .btn-logout-action button:hover {
-                background-color: #B71C1C !important;
-                color: #FFFFFF !important;
+                height: 52px !important;
+                margin-top: 20px !important;
             }
             </style>
         """, unsafe_allow_html=True)
 
         st.markdown("<div class='section-header'>PAINEL INICIAL</div>", unsafe_allow_html=True)
         st.subheader(f"Olá, {st.session_state['usuario_logado']}! 👋")
-        st.info(f"Perfil de Acesso: **{st.session_state.get('nome_perfil_logado', 'Usuário').upper()}**")
+        st.info(f"Perfil de Acesso: **{st.session_state.get('nome_perfil_logado', 'Usuário')}**")
         
-        st.markdown("<br>", unsafe_allow_html=True)
-
-        # Mapeia dinamicamente as permissões
+        st.markdown("---")
+        
+        # Mapeia dinamicamente quais botões o perfil atual pode ver no Início
         pode_pesagem = tem_permissao("pesagem:visualizar")
         pode_historico = tem_permissao("dashboard:visualizar")
-        pode_config = tem_permissao("usuarios:gerenciar") or tem_permissao("pratos:gerenciar")
+        
+        # 1. Se tiver acesso a AMBOS (Lançamento + Painel)
+        if pode_pesagem and pode_historico:
+            col_a, col_b = st.columns(2)
+            with col_a:
+                st.markdown('<div class="btn-inicio-lancamento">', unsafe_allow_html=True)
+                if st.button("📝 NOVO LANÇAMENTO", use_container_width=True):
+                    st.session_state["aba_ativa"] = "pesagem"
+                    st.rerun()
+                st.markdown('</div>', unsafe_allow_html=True)
+            with col_b:
+                st.markdown('<div class="btn-inicio-painel">', unsafe_allow_html=True)
+                if st.button("📊 CONSULTAR PAINEL", use_container_width=True):
+                    st.session_state["aba_ativa"] = "historico"
+                    st.rerun()
+                st.markdown('</div>', unsafe_allow_html=True)
 
-        # 1. BOTÃO NOVO LANÇAMENTO
-        if pode_pesagem:
-            st.markdown('<div class="btn-main-action">', unsafe_allow_html=True)
-            if st.button("📝 NOVO LANÇAMENTO DE PESAGEM", key="btn_dash_pesagem", use_container_width=True):
+        # 2. Se tiver acesso APENAS a Lançamentos (ex: Cozinha / Caixa)
+        elif pode_pesagem:
+            st.markdown('<div class="btn-inicio-lancamento">', unsafe_allow_html=True)
+            if st.button("📝 NOVO LANÇAMENTO", use_container_width=True):
                 st.session_state["aba_ativa"] = "pesagem"
                 st.rerun()
             st.markdown('</div>', unsafe_allow_html=True)
-            st.markdown("<div style='margin-bottom: 18px;'></div>", unsafe_allow_html=True)
 
-        # 2. BOTÃO CONSULTAR PAINEL
-        if pode_historico:
-            st.markdown('<div class="btn-main-action">', unsafe_allow_html=True)
-            if st.button("📊 CONSULTAR PAINEL EXECUTIVO", key="btn_dash_historico", use_container_width=True):
+        # 3. Se tiver acesso APENAS ao Painel
+        elif pode_historico:
+            st.markdown('<div class="btn-inicio-painel">', unsafe_allow_html=True)
+            if st.button("📊 CONSULTAR PAINEL", use_container_width=True):
                 st.session_state["aba_ativa"] = "historico"
                 st.rerun()
             st.markdown('</div>', unsafe_allow_html=True)
-            st.markdown("<div style='margin-bottom: 18px;'></div>", unsafe_allow_html=True)
 
-        # 3. BOTÃO DE CONFIGURAÇÕES (ADMIN / MASTER)
-        if pode_config:
-            st.markdown('<div class="btn-config-action">', unsafe_allow_html=True)
-            if st.button("⚙️ GESTÃO E CONFIGURAÇÕES", key="btn_dash_config", use_container_width=True):
-                st.session_state["aba_ativa"] = "config"
-                st.rerun()
-            st.markdown('</div>', unsafe_allow_html=True)
-            st.markdown("<div style='margin-bottom: 18px;'></div>", unsafe_allow_html=True)
-
-        # BOTÃO DE LOGOUT
-        st.markdown('<div class="btn-logout-action">', unsafe_allow_html=True)
-        if st.button("🚪 ENCERRAR SESSÃO", key="btn_dash_logout", use_container_width=True):
+        st.markdown("---")
+        st.markdown('<div class="btn-inicio-logout">', unsafe_allow_html=True)
+        if st.button("🚪 ENCERRAR SESSÃO", use_container_width=True):
             for key in ["usuario_logado", "id_usuario_logado", "perfil_logado", "nome_perfil_logado", "permissoes_usuario"]:
                 st.session_state[key] = None
             st.session_state["aba_ativa"] = "inicio"
