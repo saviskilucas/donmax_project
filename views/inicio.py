@@ -285,71 +285,59 @@ def render():
                                 st.error("❌ Usuário não localizado.")
 
     else:
-        # ESTILIZAÇÃO EXCLUSIVA PARA OS CARDS DO PAINEL INICIAL
+        # ESTILIZAÇÃO SUPERIOR PARA OS BOTÕES GRANDES DE AÇÃO
         st.markdown("""
             <style>
-            .menu-card {
-                background: linear-gradient(135deg, #1E1E1E 0%, #262626 100%);
-                border: 1px solid #333333;
-                border-left: 5px solid #B71C1C;
-                border-radius: 14px;
-                padding: 16px;
-                margin-bottom: 12px;
-                box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.4);
-            }
-            .menu-card-title {
-                color: #FFFFFF;
-                font-size: 1.15rem;
-                font-weight: 800;
-                margin-bottom: 4px;
-                display: flex;
-                align-items: center;
-                gap: 8px;
-            }
-            .menu-card-desc {
-                color: #AAAAAA;
-                font-size: 0.82rem;
-                line-height: 1.3;
-                margin-bottom: 12px;
-            }
-            .btn-dash-primary button {
-                background-color: #B71C1C !important;
+            /* BOTÃO PRINCIPAL (VERMELHO COM GRADIENTE E SOMBRA DE ELEVAÇÃO) */
+            .btn-main-action button {
+                background: linear-gradient(135deg, #B71C1C 0%, #D32F2F 100%) !important;
                 color: #FFFFFF !important;
+                font-size: 1.15rem !important;
                 font-weight: 800 !important;
-                border-radius: 10px !important;
-                height: 44px !important;
+                border-radius: 16px !important;
+                height: 64px !important;
                 border: none !important;
-                box-shadow: 0px 4px 10px rgba(183, 28, 28, 0.3) !important;
-                transition: all 0.2s ease !important;
+                box-shadow: 0px 6px 18px rgba(183, 28, 28, 0.45) !important;
+                transition: all 0.25s ease-in-out !important;
+                letter-spacing: 0.5px !important;
             }
-            .btn-dash-primary button:hover {
-                background-color: #D32F2F !important;
-                transform: translateY(-2px);
+            .btn-main-action button:hover {
+                background: linear-gradient(135deg, #D32F2F 0%, #E53935 100%) !important;
+                transform: translateY(-3px) !important;
+                box-shadow: 0px 8px 24px rgba(183, 28, 28, 0.65) !important;
             }
-            .btn-dash-config button {
-                background-color: #2D2D2D !important;
+
+            /* BOTÃO DE CONFIGURAÇÕES (CINZA ESCURO PREMIUM) */
+            .btn-config-action button {
+                background: linear-gradient(135deg, #2A2A2A 0%, #383838 100%) !important;
                 color: #FFFFFF !important;
+                font-size: 1.1rem !important;
                 font-weight: 800 !important;
-                border-radius: 10px !important;
-                height: 44px !important;
+                border-radius: 16px !important;
+                height: 58px !important;
                 border: 1px solid #444444 !important;
-                transition: all 0.2s ease !important;
+                box-shadow: 0px 4px 14px rgba(0, 0, 0, 0.5) !important;
+                transition: all 0.25s ease-in-out !important;
             }
-            .btn-dash-config button:hover {
-                background-color: #383838 !important;
+            .btn-config-action button:hover {
+                background: linear-gradient(135deg, #383838 0%, #484848 100%) !important;
                 border-color: #666666 !important;
-                transform: translateY(-2px);
+                transform: translateY(-2px) !important;
             }
-            .btn-logout button {
+
+            /* BOTÃO DE SAÍDA */
+            .btn-logout-action button {
                 background-color: transparent !important;
                 color: #FF5252 !important;
+                font-size: 0.95rem !important;
                 font-weight: 700 !important;
-                border: 1px solid #B71C1C !important;
-                border-radius: 10px !important;
-                height: 40px !important;
-                margin-top: 15px;
+                border: 2px solid #B71C1C !important;
+                border-radius: 14px !important;
+                height: 48px !important;
+                margin-top: 10px !important;
+                transition: all 0.2s ease !important;
             }
-            .btn-logout button:hover {
+            .btn-logout-action button:hover {
                 background-color: #B71C1C !important;
                 color: #FFFFFF !important;
             }
@@ -367,53 +355,35 @@ def render():
         pode_historico = tem_permissao("dashboard:visualizar")
         pode_config = tem_permissao("usuarios:gerenciar") or tem_permissao("pratos:gerenciar")
 
-        # 1. CARD DE LANÇAMENTOS
+        # 1. BOTÃO NOVO LANÇAMENTO
         if pode_pesagem:
-            st.markdown("""
-                <div class="menu-card">
-                    <div class="menu-card-title">📝 LANÇAMENTOS DE PESAGEM</div>
-                    <div class="menu-card-desc">Registre pratos do buffet, pesos de produção, sobra, descarte ou quantidade de clientes atendidos no turno.</div>
-                </div>
-            """, unsafe_allow_html=True)
-            st.markdown('<div class="btn-dash-primary">', unsafe_allow_html=True)
-            if st.button("NOVO LANÇAMENTO ➔", key="btn_dash_pesagem", use_container_width=True):
+            st.markdown('<div class="btn-main-action">', unsafe_allow_html=True)
+            if st.button("📝 NOVO LANÇAMENTO DE PESAGEM", key="btn_dash_pesagem", use_container_width=True):
                 st.session_state["aba_ativa"] = "pesagem"
                 st.rerun()
             st.markdown('</div>', unsafe_allow_html=True)
-            st.markdown("<br>", unsafe_allow_html=True)
+            st.markdown("<div style='margin-bottom: 18px;'></div>", unsafe_allow_html=True)
 
-        # 2. CARD DO PAINEL / DASHBOARD
+        # 2. BOTÃO CONSULTAR PAINEL
         if pode_historico:
-            st.markdown("""
-                <div class="menu-card">
-                    <div class="menu-card-title">📊 PAINEL EXECUTIVO & HISTÓRICO</div>
-                    <div class="menu-card-desc">Consulte gráficos de desempenho, acompanhe taxa de descarte, balanço da cozinha e exporte relatórios executivos em PDF.</div>
-                </div>
-            """, unsafe_allow_html=True)
-            st.markdown('<div class="btn-dash-primary">', unsafe_allow_html=True)
-            if st.button("CONSULTAR PAINEL ➔", key="btn_dash_historico", use_container_width=True):
+            st.markdown('<div class="btn-main-action">', unsafe_allow_html=True)
+            if st.button("📊 CONSULTAR PAINEL EXECUTIVO", key="btn_dash_historico", use_container_width=True):
                 st.session_state["aba_ativa"] = "historico"
                 st.rerun()
             st.markdown('</div>', unsafe_allow_html=True)
-            st.markdown("<br>", unsafe_allow_html=True)
+            st.markdown("<div style='margin-bottom: 18px;'></div>", unsafe_allow_html=True)
 
-        # 3. CARD DE CONFIGURAÇÕES (ADMIN / MASTER)
+        # 3. BOTÃO DE CONFIGURAÇÕES (ADMIN / MASTER)
         if pode_config:
-            st.markdown("""
-                <div class="menu-card" style="border-left-color: #757575;">
-                    <div class="menu-card-title">⚙️ GESTÃO & CONFIGURAÇÕES</div>
-                    <div class="menu-card-desc">Cadastre e edite contas de usuários, redefina perfis de acesso e gerencie o catálogo de pratos/alimentos.</div>
-                </div>
-            """, unsafe_allow_html=True)
-            st.markdown('<div class="btn-dash-config">', unsafe_allow_html=True)
-            if st.button("ACESSAR CONFIGURAÇÕES ⚙️", key="btn_dash_config", use_container_width=True):
+            st.markdown('<div class="btn-config-action">', unsafe_allow_html=True)
+            if st.button("⚙️ GESTÃO E CONFIGURAÇÕES", key="btn_dash_config", use_container_width=True):
                 st.session_state["aba_ativa"] = "config"
                 st.rerun()
             st.markdown('</div>', unsafe_allow_html=True)
-            st.markdown("<br>", unsafe_allow_html=True)
+            st.markdown("<div style='margin-bottom: 18px;'></div>", unsafe_allow_html=True)
 
         # BOTÃO DE LOGOUT
-        st.markdown('<div class="btn-logout">', unsafe_allow_html=True)
+        st.markdown('<div class="btn-logout-action">', unsafe_allow_html=True)
         if st.button("🚪 ENCERRAR SESSÃO", key="btn_dash_logout", use_container_width=True):
             for key in ["usuario_logado", "id_usuario_logado", "perfil_logado", "nome_perfil_logado", "permissoes_usuario"]:
                 st.session_state[key] = None
