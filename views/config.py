@@ -111,7 +111,7 @@ def render():
                         nome_perfil_display = perfis_disponiveis.get(id_perfil_usr, {}).get("nome", id_perfil_usr.capitalize())
                         status_emoji = "🟢 Ativo" if ativo_usr else "🔴 Inativo"
 
-                        label_expander = f"👤 {nome_usr if nome_usr else usr_login} ({usr_login if usr_login else 'Sem login'}) — [{nome_perfil_display}] {status_emoji}"
+                        label_expander = f"👤 ({usr_login if usr_login else 'Sem login'}) — [{nome_perfil_display}] {status_emoji}"
 
                         with st.expander(label_expander):
                             pode_editar = True

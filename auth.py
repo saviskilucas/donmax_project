@@ -28,18 +28,18 @@ TODAS_PERMISSOES = {
 def buscar_perfis():
     return {
         "master": {
-            "nome": "Master / Proprietário",
+            "nome": "Master",
             "permissoes": ["pesagem:visualizar", "pesagem:criar", "campo:data", "campo:prato", "campo:pesos", "campo:clientes", "campo:obs", "dashboard:visualizar", "dashboard:filtrar", "dashboard:matriz", "relatorios:exportar_pdf", "lancamentos:editar", "usuarios:gerenciar", "pratos:gerenciar"]
         },
         "admin": {
-            "nome": "Administrador",
+            "nome": "Admin",
             "permissoes": ["pesagem:visualizar", "pesagem:criar", "campo:data", "campo:prato", "campo:pesos", "campo:clientes", "campo:obs", "dashboard:visualizar", "dashboard:filtrar", "dashboard:matriz", "relatorios:exportar_pdf", "lancamentos:editar", "usuarios:gerenciar", "pratos:gerenciar"]
         },
         # =========================================================
         # NOVOS PERFIS DE COZINHA
         # =========================================================
         "cozinha_escala_1": {
-            "nome": "Cozinha - Escala 1 (Lança e Cadastra Pratos)",
+            "nome": "Cozinha - Escala 1",
             "permissoes": [
                 "pesagem:visualizar", # Permite acessar a tela de lançamentos
                 "pesagem:criar",      # Permite salvar formulários
@@ -50,7 +50,7 @@ def buscar_perfis():
             ]
         },
         "cozinha_escala_2": {
-            "nome": "Cozinha - Escala 2 (Apenas Lançamento)",
+            "nome": "Cozinha - Escala 2",
             "permissoes": [
                 "pesagem:visualizar", # Permite acessar a tela de lançamentos
                 "pesagem:criar",      # Permite salvar formulários
@@ -62,7 +62,7 @@ def buscar_perfis():
         },
         # Perfil Caixa tradicional
         "caixa": {
-            "nome": "Caixa / Atendimento",
+            "nome": "Caixa",
             "permissoes": [
                 "pesagem:visualizar", "pesagem:criar", "campo:clientes", "campo:obs"
             ]
