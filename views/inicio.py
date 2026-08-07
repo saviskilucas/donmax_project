@@ -5,6 +5,7 @@ import os
 import base64
 from email.mime.text import MIMEText
 from google.oauth2.service_account import Credentials
+# ALTERE ESTA LINHA NO TOPO DO ARQUIVO:
 from auth import buscar_perfis, conectar_gsheets, tem_permissao
 
 # =========================================================
@@ -226,7 +227,7 @@ def render():
             with st.form("form_login_principal"):
                 usuario_login = st.text_input("Usuário", placeholder="ex: nome.sobrenome")
                 senha_login = st.text_input("Senha", type="password", placeholder="••••••••")
-                btn_login = st.form_submit_button("ENTRAR NO SISTEMA", use_container_width=True)
+                btn_login = st.form_submit_button("ENTRAR NO SISTEMA", width="stretch")
                 
                 if btn_login:
                     usr_digitado = usuario_login.strip().lower()
@@ -267,7 +268,7 @@ def render():
             with st.expander("🔑 Esqueceu sua senha?"):
                 with st.form("form_esqueci_senha_exp"):
                     usr_recup = st.text_input("Insira seu usuário cadastrado", placeholder="ex: nome.sobrenome")
-                    btn_recuperar = st.form_submit_button("SOLICITAR SENHA AO ADMIN", use_container_width=True)
+                    btn_recuperar = st.form_submit_button("SOLICITAR SENHA AO ADMIN", width="stretch")
                     
                     if btn_recuperar:
                         usr_target = usr_recup.strip().lower()
@@ -285,61 +286,6 @@ def render():
                                 st.error("❌ Usuário não localizado.")
 
     else:
-        # ESTILIZAÇÃO GIGANTE PARA OPERAÇÃO EM CELULAR (ALTURA 120PX, FONTE 1.6REM)
-        st.markdown("""
-            <style>
-            /* BOTÃO 1: LANÇAMENTOS (VERMELHO VIBRANTE GIGANTE) */
-            div.btn-inicio-lancamento button {
-                background: linear-gradient(135deg, #B71C1C 0%, #FF1744 100%) !important;
-                color: #FFFFFF !important;
-                font-size: 1.6rem !important;
-                font-weight: 900 !important;
-                border-radius: 24px !important;
-                height: 120px !important;
-                border: 4px solid #FF5252 !important;
-                box-shadow: 0px 12px 28px rgba(255, 23, 68, 0.5) !important;
-                margin-bottom: 25px !important;
-                text-transform: uppercase !important;
-                letter-spacing: 0.8px !important;
-            }
-            div.btn-inicio-lancamento button:active {
-                transform: scale(0.96) !important;
-                box-shadow: 0px 4px 14px rgba(255, 23, 68, 0.7) !important;
-            }
-            
-            /* BOTÃO 2: PAINEL (AZUL VIBRANTE GIGANTE) */
-            div.btn-inicio-painel button {
-                background: linear-gradient(135deg, #0D47A1 0%, #2979FF 100%) !important;
-                color: #FFFFFF !important;
-                font-size: 1.6rem !important;
-                font-weight: 900 !important;
-                border-radius: 24px !important;
-                height: 120px !important;
-                border: 4px solid #82B1FF !important;
-                box-shadow: 0px 12px 28px rgba(41, 121, 255, 0.5) !important;
-                margin-bottom: 25px !important;
-                text-transform: uppercase !important;
-                letter-spacing: 0.8px !important;
-            }
-            div.btn-inicio-painel button:active {
-                transform: scale(0.96) !important;
-                box-shadow: 0px 4px 14px rgba(41, 121, 255, 0.7) !important;
-            }
-
-            /* BOTÃO 3: ENCERRAR SESSÃO */
-            div.btn-inicio-logout button {
-                background-color: #1E1E1E !important;
-                color: #FF5252 !important;
-                font-size: 1.15rem !important;
-                font-weight: 800 !important;
-                border: 2px solid #D32F2F !important;
-                border-radius: 18px !important;
-                height: 60px !important;
-                margin-top: 30px !important;
-            }
-            </style>
-        """, unsafe_allow_html=True)
-
         st.markdown("<div class='section-header'>PAINEL INICIAL</div>", unsafe_allow_html=True)
         st.subheader(f"Olá, {st.session_state['usuario_logado']}! 👋")
         st.info(f"Perfil de Acesso: **{st.session_state.get('nome_perfil_logado', 'Usuário')}**")
@@ -350,43 +296,33 @@ def render():
         pode_pesagem = tem_permissao("pesagem:visualizar")
         pode_historico = tem_permissao("dashboard:visualizar")
         
-        # 1. Se tiver acesso a AMBOS (Lançamento + Painel)
+        # 1. Se tiver acesso a AMBOS (Lançamento + Painel) -> 2 colunas lado a lado
         if pode_pesagem and pode_historico:
             col_a, col_b = st.columns(2)
             with col_a:
-                st.markdown('<div class="btn-inicio-lancamento">', unsafe_allow_html=True)
-                if st.button("📝 NOVO LANÇAMENTO", use_container_width=True):
+                if st.button("NOVO LANÇAMENTO", width="stretch"):
                     st.session_state["aba_ativa"] = "pesagem"
                     st.rerun()
-                st.markdown('</div>', unsafe_allow_html=True)
             with col_b:
-                st.markdown('<div class="btn-inicio-painel">', unsafe_allow_html=True)
-                if st.button("📊 CONSULTAR PAINEL", use_container_width=True):
+                if st.button("CONSULTAR PAINEL", width="stretch"):
                     st.session_state["aba_ativa"] = "historico"
                     st.rerun()
-                st.markdown('</div>', unsafe_allow_html=True)
 
-        # 2. Se tiver acesso APENAS a Lançamentos (ex: Cozinha / Caixa)
+        # 2. Se tiver acesso APENAS a Lançamentos (ex: Cozinha/Caixa)
         elif pode_pesagem:
-            st.markdown('<div class="btn-inicio-lancamento">', unsafe_allow_html=True)
-            if st.button("📝 NOVO LANÇAMENTO", use_container_width=True):
+            if st.button("NOVO LANÇAMENTO", width="stretch"):
                 st.session_state["aba_ativa"] = "pesagem"
                 st.rerun()
-            st.markdown('</div>', unsafe_allow_html=True)
 
         # 3. Se tiver acesso APENAS ao Painel
         elif pode_historico:
-            st.markdown('<div class="btn-inicio-painel">', unsafe_allow_html=True)
-            if st.button("📊 CONSULTAR PAINEL", use_container_width=True):
+            if st.button("CONSULTAR PAINEL", width="stretch"):
                 st.session_state["aba_ativa"] = "historico"
                 st.rerun()
-            st.markdown('</div>', unsafe_allow_html=True)
 
         st.markdown("---")
-        st.markdown('<div class="btn-inicio-logout">', unsafe_allow_html=True)
-        if st.button("🚪 ENCERRAR SESSÃO", use_container_width=True):
+        if st.button("ENCERRAR SESSÃO", width="stretch"):
             for key in ["usuario_logado", "id_usuario_logado", "perfil_logado", "nome_perfil_logado", "permissoes_usuario"]:
                 st.session_state[key] = None
             st.session_state["aba_ativa"] = "inicio"
             st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
