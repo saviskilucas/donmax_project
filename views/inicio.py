@@ -258,7 +258,7 @@ def render():
                             st.session_state["nome_perfil_logado"] = dados_perfil.get("nome")
                             st.session_state["permissoes_usuario"] = dados_perfil.get("permissoes", [])
                             
-                            st.session_state["aba_ativa"] = "pesagem"
+                            st.session_state["aba_ativa"] = "inicio"
                             st.success(f"Bem-vindo(a), {usuario_achado.get('nome_original')}!")
                             st.rerun()
                         else:
