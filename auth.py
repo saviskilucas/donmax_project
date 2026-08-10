@@ -42,6 +42,7 @@ def buscar_perfis():
             "nome": "Cozinha - Escala 1",
             "permissoes": [
                 "pesagem:visualizar", # Permite acessar a tela de lançamentos
+                "campo:data",
                 "pesagem:criar",      # Permite salvar formulários
                 "campo:prato",        # Acesso ao campo de seleção de pratos
                 "campo:pesos",        # Acesso aos campos de medições (kg)
@@ -53,6 +54,7 @@ def buscar_perfis():
             "nome": "Cozinha - Escala 2",
             "permissoes": [
                 "pesagem:visualizar", # Permite acessar a tela de lançamentos
+                "campo:data",
                 "pesagem:criar",      # Permite salvar formulários
                 "campo:prato",        # Acesso ao campo de seleção de pratos
                 "campo:pesos",        # Acesso aos campos de medições (kg)
@@ -64,7 +66,7 @@ def buscar_perfis():
         "caixa": {
             "nome": "Caixa",
             "permissoes": [
-                "pesagem:visualizar", "pesagem:criar", "campo:clientes", "campo:obs"
+                "pesagem:visualizar", "campo:data", "pesagem:criar", "campo:clientes", "campo:obs"
             ]
         }
     }
