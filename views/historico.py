@@ -685,8 +685,8 @@ def render():
             # 3. Junta as datas contínuas com os dados reais e preenche dias sem lançamento com 0.0
             df_data = pd.merge(df_timeline_completa, df_agrupado, on='Data_DT', how='left').fillna(0.0)
 
-            # 4. Formata a coluna de texto para exibição visual (DD/MM/YYYY) e ordena
-            df_data['Data'] = pd.to_datetime(df_data['Data_DT']).dt.strftime('%d/%m/%Y')
+            # 4. Formata a data apenas com Dia/Mês (ex: 19/08) para não poluir
+            df_data['Data'] = pd.to_datetime(df_data['Data_DT']).dt.strftime('%d/%m')
             df_data = df_data.sort_values('Data_DT', ascending=True)
 
         df_matriz = pd.DataFrame()
@@ -970,14 +970,14 @@ def render():
             st.info("Sem registros de sobras ou descarte no período selecionado.")
 
         # =========================================================
-        # LINHA DO TEMPO (RÓTULOS SEMPRE ACIMA DA BOLINHA)
+        # LINHA DO TEMPO (RÓTULOS LIGEIRAMENTE INCLINADOS E SEM O ANO)
         # =========================================================
         if not df_data.empty:
             st.markdown("##### Linha do Tempo de Descarte e Sobra")
             
             fig_line = go.Figure()
 
-            # Descarte: Rótulo posicionado SEMPRE no topo
+            # Descarte
             if 'Descarte' in df_data.columns:
                 fig_line.add_trace(go.Scatter(
                     x=df_data['Data'],
@@ -986,12 +986,12 @@ def render():
                     mode='lines+markers+text',
                     text=[f"<b>{v:.1f} kg</b>" if v > 0 else "" for v in df_data['Descarte']],
                     textposition='top center',
-                    textfont=dict(color='#FF5252', size=12, family="Arial Black"),
+                    textfont=dict(color='#FF5252', size=11, family="Arial Black"),
                     line=dict(color='#FF5252', width=3),
                     marker=dict(size=8, color='#FF5252')
                 ))
 
-            # Sobra Buffet: Rótulo posicionado SEMPRE no topo
+            # Sobra Buffet
             if 'Sobra Buffet' in df_data.columns:
                 fig_line.add_trace(go.Scatter(
                     x=df_data['Data'],
@@ -1000,12 +1000,12 @@ def render():
                     mode='lines+markers+text',
                     text=[f"<b>{v:.1f} kg</b>" if v > 0 else "" for v in df_data['Sobra Buffet']],
                     textposition='top center',
-                    textfont=dict(color='#FB8C00', size=12, family="Arial Black"),
+                    textfont=dict(color='#FB8C00', size=11, family="Arial Black"),
                     line=dict(color='#FB8C00', width=3),
                     marker=dict(size=8, color='#FB8C00')
                 ))
 
-            # Ajusta o topo do gráfico para 130% do valor máximo para o texto do topo não cortar
+            # Dá folga no topo do gráfico
             max_val = max(df_data[['Descarte', 'Sobra Buffet']].max()) if not df_data.empty else 10
             max_y = max_val * 1.30 if max_val > 0 else 10
 
@@ -1013,8 +1013,13 @@ def render():
                 paper_bgcolor='rgba(0,0,0,0)',
                 plot_bgcolor='rgba(0,0,0,0)',
                 font=dict(color="#E0E0E0"),
-                margin=dict(l=5, r=5, t=30, b=5),
-                xaxis=dict(showgrid=False, fixedrange=True, type='category'),
+                margin=dict(l=5, r=5, t=30, b=10),
+                xaxis=dict(
+                    showgrid=False, 
+                    fixedrange=True, 
+                    type='category',
+                    tickangle=-35  # Inclina os rótulos suavemente a 35 graus
+                ),
                 yaxis=dict(showgrid=True, gridcolor='#2D2D2D', fixedrange=True, title="", range=[0, max_y]),
                 legend=dict(title="", orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
             )
