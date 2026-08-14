@@ -625,36 +625,24 @@ def render():
         st.markdown("##### Filtrar por Período")
         
         if tem_permissao("dashboard:filtrar"):
-            # min_value e max_value foram removidos para liberar a seleção de qualquer data no calendário
-            filtro_datas = st.date_input(
-                "Selecione o intervalo no calendário:",
-                value=(primeiro_dia_mes, hoje),
-                format="DD/MM/YYYY"
-            )
+            col_dt1, col_dt2 = st.columns(2)
+            with col_dt1:
+                dt_inicio = st.date_input(
+                    "Data Inicial",
+                    value=primeiro_dia_mes,
+                    format="DD/MM/YYYY"
+                )
+            with col_dt2:
+                dt_fim = st.date_input(
+                    "Data Final",
+                    value=hoje,
+                    format="DD/MM/YYYY"
+                )
         else:
-            filtro_datas = (primeiro_dia_mes, hoje)
+            dt_inicio = primeiro_dia_mes
+            dt_fim = hoje
 
-        if isinstance(filtro_datas, (list, tuple)):
-            if len(filtro_datas) == 2:
-                dt_inicio, dt_fim = filtro_datas
-            elif len(filtro_datas) == 1:
-                dt_inicio = dt_fim = filtro_datas[0]
-            else:
-                dt_inicio = primeiro_dia_mes
-                dt_fim = hoje
-        else:
-            dt_inicio = dt_fim = filtro_datas
-
-        if isinstance(filtro_datas, (list, tuple)):
-            if len(filtro_datas) == 2:
-                dt_inicio, dt_fim = filtro_datas
-            elif len(filtro_datas) == 1:
-                dt_inicio = dt_fim = filtro_datas[0]
-            else:
-                dt_inicio = dt_fim = data_min
-        else:
-            dt_inicio = dt_fim = filtro_datas
-
+        # Filtragem direta no DataFrame
         df = df[(df['Data_DT'] >= dt_inicio) & (df['Data_DT'] <= dt_fim)]
 
         if df.empty:
@@ -681,14 +669,24 @@ def render():
         tot_clientes = float(clientes.sum())
 
         df_data = pd.DataFrame()
-        if 'Data' in df.columns:
+        if 'Data' in df.columns or not df.empty:
+            # 1. Agrupa os lançamentos existentes por data
             df_temp_data = pd.DataFrame({
-                'Data': df['Data'], 
+                'Data_DT': df['Data_DT'],
                 'Descarte': descarte,
                 'Sobra Buffet': sobra_buffet
             })
-            df_temp_data['Data_DT'] = pd.to_datetime(df_temp_data['Data'], format='%d/%m/%Y', errors='coerce')
-            df_data = df_temp_data.groupby(['Data_DT', 'Data'])[['Descarte', 'Sobra Buffet']].sum().reset_index()
+            df_agrupado = df_temp_data.groupby('Data_DT')[['Descarte', 'Sobra Buffet']].sum().reset_index()
+
+            # 2. Cria uma sequência contínua do primeiro ao último dia do filtro
+            datas_completas = pd.date_range(start=dt_inicio, end=dt_fim, freq='D').date
+            df_timeline_completa = pd.DataFrame({'Data_DT': datas_completas})
+
+            # 3. Junta as datas contínuas com os dados reais e preenche dias sem lançamento com 0.0
+            df_data = pd.merge(df_timeline_completa, df_agrupado, on='Data_DT', how='left').fillna(0.0)
+
+            # 4. Formata a coluna de texto para exibição visual (DD/MM/YYYY) e ordena
+            df_data['Data'] = pd.to_datetime(df_data['Data_DT']).dt.strftime('%d/%m/%Y')
             df_data = df_data.sort_values('Data_DT', ascending=True)
 
         df_matriz = pd.DataFrame()
