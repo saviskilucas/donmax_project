@@ -618,25 +618,32 @@ def render():
         else:
             df['Data_DT'] = date.today()
 
-        datas_validas = df['Data_DT'].dropna()
-        if not datas_validas.empty:
-            data_min = min(datas_validas)
-            data_max = max(datas_validas)
-        else:
-            data_min = data_max = date.today()
+        # Define o padrão: 1º dia do mês atual até o dia de hoje (Fuso Brasília)
+        hoje = datetime.now(ZoneInfo("America/Sao_Paulo")).date()
+        primeiro_dia_mes = hoje.replace(day=1)
 
         st.markdown("##### Filtrar por Período")
         
         if tem_permissao("dashboard:filtrar"):
+            # min_value e max_value foram removidos para liberar a seleção de qualquer data no calendário
             filtro_datas = st.date_input(
                 "Selecione o intervalo no calendário:",
-                value=(data_min, data_max),
-                min_value=data_min,
-                max_value=data_max,
+                value=(primeiro_dia_mes, hoje),
                 format="DD/MM/YYYY"
             )
         else:
-            filtro_datas = (data_min, data_max)
+            filtro_datas = (primeiro_dia_mes, hoje)
+
+        if isinstance(filtro_datas, (list, tuple)):
+            if len(filtro_datas) == 2:
+                dt_inicio, dt_fim = filtro_datas
+            elif len(filtro_datas) == 1:
+                dt_inicio = dt_fim = filtro_datas[0]
+            else:
+                dt_inicio = primeiro_dia_mes
+                dt_fim = hoje
+        else:
+            dt_inicio = dt_fim = filtro_datas
 
         if isinstance(filtro_datas, (list, tuple)):
             if len(filtro_datas) == 2:
