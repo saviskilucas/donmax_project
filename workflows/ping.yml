@@ -1,0 +1,57 @@
+name: Keep-Alive Streamlit (F5 + Print da Tela)
+
+on:
+  schedule:
+    # Executa a cada 6 horas
+    - cron: '0 */6 * * *'
+  # Permite executar manualmente pela aba Actions
+  workflow_dispatch:
+
+jobs:
+  keep-alive:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do Repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Instalar Playwright
+        run: |
+          npm install playwright
+          npx playwright install chromium
+
+      - name: Simular Acesso, F5 e Tirar Print
+        run: |
+          node -e "
+          const { chromium } = require('playwright');
+          (async () => {
+            const browser = await chromium.launch();
+            const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+            
+            console.log('Acessando o site...');
+            await page.goto('https://saviskilucas.github.io/donmax_project/', { waitUntil: 'networkidle', timeout: 60000 });
+            await page.waitForTimeout(3000);
+            
+            console.log('Recarregando a página (F5)...');
+            await page.reload({ waitUntil: 'networkidle' });
+            await page.waitForTimeout(5000); // Aguarda a renderização do Streamlit pós-F5
+            
+            console.log('Tirando foto da tela...');
+            await page.screenshot({ path: 'screenshot.png', fullPage: true });
+            console.log('Print salvo com sucesso!');
+            
+            await browser.close();
+          })();
+          "
+
+      - name: Anexar Print da Tela na Execução (Artefato)
+        uses: actions/upload-artifact@v4
+        with:
+          name: print-streamlit-app
+          path: screenshot.png
+          retention-days: 7
